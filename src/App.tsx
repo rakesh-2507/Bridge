@@ -20,7 +20,10 @@ function App() {
     <BrowserRouter>
       <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
 
-        <Navbar />
+        <Navbar
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+        />
 
         <div className="flex flex-1">
 

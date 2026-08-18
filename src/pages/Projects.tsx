@@ -422,7 +422,6 @@ function Projects() {
   return (
     <div className="mx-auto text-gray-900 dark:text-white">
 
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
@@ -444,7 +443,6 @@ function Projects() {
 
       </div>
 
-      {/* Search */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
 
         <div className="relative w-full sm:max-w-md">

@@ -1,4 +1,8 @@
+import { useNavigate } from "react-router-dom";
+
 function Home() {
+  const navigate = useNavigate();
+
   return (
     <div className="mx-auto">
 
@@ -14,7 +18,11 @@ function Home() {
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-950">
+        <button
+          type="button"
+          onClick={() => navigate("/projects")}
+          className="group rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-950 dark:hover:border-gray-600"
+        >
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
             Total Projects
           </p>
@@ -22,7 +30,11 @@ function Home() {
           <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
             24
           </p>
-        </div>
+
+          <p className="mt-2 text-xs text-gray-400 opacity-0 transition group-hover:opacity-100 dark:text-gray-500">
+            View all projects →
+          </p>
+        </button>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-950">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">

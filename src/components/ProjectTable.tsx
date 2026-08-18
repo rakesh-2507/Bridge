@@ -60,11 +60,13 @@ function ProjectTable({ projects }: ProjectTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-950">
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
+      <div className="hidden overflow-x-auto md:block">
+
+        <table className="w-full text-left text-sm">
 
           <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-200">
             <tr>
+
               <th className="px-6 py-4 font-semibold">
                 Project ID
               </th>
@@ -88,12 +90,14 @@ function ProjectTable({ projects }: ProjectTableProps) {
               <th className="px-6 py-4 font-semibold">
                 Status
               </th>
+
             </tr>
           </thead>
 
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
 
             {currentProjects.map((project) => (
+
               <tr
                 key={project.id}
                 onClick={() => handleProjectClick(project.id)}
@@ -105,6 +109,7 @@ function ProjectTable({ projects }: ProjectTableProps) {
                 </td>
 
                 <td className="px-6 py-4">
+
                   <button
                     type="button"
                     onClick={(e) => {
@@ -115,6 +120,7 @@ function ProjectTable({ projects }: ProjectTableProps) {
                   >
                     {project.projectName}
                   </button>
+
                 </td>
 
                 <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
@@ -131,34 +137,105 @@ function ProjectTable({ projects }: ProjectTableProps) {
 
                 <td className="px-6 py-4">
 
-                  <span
-                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-                      project.status === "Completed"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                        : project.status === "In Progress"
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                        : project.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                    }`}
-                  >
-                    {project.status}
-                  </span>
+                  <StatusBadge status={project.status} />
 
                 </td>
 
               </tr>
+
             ))}
 
           </tbody>
 
         </table>
+
       </div>
 
-      {/* Pagination */}
-      <div className="flex flex-col gap-4 border-t border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
+      <div className="divide-y divide-gray-200 md:hidden dark:divide-gray-700">
 
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+        {currentProjects.map((project) => (
+
+          <button
+            key={project.id}
+            type="button"
+            onClick={() => handleProjectClick(project.id)}
+            className="block w-full p-4 text-left transition hover:bg-gray-50 dark:hover:bg-gray-900"
+          >
+
+            <div className="flex items-start justify-between gap-3">
+
+              <div className="min-w-0">
+
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Project #{project.id}
+                </p>
+
+                <h3 className="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-white">
+                  {project.projectName}
+                </h3>
+
+              </div>
+
+              <StatusBadge status={project.status} />
+
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-4">
+
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Coordinator
+                </p>
+
+                <p className="mt-1 truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {project.coordinator}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Start Date
+                </p>
+
+                <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {project.startDate}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  End Date
+                </p>
+
+                <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {project.endDate}
+                </p>
+              </div>
+
+
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Project ID
+                </p>
+
+                <p className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+                  #{project.id}
+                </p>
+              </div>
+
+            </div>
+
+          </button>
+
+        ))}
+
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between dark:border-gray-700">
+
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-300">
 
           <span>
             Go to page
@@ -179,7 +256,7 @@ function ProjectTable({ projects }: ProjectTableProps) {
 
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
 
           <button
             type="button"
@@ -190,9 +267,11 @@ function ProjectTable({ projects }: ProjectTableProps) {
             Previous
           </button>
 
+
           <span className="px-2 text-sm text-gray-600 dark:text-gray-300">
             Page {currentPage} of {totalPages}
           </span>
+
 
           <button
             type="button"
@@ -208,6 +287,26 @@ function ProjectTable({ projects }: ProjectTableProps) {
       </div>
 
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+
+  const styles =
+    status === "Completed"
+      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+      : status === "In Progress"
+      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+      : status === "Pending"
+      ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+      : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+
+  return (
+    <span
+      className={`inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-medium ${styles}`}
+    >
+      {status}
+    </span>
   );
 }
 

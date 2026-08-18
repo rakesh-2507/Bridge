@@ -1,9 +1,20 @@
-import { Bell, MapPin, UserCircle } from "lucide-react";
+import {
+  Bell,
+  MapPin,
+  Moon,
+  Sun,
+  UserCircle,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
-function Navbar() {
+type NavbarProps = {
+  darkMode: boolean;
+  setDarkMode: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+function Navbar({ darkMode, setDarkMode }: NavbarProps) {
   return (
-    <header className="h-16 border-b border-gray-200 bg-white dark:bg-gray-950 dark:text-white dark:border-gray-700">
+    <header className="h-16 border-b border-gray-200 bg-white transition-colors dark:border-gray-700 dark:bg-gray-950 dark:text-white">
       <div className="flex h-full items-center justify-between px-6">
 
         <Link
@@ -18,8 +29,21 @@ function Navbar() {
 
           <button
             type="button"
+            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => setDarkMode(!darkMode)}
+            className="flex items-center justify-center rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white md:hidden"
+          >
+            {darkMode ? (
+              <Sun size={20} strokeWidth={1.8} />
+            ) : (
+              <Moon size={20} strokeWidth={1.8} />
+            )}
+          </button>
+
+          <button
+            type="button"
             aria-label="Notifications"
-            className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white"
+            className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white dark:hover:bg-gray-800"
           >
             <Bell size={20} strokeWidth={1.8} />
           </button>
@@ -27,7 +51,7 @@ function Navbar() {
           <button
             type="button"
             aria-label="Location"
-            className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white"
+            className="rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white dark:hover:bg-gray-800"
           >
             <MapPin size={20} strokeWidth={1.8} />
           </button>
