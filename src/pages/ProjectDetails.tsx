@@ -129,7 +129,7 @@ function ProjectDetails() {
       <button
         type="button"
         onClick={() => navigate("/projects")}
-        className="mb-5 flex items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-gray-900"
+        className="mb-5 flex items-center gap-2 text-sm font-medium text-gray-600 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
       >
         <svg
           className="h-4 w-4"
@@ -148,16 +148,16 @@ function ProjectDetails() {
         Back to Projects
       </button>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-950">
 
-        <div className="flex flex-col gap-4 border-b border-gray-200 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-4 border-b border-gray-200 px-6 py-4 lg:flex-row lg:items-center lg:justify-between dark:border-gray-700">
 
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-200">
               {project.name}
             </h1>
 
-            <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+            <div className="mt-1 flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
               <button
                 type="button"
                 onClick={() => setCurrentFolder("Project Files")}
@@ -179,14 +179,14 @@ function ProjectDetails() {
 
             <button
               type="button"
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-500 dark:hover:bg-gray-800"
             >
               Create Folder
             </button>
 
             <button
               type="button"
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700"
+              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
             >
               Upload Files
             </button>
@@ -199,7 +199,7 @@ function ProjectDetails() {
 
           <table className="w-full min-w-[850px] text-left text-sm">
 
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-200">
               <tr>
 
                 <th className="w-12 px-6 py-4">
@@ -232,19 +232,19 @@ function ProjectDetails() {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
 
               {files.map((file) => (
 
                 <tr
                   key={file.id}
-                  className="transition hover:bg-gray-50"
+                  className="transition hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
 
                   <td className="px-6 py-4">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                     />
                   </td>
 
@@ -257,7 +257,7 @@ function ProjectDetails() {
                           setCurrentFolder(file.name);
                         }
                       }}
-                      className="flex items-center gap-3 font-medium text-gray-900 hover:text-blue-600"
+                      className="flex items-center gap-3 font-medium text-gray-900 hover:text-blue-600 dark:text-gray-400 dark:hover:text-gray-200"
                     >
                       <span className="flex h-6 w-6 items-center justify-center">
                         {getFileIcon(file.type)}
@@ -268,19 +268,19 @@ function ProjectDetails() {
 
                   </td>
 
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     {file.updatedBy}
                   </td>
 
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     {file.size}
                   </td>
 
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     {file.pages ?? "-"}
                   </td>
 
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                     {file.date}
                   </td>
 
@@ -294,7 +294,7 @@ function ProjectDetails() {
 
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700 dark:bg-gray-900">
 
           <div className="text-sm text-gray-500">
             {files.length} items
@@ -304,14 +304,14 @@ function ProjectDetails() {
 
             <button
               type="button"
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-400 dark:text-gray-500 dark:hover:bg-gray-800"
             >
               Delete Files
             </button>
 
             <button
               type="button"
-              className="rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              className="rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:border-red-400 dark:text-red-500 dark:hover:bg-red-800 dark:hover:text-gray-200"
             >
               Delete All Files
             </button>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -9,17 +10,26 @@ import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
 
 function App() {
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
   return (
     <BrowserRouter>
-      <div className="flex min-h-screen flex-col bg-gray-50">
+      <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
 
         <Navbar />
 
         <div className="flex flex-1">
 
-          <Sidebar />
+          <Sidebar
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+          />
 
-          <main className="flex-1 p-2 lg:p-4">
+          <main className="flex-1 bg-gray-50 p-2 transition-colors dark:bg-gray-950 lg:p-4">
 
             <Routes>
 
@@ -27,7 +37,10 @@ function App() {
 
               <Route path="/projects" element={<Projects />} />
 
-              <Route path="/projects/:id" element={<ProjectDetails />} />
+              <Route
+                path="/projects/:id"
+                element={<ProjectDetails />}
+              />
 
             </Routes>
 
