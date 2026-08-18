@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Project {
   id: number;
@@ -14,6 +15,8 @@ interface ProjectTableProps {
 }
 
 function ProjectTable({ projects }: ProjectTableProps) {
+  const navigate = useNavigate();
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = 5;
@@ -38,10 +41,13 @@ function ProjectTable({ projects }: ProjectTableProps) {
     }
   };
 
+  const handleProjectClick = (projectId: number) => {
+    navigate(`/projects/${projectId}`);
+  };
+
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-left text-sm">
 
@@ -74,17 +80,31 @@ function ProjectTable({ projects }: ProjectTableProps) {
           </thead>
 
           <tbody className="divide-y divide-gray-200">
+
             {projects.map((project) => (
               <tr
                 key={project.id}
-                className="transition hover:bg-gray-50"
+                onClick={() => handleProjectClick(project.id)}
+                className="cursor-pointer transition hover:bg-gray-50"
               >
+
                 <td className="px-6 py-4 font-medium text-gray-900">
                   #{project.id}
                 </td>
 
-                <td className="px-6 py-4 font-medium text-gray-900">
-                  {project.projectName}
+                <td className="px-6 py-4">
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProjectClick(project.id);
+                    }}
+                    className="font-medium text-gray-900 transition hover:text-blue-600"
+                  >
+                    {project.projectName}
+                  </button>
+
                 </td>
 
                 <td className="px-6 py-4 text-gray-600">
@@ -100,23 +120,38 @@ function ProjectTable({ projects }: ProjectTableProps) {
                 </td>
 
                 <td className="px-6 py-4">
-                  <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                      project.status === "Completed"
+                        ? "bg-green-100 text-green-700"
+                        : project.status === "In Progress"
+                        ? "bg-blue-100 text-blue-700"
+                        : project.status === "Pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
                     {project.status}
                   </span>
+
                 </td>
+
               </tr>
             ))}
+
           </tbody>
 
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="flex flex-col gap-4 border-t border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
 
-        {/* Go To Page */}
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span>Go to page</span>
+
+          <span>
+            Go to page
+          </span>
 
           <input
             type="number"
@@ -127,10 +162,12 @@ function ProjectTable({ projects }: ProjectTableProps) {
             className="w-14 rounded-md border border-gray-300 px-2 py-1.5 text-center text-sm outline-none focus:border-gray-500"
           />
 
-          <span>of {totalPages}</span>
+          <span>
+            of {totalPages}
+          </span>
+
         </div>
 
-        {/* Previous / Next */}
         <div className="flex items-center gap-2">
 
           <button

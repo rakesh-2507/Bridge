@@ -6,11 +6,11 @@ import Footer from "./components/Footer";
 
 import Home from "./pages/Home";
 import Projects from "./pages/Projects";
+import ProjectDetails from "./pages/ProjectDetails";
 
 function App() {
   return (
     <BrowserRouter>
-
       <div className="flex min-h-screen flex-col bg-gray-50">
 
         <Navbar />
@@ -23,15 +23,11 @@ function App() {
 
             <Routes>
 
-              <Route
-                path="/"
-                element={<Home />}
-              />
+              <Route path="/" element={<Home />} />
 
-              <Route
-                path="/projects"
-                element={<Projects />}
-              />
+              <Route path="/projects" element={<Projects />} />
+
+              <Route path="/projects/:id" element={<ProjectDetails />} />
 
             </Routes>
 
@@ -42,7 +38,6 @@ function App() {
         <Footer />
 
       </div>
-
     </BrowserRouter>
   );
 }

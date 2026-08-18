@@ -7,7 +7,7 @@ function Projects() {
   const projects = [
     {
       id: 1,
-      projectName: "Techonomy Website",
+      projectName: "Techonomy",
       coordinator: "John Doe",
       startDate: "01/08/2026",
       endDate: "30/09/2026",
@@ -15,7 +15,7 @@ function Projects() {
     },
     {
       id: 2,
-      projectName: "Business One Website",
+      projectName: "AISTGS",
       coordinator: "Jane Smith",
       startDate: "05/08/2026",
       endDate: "15/09/2026",
@@ -23,7 +23,7 @@ function Projects() {
     },
     {
       id: 3,
-      projectName: "Project Management Portal",
+      projectName: "Management Portal",
       coordinator: "Alex Kumar",
       startDate: "10/08/2026",
       endDate: "20/10/2026",
@@ -38,7 +38,6 @@ function Projects() {
   return (
     <div className="mx-auto">
 
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
@@ -60,7 +59,6 @@ function Projects() {
 
       </div>
 
-      {/* Search */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
 
         <div className="relative w-full sm:max-w-md">
@@ -98,7 +96,6 @@ function Projects() {
 
       </div>
 
-      {/* Project Table */}
       <ProjectTable projects={filteredProjects} />
 
     </div>
