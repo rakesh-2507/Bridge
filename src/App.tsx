@@ -8,6 +8,7 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
+import MembersList from "./pages/MembersList";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -44,6 +45,7 @@ function App() {
                 path="/projects/:id"
                 element={<ProjectDetails />}
               />
+              <Route path="/members" element={<MembersList />} />
 
             </Routes>
 
