@@ -10,6 +10,11 @@ import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
 import MembersList from "./pages/MembersList";
 
+import ProjectTypes from "./pages/ProjectTypes";
+import Templates from "./pages/Templates";
+import Folders from "./pages/Folders";
+import Companies from "./pages/Companies";
+
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
@@ -37,15 +42,46 @@ function App() {
 
             <Routes>
 
-              <Route path="/" element={<Home />} />
+              <Route
+                path="/"
+                element={<Home />}
+              />
 
-              <Route path="/projects" element={<Projects />} />
+              <Route
+                path="/projects"
+                element={<Projects />}
+              />
 
               <Route
                 path="/projects/:id"
                 element={<ProjectDetails />}
               />
-              <Route path="/members" element={<MembersList />} />
+
+              <Route
+                path="/members"
+                element={<MembersList />}
+              />
+
+              <Route
+                path="/project-types"
+                element={<ProjectTypes />}
+              />
+
+              <Route
+                path="/templates"
+                element={<Templates />}
+              />
+
+              {/* Folders */}
+              <Route
+                path="/folders"
+                element={<Folders />}
+              />
+
+              <Route
+                path="/companies"
+                element={<Companies />}
+              />
 
             </Routes>
 

@@ -57,7 +57,6 @@ const CreateUserForm = ({
     setError("");
     setSuccess("");
 
-    // Basic validation
     if (
       !formData.firstname.trim() ||
       !formData.lastname.trim() ||
@@ -108,7 +107,6 @@ const CreateUserForm = ({
 
   return (
     <div className="w-full rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-      {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Create User
@@ -119,7 +117,6 @@ const CreateUserForm = ({
         </p>
       </div>
 
-      {/* Messages */}
       {error && (
         <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
           {error}
@@ -134,7 +131,7 @@ const CreateUserForm = ({
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {/* Title */}
+
           <div>
             <label
               htmlFor="title"
@@ -159,7 +156,6 @@ const CreateUserForm = ({
             </select>
           </div>
 
-          {/* User Type */}
           <div>
             <label
               htmlFor="mtype"
@@ -183,7 +179,6 @@ const CreateUserForm = ({
             </select>
           </div>
 
-          {/* First Name */}
           <div>
             <label
               htmlFor="firstname"
@@ -204,7 +199,6 @@ const CreateUserForm = ({
             />
           </div>
 
-          {/* Last Name */}
           <div>
             <label
               htmlFor="lastname"
@@ -225,7 +219,6 @@ const CreateUserForm = ({
             />
           </div>
 
-          {/* Login Name */}
           <div>
             <label
               htmlFor="loginname"
@@ -247,7 +240,6 @@ const CreateUserForm = ({
             />
           </div>
 
-          {/* Password */}
           <div>
             <label
               htmlFor="password"
@@ -269,7 +261,6 @@ const CreateUserForm = ({
             />
           </div>
 
-          {/* Email */}
           <div>
             <label
               htmlFor="email"
@@ -291,7 +282,6 @@ const CreateUserForm = ({
             />
           </div>
 
-          {/* Mobile */}
           <div>
             <label
               htmlFor="mobile"
@@ -313,7 +303,6 @@ const CreateUserForm = ({
           </div>
         </div>
 
-        {/* Buttons */}
         <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
           {onCancel && (
             <button

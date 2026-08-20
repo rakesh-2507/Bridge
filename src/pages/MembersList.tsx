@@ -117,7 +117,6 @@ function MembersList() {
 
   ];
 
-  /* Search */
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,7 +124,6 @@ function MembersList() {
       user.username.toLowerCase().includes(search.toLowerCase())
   );
 
-  /* Pagination */
   const totalPages = Math.max(
     1,
     Math.ceil(filteredUsers.length / itemsPerPage)
@@ -167,7 +165,7 @@ function MembersList() {
 
   return (
     <div className="mx-auto text-gray-900 dark:text-white">
-      {/* Create User Form */}
+
       {showCreateForm ? (
 
         <CreateUserForm
@@ -182,7 +180,6 @@ function MembersList() {
 
         <>
 
-          {/* Header */}
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
@@ -207,9 +204,6 @@ function MembersList() {
 
           </div>
 
-
-
-          {/* Search */}
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
 
             <div className="relative w-full sm:max-w-md">
@@ -248,10 +242,8 @@ function MembersList() {
 
           </div>
 
-          {/* Users Table */}
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-950">
 
-            {/* Desktop */}
             <div className="hidden overflow-x-auto md:block">
 
               <table className="w-full text-left text-sm">
@@ -355,7 +347,6 @@ function MembersList() {
 
             </div>
 
-            {/* Mobile */}
             <div className="divide-y divide-gray-200 md:hidden dark:divide-gray-700">
 
               {currentUsers.length > 0 ? (
@@ -444,7 +435,6 @@ function MembersList() {
 
             </div>
 
-            {/* Pagination */}
             <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between dark:border-gray-700">
 
               <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-300">

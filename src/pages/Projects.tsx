@@ -88,7 +88,6 @@ function Projects() {
       status: "Completed",
     },
 
-    // Page 2
     {
       id: 11,
       projectName: "Mobile Application",
@@ -170,7 +169,6 @@ function Projects() {
       status: "Completed",
     },
 
-    // Page 3
     {
       id: 21,
       projectName: "Employee Portal",
@@ -252,7 +250,6 @@ function Projects() {
       status: "Completed",
     },
 
-    // Page 4
     {
       id: 31,
       projectName: "Healthcare Portal",
@@ -334,7 +331,6 @@ function Projects() {
       status: "In Progress",
     },
 
-    // Page 5
     {
       id: 41,
       projectName: "Real Estate Portal",
@@ -424,7 +420,6 @@ function Projects() {
   return (
     <div className="mx-auto text-gray-900 dark:text-white">
 
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
@@ -462,7 +457,6 @@ function Projects() {
       ) : (
 
         <>
-          {/* Search */}
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
 
             <div className="relative w-full sm:max-w-md">

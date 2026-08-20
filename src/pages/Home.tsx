@@ -13,32 +13,36 @@ function Home() {
     },
     {
       title: "Project Types",
-      value: "6",
-      description: "Project categories",
-      clickable: false,
+      value: "5",
+      description: "View Project categories →",
+      path: "/project-types",
+      clickable: true,
     },
     {
       title: "Templates",
-      value: "18",
-      description: "Available templates",
-      clickable: false,
+      value: "3",
+      description: "Available templates →",
+      path: "/templates",
+      clickable: true,
     },
     {
       title: "Folders",
-      value: "12",
-      description: "Project folders",
-      clickable: false,
+      value: "4",
+      description: "Project folders →",
+      path: "/folders",
+      clickable: true,
     },
     {
       title: "Companies",
-      value: "8",
-      description: "Registered companies",
-      clickable: false,
+      value: "4",
+      description: "Registered companies →",
+      path: "/companies",
+      clickable: true,
     },
     {
       title: "Users",
       value: "12",
-      description: "Active users",
+      description: "View users →",
       path: "/members",
       clickable: true,
     },
@@ -47,7 +51,6 @@ function Home() {
   return (
     <div className="mx-auto">
 
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
           Dashboard
@@ -58,7 +61,6 @@ function Home() {
         </p>
       </div>
 
-      {/* Dashboard Cards */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
         {cards.map((card) => {
@@ -74,8 +76,8 @@ function Home() {
 
               <p
                 className={`mt-2 text-xs transition ${card.clickable
-                    ? "text-gray-400 opacity-0 group-hover:opacity-100 dark:text-gray-500"
-                    : "text-gray-400 dark:text-gray-500"
+                  ? "text-gray-400 opacity-0 group-hover:opacity-100 dark:text-gray-500"
+                  : "text-gray-400 dark:text-gray-500"
                   }`}
               >
                 {card.description}

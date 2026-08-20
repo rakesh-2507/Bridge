@@ -70,18 +70,12 @@ function AddProjectForm({
                 throw new Error("Access token not found.");
             }
 
-            /*
-             * Required fields
-             */
             const payload: Record<string, unknown> = {
                 tid: Number(formData.tid),
                 cid: Number(formData.cid),
                 projectname: formData.projectname.trim(),
             };
 
-            /*
-             * Optional integer fields
-             */
             if (formData.member_id.trim() !== "") {
                 payload.member_id = Number(formData.member_id);
             }
@@ -100,9 +94,6 @@ function AddProjectForm({
                 );
             }
 
-            /*
-             * Optional string fields
-             */
             if (formData.projectdesc.trim() !== "") {
                 payload.projectdesc = formData.projectdesc.trim();
             }
@@ -168,7 +159,6 @@ function AddProjectForm({
     return (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
 
-            {/* Header */}
             <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Create Project
@@ -179,7 +169,6 @@ function AddProjectForm({
                 </p>
             </div>
 
-            {/* Error Message */}
             {error && (
                 <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
                     {error}
@@ -189,7 +178,6 @@ function AddProjectForm({
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-                    {/* Template ID */}
                     <div>
                         <label
                             htmlFor="tid"
@@ -211,7 +199,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Company ID */}
                     <div>
                         <label
                             htmlFor="cid"
@@ -233,7 +220,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Member ID */}
                     <div>
                         <label
                             htmlFor="member_id"
@@ -254,7 +240,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Coordinator */}
                     <div>
                         <label
                             htmlFor="coordinator"
@@ -275,7 +260,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Project Name */}
                     <div className="md:col-span-2">
                         <label
                             htmlFor="projectname"
@@ -297,7 +281,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Project Description */}
                     <div className="md:col-span-2">
                         <label
                             htmlFor="projectdesc"
@@ -317,7 +300,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Project Management */}
                     <div>
                         <label
                             htmlFor="is_project_manage"
@@ -339,7 +321,6 @@ function AddProjectForm({
                         </select>
                     </div>
 
-                    {/* PO / Reference */}
                     <div>
                         <label
                             htmlFor="po"
@@ -359,7 +340,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Cost Head */}
                     <div>
                         <label
                             htmlFor="costhead"
@@ -379,7 +359,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Project Number */}
                     <div>
                         <label
                             htmlFor="projectno"
@@ -399,7 +378,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Project Type */}
                     <div>
                         <label
                             htmlFor="projecttype"
@@ -420,7 +398,6 @@ function AddProjectForm({
                         />
                     </div>
 
-                    {/* Department */}
                     <div>
                         <label
                             htmlFor="department"
@@ -441,10 +418,8 @@ function AddProjectForm({
                     </div>
                 </div>
 
-                {/* Buttons */}
                 <div className="mt-8 flex justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
 
-                    {/* Cancel */}
                     <button
                         type="button"
                         onClick={onCancel}
@@ -454,7 +429,6 @@ function AddProjectForm({
                         Cancel
                     </button>
 
-                    {/* Create */}
                     <button
                         type="submit"
                         disabled={loading}
