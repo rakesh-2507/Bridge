@@ -1,41 +1,93 @@
 import { apiRequest } from "./client";
 
+/*
+ * User returned by the API
+ */
 export interface User {
-    uid: number;
-    name?: string;
-    email?: string;
-    organization?: string;
-    designation?: string;
-    [key: string]: unknown;
+  uid: number;
+  title: string;
+  firstname: string;
+  lastname: string;
+  loginname: string;
+  email: string;
+  mobile: string;
+  status: string;
+  mtype: string;
+  createddt: string;
+  updatedt: string;
 }
 
-export async function getUsers() {
-    return apiRequest<User[]>("/api/getusers");
+/*
+ * GET /api/getusers
+ */
+export interface GetUsersResponse {
+  users: User[];
+  total: number;
 }
 
-export async function getUser(uid: number) {
-    return apiRequest<User>(`/api/getuser/${uid}`);
+export async function getUsers(): Promise<GetUsersResponse> {
+  return apiRequest<GetUsersResponse>("/api/getusers");
 }
 
-export async function createUser(data: unknown) {
-    return apiRequest("/api/createuser", {
-        method: "POST",
-        body: JSON.stringify(data),
-    });
+/*
+ * GET /api/getuser/{uid}
+ */
+export async function getUser(uid: number): Promise<User> {
+  return apiRequest<User>(`/api/getuser/${uid}`);
+}
+
+/*
+ * POST /api/createuser
+ */
+export interface CreateUserData {
+  title: string;
+  firstname: string;
+  lastname: string;
+  loginname: string;
+  password: string;
+  email: string;
+  mobile: string;
+  mtype: string;
+}
+
+export async function createUser(
+  data: CreateUserData
+): Promise<User> {
+  return apiRequest<User>("/api/createuser", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/*
+ * PUT /api/updateuser/{uid}
+ */
+export interface UpdateUserData {
+  title: string;
+  firstname: string;
+  lastname: string;
+  loginname: string;
+  password: string;
+  email: string;
+  mobile: string;
+  mtype: string;
 }
 
 export async function updateUser(
-    uid: number,
-    data: unknown
-) {
-    return apiRequest(`/api/updateuser/${uid}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-    });
+  uid: number,
+  data: UpdateUserData
+): Promise<User> {
+  return apiRequest<User>(`/api/updateuser/${uid}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
-export async function deleteUser(uid: number) {
-    return apiRequest(`/api/deleteuser/${uid}`, {
-        method: "DELETE",
-    });
+/*
+ * DELETE /api/deleteuser/{uid}
+ */
+export async function deleteUser(uid: number): Promise<string> {
+  return apiRequest<string>(`/api/deleteuser/${uid}`, {
+    method: "DELETE",
+  });
 }
