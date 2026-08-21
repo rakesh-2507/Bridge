@@ -1,100 +1,192 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import CreateProjectTypeForm from "../components/forms/CreateProjectTypeForm";
 
-interface ProjectType {
-  id: number;
-  projecttype: string;
-}
+import {
+  getProjectTypes,
+  type ProjectType,
+} from "../api/projectTypes";
 
 function ProjectTypes() {
+  const [projectTypes, setProjectTypes] = useState<ProjectType[]>([]);
   const [search, setSearch] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const itemsPerPage = 10;
 
-  const projectTypes: ProjectType[] = [
-    {
-      id: 1,
-      projecttype: "Software Development",
-    },
-    {
-      id: 2,
-      projecttype: "Web Development",
-    },
-    {
-      id: 3,
-      projecttype: "Mobile Application",
-    },
-    {
-      id: 4,
-      projecttype: "Research",
-    },
-    {
-      id: 5,
-      projecttype: "Consulting",
-    },
-  ];
+  /*
+   * Fetch project types when page loads
+   */
+  useEffect(() => {
+    let cancelled = false;
 
+    const loadProjectTypes = async () => {
+      try {
+        const response = await getProjectTypes();
+
+        if (cancelled) return;
+
+        setProjectTypes(response.projecttypes);
+        setError("");
+      } catch (err) {
+        if (cancelled) return;
+
+        console.error("Failed to fetch project types:", err);
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load project types."
+        );
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProjectTypes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /*
+   * Fetch project types manually
+   *
+   * Used by:
+   * - Try Again
+   * - After creating a project type
+   */
+  const fetchProjectTypes = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await getProjectTypes();
+
+      setProjectTypes(response.projecttypes);
+    } catch (err) {
+      console.error("Failed to fetch project types:", err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load project types."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /*
+   * Search
+   */
   const filteredProjectTypes = projectTypes.filter((type) =>
-    type.projecttype.toLowerCase().includes(search.toLowerCase())
+    type.projecttype
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
+  /*
+   * Pagination
+   */
   const totalPages = Math.max(
     1,
     Math.ceil(filteredProjectTypes.length / itemsPerPage)
   );
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const startIndex =
+    (currentPage - 1) * itemsPerPage;
 
-  const currentProjectTypes = filteredProjectTypes.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const currentProjectTypes =
+    filteredProjectTypes.slice(
+      startIndex,
+      startIndex + itemsPerPage
+    );
 
+  /*
+   * Search handler
+   */
   const handleSearch = (value: string) => {
     setSearch(value);
     setCurrentPage(1);
   };
 
+  /*
+   * Previous page
+   */
   const handlePrevious = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    setCurrentPage((page) => Math.max(1, page - 1));
   };
 
+  /*
+   * Next page
+   */
   const handleNext = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    setCurrentPage((page) =>
+      Math.min(totalPages, page + 1)
+    );
   };
 
+  /*
+   * Go to page
+   */
   const handleGoToPage = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const page = Number(e.target.value);
+    const value = e.target.value;
 
-    if (page >= 1 && page <= totalPages) {
+    if (value === "") {
+      return;
+    }
+
+    const page = Number(value);
+
+    if (
+      Number.isInteger(page) &&
+      page >= 1 &&
+      page <= totalPages
+    ) {
       setCurrentPage(page);
     }
+  };
+
+  /*
+   * Create project type success
+   */
+  const handleCreateSuccess = async (data: unknown) => {
+    console.log("Project type created:", data);
+
+    setShowCreateForm(false);
+    setCurrentPage(1);
+
+    await fetchProjectTypes();
   };
 
   return (
     <div className="mx-auto text-gray-900 dark:text-white">
 
-      {showCreateForm ? (
+      {/* =========================
+          CREATE FORM
+      ========================== */}
 
+      {showCreateForm ? (
         <CreateProjectTypeForm
           onCancel={() => setShowCreateForm(false)}
-          onSuccess={(data) => {
-            console.log("Project type created:", data);
-            setShowCreateForm(false);
-          }}
+          onSuccess={handleCreateSuccess}
         />
-
       ) : (
-
         <>
+          {/* =========================
+              HEADER
+          ========================== */}
+
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
@@ -116,6 +208,10 @@ function ProjectTypes() {
             </button>
 
           </div>
+
+          {/* =========================
+              SEARCH
+          ========================== */}
 
           <div className="mb-6 flex flex-col gap-3 sm:flex-row">
 
@@ -139,7 +235,9 @@ function ProjectTypes() {
                 type="text"
                 placeholder="Search project types..."
                 value={search}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) =>
+                  handleSearch(e.target.value)
+                }
                 className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500"
               />
 
@@ -147,145 +245,195 @@ function ProjectTypes() {
 
             <button
               type="button"
-              onClick={() => setCurrentPage(1)}
+              onClick={() => {
+                setSearch("");
+                setCurrentPage(1);
+              }}
               className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
             >
-              Search
+              Clear
             </button>
 
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-950">
+          {/* =========================
+              LOADING
+          ========================== */}
 
-            <div className="hidden overflow-x-auto md:block">
+          {loading && (
+            <div className="rounded-xl border border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-400">
+              Loading project types...
+            </div>
+          )}
 
-              <table className="w-full text-left text-sm">
+          {/* =========================
+              ERROR
+          ========================== */}
 
-                <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-200">
-                  <tr>
+          {!loading && error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-10 text-center text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
 
-                    <th className="px-6 py-4 font-semibold">
-                      Project Type ID
-                    </th>
+              <p>{error}</p>
 
-                    <th className="px-6 py-4 font-semibold">
-                      Project Type
-                    </th>
-
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-
-                  {currentProjectTypes.map((type) => (
-
-                    <tr
-                      key={type.id}
-                      className="transition hover:bg-gray-50 dark:hover:bg-gray-800"
-                    >
-
-                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                        #{type.id}
-                      </td>
-
-                      <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                        {type.projecttype}
-                      </td>
-
-                    </tr>
-
-                  ))}
-
-                  {currentProjectTypes.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={2}
-                        className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
-                      >
-                        No project types found.
-                      </td>
-                    </tr>
-                  )}
-
-                </tbody>
-
-              </table>
+              <button
+                type="button"
+                onClick={fetchProjectTypes}
+                className="mt-4 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+              >
+                Try Again
+              </button>
 
             </div>
+          )}
 
-            <div className="divide-y divide-gray-200 md:hidden dark:divide-gray-700">
+          {/* =========================
+              TABLE
+          ========================== */}
 
-              {currentProjectTypes.map((type) => (
+          {!loading && !error && (
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-950">
 
-                <div
-                  key={type.id}
-                  className="p-4 transition hover:bg-gray-50 dark:hover:bg-gray-900"
-                >
+              {/* Desktop */}
+              <div className="hidden overflow-x-auto md:block">
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Project Type #{type.id}
-                  </p>
+                <table className="w-full text-left text-sm">
 
-                  <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-                    {type.projecttype}
-                  </p>
+                  <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-200">
+
+                    <tr>
+
+                      <th className="px-6 py-4 font-semibold">
+                        Project Type ID
+                      </th>
+
+                      <th className="px-6 py-4 font-semibold">
+                        Project Type
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+
+                    {currentProjectTypes.length > 0 ? (
+                      currentProjectTypes.map((type) => (
+                        <tr
+                          key={type.ptypeid}
+                          className="transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+
+                          <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            #{type.ptypeid}
+                          </td>
+
+                          <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            {type.projecttype}
+                          </td>
+
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={2}
+                          className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
+                        >
+                          No project types found.
+                        </td>
+                      </tr>
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+              {/* Mobile */}
+              <div className="divide-y divide-gray-200 dark:divide-gray-700 md:hidden">
+
+                {currentProjectTypes.length > 0 ? (
+                  currentProjectTypes.map((type) => (
+                    <div
+                      key={type.ptypeid}
+                      className="p-4 transition hover:bg-gray-50 dark:hover:bg-gray-900"
+                    >
+
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Project Type #{type.ptypeid}
+                      </p>
+
+                      <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                        {type.projecttype}
+                      </p>
+
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                    No project types found.
+                  </div>
+                )}
+
+              </div>
+
+              {/* =========================
+                  PAGINATION
+              ========================== */}
+
+              <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between dark:border-gray-700">
+
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+
+                  <span>Go to page</span>
+
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={currentPage}
+                    onChange={handleGoToPage}
+                    className="w-14 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-center text-sm text-gray-900 outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  />
+
+                  <span>
+                    of {totalPages}
+                  </span>
 
                 </div>
 
-              ))}
+                <div className="flex items-center justify-center gap-2">
 
-            </div>
+                  <button
+                    type="button"
+                    onClick={handlePrevious}
+                    disabled={currentPage === 1}
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    Previous
+                  </button>
 
-            <div className="flex flex-col gap-4 border-t border-gray-200 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between dark:border-gray-700">
+                  <span className="px-2 text-sm text-gray-600 dark:text-gray-300">
+                    Page {currentPage} of {totalPages}
+                  </span>
 
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={currentPage === totalPages}
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    Next
+                  </button>
 
-                <span>Go to page</span>
-
-                <input
-                  type="number"
-                  min={1}
-                  max={totalPages}
-                  value={currentPage}
-                  onChange={handleGoToPage}
-                  className="w-14 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-center text-sm text-gray-900 outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                />
-
-                <span>of {totalPages}</span>
-
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
-
-                <button
-                  type="button"
-                  onClick={handlePrevious}
-                  disabled={currentPage === 1}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                  Previous
-                </button>
-
-                <span className="px-2 text-sm text-gray-600 dark:text-gray-300">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={currentPage === totalPages}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                  Next
-                </button>
+                </div>
 
               </div>
 
             </div>
-
-          </div>
+          )}
         </>
-
       )}
 
     </div>
