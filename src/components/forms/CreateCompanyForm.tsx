@@ -1,5 +1,10 @@
 import { useState } from "react";
 
+import {
+  createCompany,
+  type CreateCompanyData,
+} from "../../api/companies";
+
 interface CreateCompanyFormProps {
   onCancel?: () => void;
   onSuccess?: (data: unknown) => void;
@@ -13,11 +18,13 @@ function CreateCompanyForm({
   onCancel,
   onSuccess,
 }: CreateCompanyFormProps) {
-  const [formData, setFormData] = useState<CompanyFormData>({
-    company_name: "",
-  });
+  const [formData, setFormData] =
+    useState<CompanyFormData>({
+      company_name: "",
+    });
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -29,7 +36,9 @@ function CreateCompanyForm({
     setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     if (!formData.company_name.trim()) {
@@ -37,17 +46,47 @@ function CreateCompanyForm({
       return;
     }
 
+    setLoading(true);
     setError("");
 
-    console.log("Company:", formData);
+    try {
+      const payload: CreateCompanyData = {
+        company_name:
+          formData.company_name.trim(),
+      };
 
-    onSuccess?.(formData);
+      console.log("Creating company:", payload);
+
+      const response = await createCompany(payload);
+
+      console.log(
+        "Company created successfully:",
+        response
+      );
+
+      onSuccess?.(response);
+
+    } catch (err) {
+      console.error(
+        "Create company error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to create company."
+      );
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-950">
 
-      <div className="border-b border-gray-200 px-6 py-5">
+      <div className="border-b border-gray-200 px-6 py-5 dark:border-gray-700">
 
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
           Create Company
@@ -67,7 +106,8 @@ function CreateCompanyForm({
             htmlFor="company_name"
             className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            Company Name <span className="text-red-500">*</span>
+            Company Name{" "}
+            <span className="text-red-500">*</span>
           </label>
 
           <input
@@ -76,8 +116,9 @@ function CreateCompanyForm({
             type="text"
             value={formData.company_name}
             onChange={handleChange}
+            disabled={loading}
             placeholder="Enter company name"
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500"
           />
 
           {error && (
@@ -93,16 +134,20 @@ function CreateCompanyForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+            disabled={loading}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             Cancel
           </button>
 
           <button
             type="submit"
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+            disabled={loading}
+            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
           >
-            Create Company
+            {loading
+              ? "Creating..."
+              : "Create Company"}
           </button>
 
         </div>
