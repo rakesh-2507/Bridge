@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Outlet,
+} from "react-router-dom";
+import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -19,79 +26,102 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
+    document.documentElement.classList.toggle(
+      "dark",
+      darkMode
+    );
   }, [darkMode]);
 
   return (
     <BrowserRouter>
-      <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
+      <Routes>
 
-        <Navbar
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
+        {/* =========================
+            PUBLIC ROUTE
+        ========================== */}
+        <Route
+          path="/login"
+          element={<Login />}
         />
 
-        <div className="flex flex-1">
+        {/* =========================
+            PROTECTED ROUTES
+        ========================== */}
+        <Route element={<ProtectedRoute />}>
 
-          <Sidebar
-            darkMode={darkMode}
-            setDarkMode={setDarkMode}
-          />
+          <Route
+            element={
+              <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 transition-colors dark:bg-gray-950 dark:text-white">
 
-          <main className="flex-1 bg-gray-50 p-2 transition-colors dark:bg-gray-950 lg:p-4">
+                <Navbar
+                  darkMode={darkMode}
+                  setDarkMode={setDarkMode}
+                />
 
-            <Routes>
+                <div className="flex flex-1">
 
-              <Route
-                path="/"
-                element={<Home />}
-              />
+                  <Sidebar
+                    darkMode={darkMode}
+                    setDarkMode={setDarkMode}
+                  />
 
-              <Route
-                path="/projects"
-                element={<Projects />}
-              />
+                  <main className="flex-1 bg-gray-50 p-2 transition-colors dark:bg-gray-950 lg:p-4">
+                    <Outlet />
+                  </main>
 
-              <Route
-                path="/projects/:id"
-                element={<ProjectDetails />}
-              />
+                </div>
 
-              <Route
-                path="/members"
-                element={<MembersList />}
-              />
+                <Footer />
 
-              <Route
-                path="/project-types"
-                element={<ProjectTypes />}
-              />
+              </div>
+            }
+          >
 
-              <Route
-                path="/templates"
-                element={<Templates />}
-              />
+            <Route
+              path="/"
+              element={<Home />}
+            />
 
-              {/* Folders */}
-              <Route
-                path="/folders"
-                element={<Folders />}
-              />
+            <Route
+              path="/projects"
+              element={<Projects />}
+            />
 
-              <Route
-                path="/companies"
-                element={<Companies />}
-              />
+            <Route
+              path="/projects/:id"
+              element={<ProjectDetails />}
+            />
 
-            </Routes>
+            <Route
+              path="/members"
+              element={<MembersList />}
+            />
 
-          </main>
+            <Route
+              path="/project-types"
+              element={<ProjectTypes />}
+            />
 
-        </div>
+            <Route
+              path="/templates"
+              element={<Templates />}
+            />
 
-        <Footer />
+            <Route
+              path="/folders"
+              element={<Folders />}
+            />
 
-      </div>
+            <Route
+              path="/companies"
+              element={<Companies />}
+            />
+
+          </Route>
+
+        </Route>
+
+      </Routes>
     </BrowserRouter>
   );
 }
