@@ -46,6 +46,20 @@ function Home() {
       path: "/members",
       clickable: true,
     },
+    {
+      title: "Project Template",
+      value: "1",
+      description: "View project templates →",
+      path: "/projecttemplate",
+      clickable: true,
+    },
+        {
+      title: "Project Creation",
+      value: "1",
+      description: "Create new projects →",
+      path: "/project-create",
+      clickable: true,
+    },
   ];
 
   return (

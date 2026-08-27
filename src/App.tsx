@@ -21,7 +21,8 @@ import ProjectTypes from "./pages/ProjectTypes";
 import Templates from "./pages/Templates";
 import Folders from "./pages/Folders";
 import Companies from "./pages/Companies";
-
+import CreateProjectTemplate from "./pages/CreateProjectTemplate"
+import ProjectCreation from "./pages/CreateProject";
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
@@ -115,6 +116,16 @@ function App() {
             <Route
               path="/companies"
               element={<Companies />}
+            />
+
+            <Route
+              path="/projecttemplate"
+              element={<CreateProjectTemplate />}
+            />
+
+             <Route
+              path="/project-create"
+              element={<ProjectCreation />}
             />
 
           </Route>

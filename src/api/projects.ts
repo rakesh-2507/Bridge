@@ -1,4 +1,7 @@
 import { apiRequest } from "./client";
+import type {
+  CreateProjectFromTemplatePayload,
+} from "../types/projectTemplate"; 
 
 export interface Project {
   project_id: number;
@@ -102,4 +105,13 @@ export async function deleteProject(
       method: "DELETE",
     }
   );
+}
+
+export async function createProjectFromTemplate(
+  data: CreateProjectFromTemplatePayload
+) {
+  return apiRequest("/api/createprojectfromtemplate", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }

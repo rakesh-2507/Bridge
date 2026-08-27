@@ -27,6 +27,27 @@ export interface UpdateFolderData {
   fnamedesc: string;
 }
 
+// ----------------------------------------
+// Folder Roles
+// ----------------------------------------
+
+export interface FolderRoleItem {
+  fid: number;
+  role: string;
+  id: number;
+}
+
+export interface FolderRole {
+  folder_id: number;
+  folder_name: string;
+  roles: FolderRoleItem[];
+}
+
+export interface FolderRolesResponse {
+  template_id: number;
+  folders: FolderRole[];
+}
+
 export async function getFolders() {
   return apiRequest<FoldersResponse>("/api/getfolders");
 }
@@ -71,5 +92,14 @@ export async function deleteFolder(fid: number) {
 export async function getTemplateFolders(tid: number) {
   return apiRequest<FoldersResponse>(
     `/api/gettemplatefolders/${tid}`
+  );
+}
+
+// Get folders and their configured roles for a template
+export async function getTemplateFolderRoles(
+  templateId: number
+) {
+  return apiRequest<FolderRolesResponse>(
+    `/api/folders/${templateId}/roles`
   );
 }
