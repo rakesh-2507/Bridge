@@ -3,8 +3,8 @@ import type { SubmitEvent } from "react";
 
 import {
     CalendarDays,
-    ChevronRight,
     ChevronDown,
+    ChevronRight,
     Loader2,
     User as UserIcon,
     Building2,
@@ -39,22 +39,23 @@ interface ProjectType {
     projecttype: string;
 }
 
+type FieldErrors =
+    Partial<
+        Record<
+            keyof CreateProjectFromTemplateDetails,
+            string
+        >
+    >;
+
 export default function ProjectDetailsForm({
     initialData,
     onSubmit,
 }: ProjectDetailsFormProps) {
-    /* ========================================
-     * FORM STATE
-     * ======================================== */
 
     const [formData, setFormData] =
         useState<CreateProjectFromTemplateDetails>(
             initialData
         );
-
-    /* ========================================
-     * API DATA
-     * ======================================== */
 
     const [templates, setTemplates] = useState<
         ProjectTemplate[]
@@ -70,10 +71,6 @@ export default function ProjectDetailsForm({
 
     const [users, setUsers] = useState<ApiUser[]>([]);
 
-    /* ========================================
-     * UI STATE
-     * ======================================== */
-
     const [isLoading, setIsLoading] =
         useState(true);
 
@@ -84,30 +81,23 @@ export default function ProjectDetailsForm({
         useState<string | null>(null);
 
     const [fieldErrors, setFieldErrors] =
-        useState<Record<string, string>>({});
+        useState<FieldErrors>({});
 
-    /*
-     * Members dropdown state
-     */
     const [isMembersOpen, setIsMembersOpen] =
         useState(false);
 
-    /*
-     * Used to detect clicks outside
-     * the members dropdown.
-     */
     const membersDropdownRef =
         useRef<HTMLDivElement | null>(null);
 
-    /* ========================================
-     * LOAD FORM DATA
-     * ======================================== */
 
     useEffect(() => {
         let cancelled = false;
 
-        async function loadData() {
+        async function loadFormData() {
             try {
+                setIsLoading(true);
+                setError(null);
+
                 const [
                     templatesResponse,
                     projectTypesResponse,
@@ -157,16 +147,12 @@ export default function ProjectDetailsForm({
             }
         }
 
-        loadData();
+        loadFormData();
 
         return () => {
             cancelled = true;
         };
     }, []);
-
-    /* ========================================
-     * CLICK OUTSIDE MEMBERS DROPDOWN
-     * ======================================== */
 
     useEffect(() => {
         function handleClickOutside(
@@ -195,10 +181,6 @@ export default function ProjectDetailsForm({
         };
     }, []);
 
-    /* ========================================
-     * GENERIC FIELD UPDATE
-     * ======================================== */
-
     function updateField<
         K extends keyof CreateProjectFromTemplateDetails
     >(
@@ -211,28 +193,24 @@ export default function ProjectDetailsForm({
         }));
 
         setFieldErrors((current) => {
-            const fieldName = String(field);
-
-            if (!current[fieldName]) {
+            if (!current[field]) {
                 return current;
             }
 
-            const updated = { ...current };
+            const updated = {
+                ...current,
+            };
 
-            delete updated[fieldName];
+            delete updated[field];
 
             return updated;
         });
     }
 
-    /* ========================================
-     * TEMPLATE CHANGE
-     * ======================================== */
-
     function handleTemplateChange(
         templateId: number
     ) {
-        const selectedTemplate =
+        const selected =
             templates.find(
                 (template) =>
                     template.tid === templateId
@@ -241,20 +219,18 @@ export default function ProjectDetailsForm({
         setFormData((current) => ({
             ...current,
 
-            template_id: templateId,
+            template_id:
+                templateId || 0,
 
-            /*
-             * Automatically select the
-             * project type configured
-             * on the selected template.
-             */
             projecttype:
-                selectedTemplate?.projecttype ??
+                selected?.projecttype ??
                 current.projecttype,
         }));
 
         setFieldErrors((current) => {
-            const updated = { ...current };
+            const updated = {
+                ...current,
+            };
 
             delete updated.template_id;
 
@@ -262,9 +238,6 @@ export default function ProjectDetailsForm({
         });
     }
 
-    /* ========================================
-     * SELECTED TEMPLATE
-     * ======================================== */
 
     const selectedTemplate =
         templates.find(
@@ -272,10 +245,6 @@ export default function ProjectDetailsForm({
                 template.tid ===
                 formData.template_id
         );
-
-    /* ========================================
-     * USER NAME
-     * ======================================== */
 
     function getUserName(
         user: ApiUser
@@ -285,7 +254,9 @@ export default function ProjectDetailsForm({
             user.lastname,
         ]
             .filter(
-                (value): value is string =>
+                (
+                    value
+                ): value is string =>
                     typeof value === "string" &&
                     value.trim().length > 0
             )
@@ -313,16 +284,8 @@ export default function ProjectDetailsForm({
         return `User ${user.uid}`;
     }
 
-    /* ========================================
-     * MEMBER IDS
-     * ======================================== */
-
     const selectedMemberIds =
         formData.member_ids ?? [];
-
-    /* ========================================
-     * TOGGLE MEMBER
-     * ======================================== */
 
     function toggleMember(
         userId: number
@@ -330,24 +293,23 @@ export default function ProjectDetailsForm({
         const currentIds =
             formData.member_ids ?? [];
 
-        const alreadySelected =
+        const isSelected =
             currentIds.includes(userId);
 
-        const updatedIds = alreadySelected
+        const updatedIds = isSelected
             ? currentIds.filter(
-                  (id) => id !== userId
-              )
-            : [...currentIds, userId];
+                (id) => id !== userId
+            )
+            : [
+                ...currentIds,
+                userId,
+            ];
 
         updateField(
             "member_ids",
             updatedIds
         );
     }
-
-    /* ========================================
-     * REMOVE MEMBER
-     * ======================================== */
 
     function removeMember(
         userId: number
@@ -364,24 +326,17 @@ export default function ProjectDetailsForm({
         );
     }
 
-    /* ========================================
-     * SELECT ALL MEMBERS
-     * ======================================== */
-
     function selectAllMembers() {
-        const allIds = users.map(
-            (user) => user.uid
-        );
+        const allUserIds =
+            users.map(
+                (user) => user.uid
+            );
 
         updateField(
             "member_ids",
-            allIds
+            allUserIds
         );
     }
-
-    /* ========================================
-     * CLEAR ALL MEMBERS
-     * ======================================== */
 
     function clearAllMembers() {
         updateField(
@@ -390,22 +345,24 @@ export default function ProjectDetailsForm({
         );
     }
 
-    /* ========================================
-     * VALIDATION
-     * ======================================== */
-
     function validate(): boolean {
-        const errors: Record<string, string> = {};
+        const errors: FieldErrors = {};
+
 
         if (!formData.template_id) {
             errors.template_id =
                 "Please select a template.";
         }
 
-        if (!formData.project_name.trim()) {
+
+        if (
+            !formData.project_name ||
+            !formData.project_name.trim()
+        ) {
             errors.project_name =
                 "Project name is required.";
         }
+
 
         if (!formData.company_id) {
             errors.company_id =
@@ -431,23 +388,17 @@ export default function ProjectDetailsForm({
             formData.start_date &&
             formData.end_date &&
             formData.start_date >
-                formData.end_date
+            formData.end_date
         ) {
             errors.end_date =
                 "End date must be after the start date.";
         }
 
-        /*
-         * Coordinator remains ONE user.
-         */
         if (!formData.coordinator) {
             errors.coordinator =
                 "Please select a coordinator.";
         }
 
-        /*
-         * Members can be MULTIPLE users.
-         */
         if (
             !Array.isArray(
                 formData.member_ids
@@ -465,10 +416,6 @@ export default function ProjectDetailsForm({
         );
     }
 
-    /* ========================================
-     * SUBMIT
-     * ======================================== */
-
     async function handleSubmit(
         event: SubmitEvent<HTMLFormElement>
     ) {
@@ -478,9 +425,9 @@ export default function ProjectDetailsForm({
             return;
         }
 
-        const isValid = validate();
+        const valid = validate();
 
-        if (!isValid) {
+        if (!valid) {
             return;
         }
 
@@ -503,10 +450,6 @@ export default function ProjectDetailsForm({
         }
     }
 
-    /* ========================================
-     * LOADING
-     * ======================================== */
-
     if (isLoading) {
         return (
             <div className="flex min-h-[400px] items-center justify-center">
@@ -524,16 +467,15 @@ export default function ProjectDetailsForm({
         );
     }
 
-    /* ========================================
-     * FATAL ERROR
-     * ======================================== */
-
-    if (
-        error &&
+    const hasNoFormData =
         templates.length === 0 &&
         projectTypes.length === 0 &&
         companies.length === 0 &&
-        users.length === 0
+        users.length === 0;
+
+    if (
+        error &&
+        hasNoFormData
     ) {
         return (
             <div className="p-6">
@@ -544,17 +486,10 @@ export default function ProjectDetailsForm({
         );
     }
 
-    /* ========================================
-     * RENDER
-     * ======================================== */
-
     return (
         <form onSubmit={handleSubmit}>
-            <div className="p-6 sm:p-8">
 
-                {/* ==================================
-                    HEADER
-                ================================== */}
+            <div className="p-6 sm:p-8">
 
                 <div className="mb-8">
                     <div className="mb-2 flex items-center gap-2">
@@ -574,10 +509,6 @@ export default function ProjectDetailsForm({
                     </p>
                 </div>
 
-                {/* ==================================
-                    ERROR
-                ================================== */}
-
                 {error && (
                     <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                         {error}
@@ -585,10 +516,6 @@ export default function ProjectDetailsForm({
                 )}
 
                 <div className="space-y-8">
-
-                    {/* ==================================
-                        TEMPLATE
-                    ================================== */}
 
                     <section>
                         <div className="mb-4 flex items-center gap-2">
@@ -602,87 +529,80 @@ export default function ProjectDetailsForm({
                             </h3>
                         </div>
 
-                        <div>
-                            <label
-                                htmlFor="template_id"
-                                className="mb-2 block text-sm font-medium text-gray-700"
-                            >
-                                Project Template{" "}
-                                <span className="text-red-500">
-                                    *
-                                </span>
-                            </label>
+                        <label
+                            htmlFor="template_id"
+                            className="mb-2 block text-sm font-medium text-gray-700"
+                        >
+                            Project Template{" "}
+                            <span className="text-red-500">
+                                *
+                            </span>
+                        </label>
 
-                            <select
-                                id="template_id"
-                                value={
-                                    formData.template_id ||
-                                    ""
-                                }
-                                onChange={(event) =>
-                                    handleTemplateChange(
-                                        Number(
-                                            event.target.value
-                                        )
+                        <select
+                            id="template_id"
+                            value={
+                                formData.template_id ||
+                                ""
+                            }
+                            onChange={(event) =>
+                                handleTemplateChange(
+                                    Number(
+                                        event.target.value
                                     )
-                                }
-                                className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                    fieldErrors.template_id
-                                        ? "border-red-400"
-                                        : "border-gray-300"
+                                )
+                            }
+                            className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.template_id
+                                    ? "border-red-400"
+                                    : "border-gray-300"
                                 }`}
-                            >
-                                <option value="">
-                                    Select a project template
-                                </option>
+                        >
+                            <option value="">
+                                Select a project template
+                            </option>
 
-                                {templates.map(
-                                    (template) => (
-                                        <option
-                                            key={
-                                                template.tid
-                                            }
-                                            value={
-                                                template.tid
-                                            }
-                                        >
-                                            {template.name}
-                                        </option>
-                                    )
-                                )}
-                            </select>
+                            {templates.map(
+                                (template) => (
+                                    <option
+                                        key={
+                                            template.tid
+                                        }
+                                        value={
+                                            template.tid
+                                        }
+                                    >
+                                        {template.name}
+                                    </option>
+                                )
+                            )}
+                        </select>
 
-                            {fieldErrors.template_id && (
-                                <p className="mt-1.5 text-xs text-red-600">
+                        {fieldErrors.template_id && (
+                            <p className="mt-1.5 text-xs text-red-600">
+                                {
+                                    fieldErrors.template_id
+                                }
+                            </p>
+                        )}
+
+                        {selectedTemplate && (
+                            <div className="mt-3 rounded-lg bg-blue-50 px-4 py-3">
+                                <p className="text-sm font-medium text-blue-900">
                                     {
-                                        fieldErrors.template_id
+                                        selectedTemplate.name
                                     }
                                 </p>
-                            )}
 
-                            {selectedTemplate && (
-                                <div className="mt-3 rounded-lg bg-blue-50 px-4 py-3">
-                                    <p className="text-sm font-medium text-blue-900">
+                                {selectedTemplate.name_desc && (
+                                    <p className="mt-1 text-xs text-blue-700">
                                         {
-                                            selectedTemplate.name
+                                            selectedTemplate.name_desc
                                         }
                                     </p>
-
-                                    {selectedTemplate.name_desc && (
-                                        <p className="mt-1 text-xs text-blue-700">
-                                            {
-                                                selectedTemplate.name_desc
-                                            }
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
                     </section>
-
-                    {/* ==================================
-                        PROJECT INFORMATION
-                    ================================== */}
 
                     <section>
                         <div className="mb-4">
@@ -691,54 +611,45 @@ export default function ProjectDetailsForm({
                             </h3>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-5">
+                        <div>
+                            <label
+                                htmlFor="project_name"
+                                className="mb-2 block text-sm font-medium text-gray-700"
+                            >
+                                Project Name{" "}
+                                <span className="text-red-500">
+                                    *
+                                </span>
+                            </label>
 
-                            <div>
-                                <label
-                                    htmlFor="project_name"
-                                    className="mb-2 block text-sm font-medium text-gray-700"
-                                >
-                                    Project Name{" "}
-                                    <span className="text-red-500">
-                                        *
-                                    </span>
-                                </label>
-
-                                <input
-                                    id="project_name"
-                                    type="text"
-                                    value={
-                                        formData.project_name
-                                    }
-                                    onChange={(event) =>
-                                        updateField(
-                                            "project_name",
-                                            event.target.value
-                                        )
-                                    }
-                                    placeholder="Enter project name"
-                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.project_name
-                                            ? "border-red-400"
-                                            : "border-gray-300"
+                            <input
+                                id="project_name"
+                                type="text"
+                                value={
+                                    formData.project_name
+                                }
+                                onChange={(event) =>
+                                    updateField(
+                                        "project_name",
+                                        event.target.value
+                                    )
+                                }
+                                placeholder="Enter project name"
+                                className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.project_name
+                                        ? "border-red-400"
+                                        : "border-gray-300"
                                     }`}
-                                />
+                            />
 
-                                {fieldErrors.project_name && (
-                                    <p className="mt-1.5 text-xs text-red-600">
-                                        {
-                                            fieldErrors.project_name
-                                        }
-                                    </p>
-                                )}
-                            </div>
-
+                            {fieldErrors.project_name && (
+                                <p className="mt-1.5 text-xs text-red-600">
+                                    {
+                                        fieldErrors.project_name
+                                    }
+                                </p>
+                            )}
                         </div>
                     </section>
-
-                    {/* ==================================
-                        ORGANIZATION
-                    ================================== */}
 
                     <section>
                         <div className="mb-4">
@@ -783,11 +694,10 @@ export default function ProjectDetailsForm({
                                             )
                                         )
                                     }
-                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.company_id
+                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.company_id
                                             ? "border-red-400"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 >
                                     <option value="">
                                         Select company
@@ -820,8 +730,6 @@ export default function ProjectDetailsForm({
                                 )}
                             </div>
 
-                            {/* PROJECT TYPE */}
-
                             <div>
                                 <label
                                     htmlFor="projecttype"
@@ -847,11 +755,10 @@ export default function ProjectDetailsForm({
                                             )
                                         )
                                     }
-                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.projecttype
+                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.projecttype
                                             ? "border-red-400"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 >
                                     <option value="">
                                         Select project type
@@ -883,13 +790,8 @@ export default function ProjectDetailsForm({
                                     </p>
                                 )}
                             </div>
-
                         </div>
                     </section>
-
-                    {/* ==================================
-                        PROJECT DATES
-                    ================================== */}
 
                     <section>
                         <div className="mb-4 flex items-center gap-2">
@@ -904,8 +806,6 @@ export default function ProjectDetailsForm({
                         </div>
 
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                            {/* START DATE */}
 
                             <div>
                                 <label
@@ -930,11 +830,10 @@ export default function ProjectDetailsForm({
                                             event.target.value
                                         )
                                     }
-                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.start_date
+                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.start_date
                                             ? "border-red-400"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 />
 
                                 {fieldErrors.start_date && (
@@ -945,8 +844,6 @@ export default function ProjectDetailsForm({
                                     </p>
                                 )}
                             </div>
-
-                            {/* END DATE */}
 
                             <div>
                                 <label
@@ -975,11 +872,10 @@ export default function ProjectDetailsForm({
                                             event.target.value
                                         )
                                     }
-                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.end_date
+                                    className={`w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.end_date
                                             ? "border-red-400"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 />
 
                                 {fieldErrors.end_date && (
@@ -990,13 +886,8 @@ export default function ProjectDetailsForm({
                                     </p>
                                 )}
                             </div>
-
                         </div>
                     </section>
-
-                    {/* ==================================
-                        PROJECT MEMBERS
-                    ================================== */}
 
                     <section>
                         <div className="mb-4 flex items-center gap-2">
@@ -1011,10 +902,6 @@ export default function ProjectDetailsForm({
                         </div>
 
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                            {/* ==================================
-                                MEMBERS MULTISELECT DROPDOWN
-                            ================================== */}
 
                             <div
                                 ref={
@@ -1032,132 +919,108 @@ export default function ProjectDetailsForm({
                                     </span>
                                 </label>
 
-                                {/* DROPDOWN BUTTON */}
-
                                 <button
                                     type="button"
                                     id="member_ids"
+                                    aria-expanded={
+                                        isMembersOpen
+                                    }
                                     onClick={() =>
                                         setIsMembersOpen(
-                                            (current) =>
-                                                !current
+                                            (open) =>
+                                                !open
                                         )
                                     }
-                                    className={`flex min-h-[42px] w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.member_ids
+                                    className={`flex min-h-[42px] w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.member_ids
                                             ? "border-red-400"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-
                                         {selectedMemberIds.length ===
-                                        0 ? (
+                                            0 ? (
                                             <span className="text-gray-400">
                                                 Select members
                                             </span>
                                         ) : (
-                                            selectedMemberIds
-                                                .map(
-                                                    (
-                                                        userId
-                                                    ) => {
-                                                        const user =
-                                                            users.find(
-                                                                (
-                                                                    item
-                                                                ) =>
-                                                                    item.uid ===
-                                                                    userId
-                                                            );
+                                            selectedMemberIds.map(
+                                                (
+                                                    userId
+                                                ) => {
+                                                    const user =
+                                                        users.find(
+                                                            (
+                                                                item
+                                                            ) =>
+                                                                item.uid ===
+                                                                userId
+                                                        );
 
-                                                        if (
-                                                            !user
-                                                        ) {
-                                                            return null;
-                                                        }
+                                                    if (
+                                                        !user
+                                                    ) {
+                                                        return null;
+                                                    }
 
-                                                        return (
-                                                            <span
-                                                                key={
-                                                                    userId
-                                                                }
-                                                                className="inline-flex max-w-full items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+                                                    return (
+                                                        <span
+                                                            key={
+                                                                userId
+                                                            }
+                                                            className="inline-flex max-w-full items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+                                                        >
+                                                            <span className="max-w-[140px] truncate">
+                                                                {getUserName(
+                                                                    user
+                                                                )}
+                                                            </span>
+
+                                                            <button
+                                                                type="button"
+                                                                aria-label={`Remove ${getUserName(
+                                                                    user
+                                                                )}`}
                                                                 onClick={(
                                                                     event
                                                                 ) => {
                                                                     event.stopPropagation();
+
+                                                                    removeMember(
+                                                                        userId
+                                                                    );
                                                                 }}
+                                                                className="rounded-full hover:bg-blue-100"
                                                             >
-                                                                <span className="max-w-[140px] truncate">
-                                                                    {getUserName(
-                                                                        user
-                                                                    )}
-                                                                </span>
-
-                                                                <span
-                                                                    role="button"
-                                                                    tabIndex={
-                                                                        0
+                                                                <X
+                                                                    size={
+                                                                        13
                                                                     }
-                                                                    onClick={(
-                                                                        event
-                                                                    ) => {
-                                                                        event.stopPropagation();
-
-                                                                        removeMember(
-                                                                            userId
-                                                                        );
-                                                                    }}
-                                                                    onKeyDown={(
-                                                                        event
-                                                                    ) => {
-                                                                        if (
-                                                                            event.key ===
-                                                                            "Enter"
-                                                                        ) {
-                                                                            event.stopPropagation();
-
-                                                                            removeMember(
-                                                                                userId
-                                                                            );
-                                                                        }
-                                                                    }}
-                                                                    className="cursor-pointer rounded-full hover:bg-blue-100"
-                                                                >
-                                                                    <X
-                                                                        size={
-                                                                            13
-                                                                        }
-                                                                    />
-                                                                </span>
-                                                            </span>
-                                                        );
-                                                    }
-                                                )
+                                                                />
+                                                            </button>
+                                                        </span>
+                                                    );
+                                                }
+                                            )
                                         )}
                                     </div>
 
                                     <ChevronDown
                                         size={18}
-                                        className={`ml-2 flex-shrink-0 text-gray-400 transition-transform ${
-                                            isMembersOpen
+                                        className={`ml-2 flex-shrink-0 text-gray-400 transition-transform ${isMembersOpen
                                                 ? "rotate-180"
                                                 : ""
-                                        }`}
+                                            }`}
                                     />
                                 </button>
-
-                                {/* DROPDOWN */}
 
                                 {isMembersOpen && (
                                     <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
 
-                                        {/* DROPDOWN HEADER */}
-
                                         <div className="flex items-center justify-between border-b border-gray-200 px-3 py-2">
                                             <span className="text-xs font-medium text-gray-500">
-                                                {selectedMemberIds.length}{" "}
+                                                {
+                                                    selectedMemberIds.length
+                                                }{" "}
                                                 selected
                                             </span>
 
@@ -1167,32 +1030,33 @@ export default function ProjectDetailsForm({
                                                     onClick={
                                                         selectAllMembers
                                                     }
-                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                                    disabled={
+                                                        users.length ===
+                                                        0
+                                                    }
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     Select all
                                                 </button>
 
                                                 {selectedMemberIds.length >
                                                     0 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={
-                                                            clearAllMembers
-                                                        }
-                                                        className="text-xs font-medium text-gray-500 hover:text-gray-700"
-                                                    >
-                                                        Clear
-                                                    </button>
-                                                )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={
+                                                                clearAllMembers
+                                                            }
+                                                            className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                                                        >
+                                                            Clear
+                                                        </button>
+                                                    )}
                                             </div>
                                         </div>
 
-                                        {/* USERS */}
-
                                         <div className="max-h-60 overflow-y-auto p-1">
-
                                             {users.length ===
-                                            0 ? (
+                                                0 ? (
                                                 <div className="px-3 py-6 text-center text-sm text-gray-500">
                                                     No users available.
                                                 </div>
@@ -1211,13 +1075,11 @@ export default function ProjectDetailsForm({
                                                                 key={
                                                                     user.uid
                                                                 }
-                                                                className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition ${
-                                                                    isSelected
+                                                                className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition ${isSelected
                                                                         ? "bg-blue-50"
                                                                         : "hover:bg-gray-50"
-                                                                }`}
+                                                                    }`}
                                                             >
-                                                                {/* CHECKBOX */}
 
                                                                 <input
                                                                     type="checkbox"
@@ -1231,8 +1093,6 @@ export default function ProjectDetailsForm({
                                                                     }
                                                                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                                 />
-
-                                                                {/* USER NAME */}
 
                                                                 <div className="min-w-0 flex-1">
                                                                     <p className="truncate text-sm font-medium text-gray-800">
@@ -1249,8 +1109,6 @@ export default function ProjectDetailsForm({
                                                                         </p>
                                                                     )}
                                                                 </div>
-
-                                                                {/* CHECK ICON */}
 
                                                                 {isSelected && (
                                                                     <Check
@@ -1282,10 +1140,6 @@ export default function ProjectDetailsForm({
                                 </p>
                             </div>
 
-                            {/* ==================================
-                                COORDINATOR
-                            ================================== */}
-
                             <div>
                                 <label
                                     htmlFor="coordinator"
@@ -1311,11 +1165,10 @@ export default function ProjectDetailsForm({
                                             )
                                         )
                                     }
-                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
-                                        fieldErrors.coordinator
+                                    className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldErrors.coordinator
                                             ? "border-red-400"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 >
                                     <option value="">
                                         Select coordinator
@@ -1354,10 +1207,6 @@ export default function ProjectDetailsForm({
                             </div>
                         </div>
                     </section>
-
-                    {/* ==================================
-                        PROJECT MANAGEMENT
-                    ================================== */}
 
                     <section>
                         <div className="mb-4">
@@ -1398,10 +1247,6 @@ export default function ProjectDetailsForm({
                     </section>
                 </div>
             </div>
-
-            {/* ========================================
-                FOOTER
-            ======================================== */}
 
             <div className="flex items-center justify-end border-t border-gray-200 bg-gray-50 px-6 py-4 sm:px-8">
                 <button
