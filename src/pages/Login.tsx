@@ -1,9 +1,12 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../api/auth";
-
-function Login() {
+import {
+    login,
+    getJwtPayload,
+    getLoginType,
+    isAdminUser,
+} from "../api/auth"; function Login() {
     const navigate = useNavigate();
 
     const [loginname, setLoginname] = useState("");
@@ -26,7 +29,35 @@ function Login() {
                 password,
             });
 
-            // Store authentication tokens
+            console.log(
+                "LOGIN API RESPONSE:",
+                data
+            );
+            const jwtPayload =
+                getJwtPayload(data.access_token);
+
+            console.log(
+                "JWT PAYLOAD:",
+                jwtPayload
+            );
+
+            const loginType =
+                getLoginType(data.access_token);
+
+            const admin =
+                isAdminUser(data.access_token);
+
+            console.log(
+                "LOGIN TYPE FROM JWT:",
+                loginType
+            );
+
+            console.log(
+                "IS ADMIN:",
+                admin
+            );
+
+            // Store authentication
             localStorage.setItem(
                 "access_token",
                 data.access_token
@@ -42,8 +73,21 @@ function Login() {
                 data.token_type
             );
 
-            // Go to dashboard
-            navigate("/");
+            localStorage.setItem(
+                "login_type",
+                loginType
+            );
+
+            // Redirect
+            if (admin) {
+                navigate("/", {
+                    replace: true,
+                });
+            } else {
+                navigate("/tasks", {
+                    replace: true,
+                });
+            }
         } catch (err) {
             setError(
                 err instanceof Error
@@ -54,7 +98,6 @@ function Login() {
             setLoading(false);
         }
     }
-
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 dark:bg-gray-950">
 
@@ -80,7 +123,6 @@ function Login() {
                     onSubmit={handleSubmit}
                     className="space-y-5"
                 >
-
                     {/* Login Name */}
                     <div>
                         <label
@@ -135,7 +177,6 @@ function Login() {
                             ? "Signing in..."
                             : "Sign In"}
                     </button>
-
                 </form>
             </div>
         </div>

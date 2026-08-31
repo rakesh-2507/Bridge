@@ -23,6 +23,8 @@ import Folders from "./pages/Folders";
 import Companies from "./pages/Companies";
 import CreateProjectTemplate from "./pages/CreateProjectTemplate"
 import ProjectCreation from "./pages/CreateProject";
+import TaskManagement from "./pages/TaskManagement";
+
 function App() {
   const [darkMode, setDarkMode] = useState(false);
 
@@ -84,6 +86,11 @@ function App() {
             />
 
             <Route
+              path="/tasks"
+              element={<TaskManagement />}
+            />
+
+            <Route
               path="/projects"
               element={<Projects />}
             />
@@ -123,7 +130,7 @@ function App() {
               element={<CreateProjectTemplate />}
             />
 
-             <Route
+            <Route
               path="/project-create"
               element={<ProjectCreation />}
             />
