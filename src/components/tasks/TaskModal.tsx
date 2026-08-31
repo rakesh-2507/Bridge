@@ -1,16 +1,44 @@
-import { useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+    Loader2,
+    X,
+} from "lucide-react";
 
 import {
     createTask,
     updateTask,
 } from "../../api/tasks";
 
+import { getProjects } from "../../api/projects";
+import {
+    getTemplates,
+} from "../../api/templates";
+import {
+    getTemplateFolders,
+} from "../../api/folders";
+import { getUsers } from "../../api/users";
+
 import type {
     CreateTaskPayload,
     Task,
     UpdateTaskPayload,
 } from "../../types/task";
+
+import type {
+    Project,
+} from "../../api/projects";
+
+import type {
+    ProjectTemplate,
+} from "../../types/projectTemplate";
+
+import type {
+    Folder,
+} from "../../api/folders";
+
+import type {
+    User,
+} from "../../api/users";
 
 interface TaskModalProps {
     open: boolean;
@@ -37,6 +65,12 @@ const EMPTY_FORM: CreateTaskPayload = {
     assigned_to: 0,
 };
 
+/*
+ * ============================================================
+ * TASK MODAL
+ * ============================================================
+ */
+
 function TaskModal({
     open,
     task,
@@ -47,12 +81,6 @@ function TaskModal({
         return null;
     }
 
-    /*
-     * Using a key forces a fresh form when:
-     * - switching from create -> edit
-     * - switching between different tasks
-     * - switching from edit -> create
-     */
     const formKey = task
         ? `edit-${task.task_id}`
         : "create";
@@ -67,9 +95,11 @@ function TaskModal({
     );
 }
 
-/* ============================================================
-   TASK MODAL FORM
-============================================================ */
+/*
+ * ============================================================
+ * TASK MODAL FORM
+ * ============================================================
+ */
 
 interface TaskModalFormProps {
     task?: Task | null;
@@ -83,6 +113,12 @@ function TaskModalForm({
     onSuccess,
 }: TaskModalFormProps) {
     const isEdit = Boolean(task);
+
+    /*
+     * --------------------------------------------------------
+     * Form
+     * --------------------------------------------------------
+     */
 
     const [form, setForm] =
         useState<CreateTaskPayload>(() => {
@@ -125,21 +161,35 @@ function TaskModalForm({
             };
         });
 
-    const [levelsInput, setLevelsInput] =
-        useState(
-            task?.levels?.join(", ") ?? ""
-        );
+    /*
+     * --------------------------------------------------------
+     * API data
+     * --------------------------------------------------------
+     */
 
-    const [keyParamsInput, setKeyParamsInput] =
-        useState(() =>
-            task?.key_params
-                ? JSON.stringify(
-                      task.key_params,
-                      null,
-                      2
-                  )
-                : ""
-        );
+    const [projects, setProjects] =
+        useState<Project[]>([]);
+
+    const [templates, setTemplates] =
+        useState<ProjectTemplate[]>([]);
+
+    const [folders, setFolders] =
+        useState<Folder[]>([]);
+
+    const [users, setUsers] =
+        useState<User[]>([]);
+
+    /*
+     * --------------------------------------------------------
+     * Loading states
+     * --------------------------------------------------------
+     */
+
+    const [loadingData, setLoadingData] =
+        useState(true);
+
+    const [foldersLoading, setFoldersLoading] =
+        useState(false);
 
     const [loading, setLoading] =
         useState(false);
@@ -147,9 +197,141 @@ function TaskModalForm({
     const [error, setError] =
         useState("");
 
-    /* ========================================================
-       UPDATE FIELD
-    ======================================================== */
+    /*
+     * --------------------------------------------------------
+     * Text inputs
+     * --------------------------------------------------------
+     */
+
+    const [levelsInput, setLevelsInput] =
+        useState<string>(() =>
+            task?.levels?.join(", ") ?? ""
+        );
+
+    const [keyParamsInput, setKeyParamsInput] =
+        useState<string>(() =>
+            task?.key_params
+                ? JSON.stringify(
+                    task.key_params,
+                    null,
+                    2
+                )
+                : ""
+        );
+
+    /*
+     * ========================================================
+     * LOAD PROJECTS / TEMPLATES / USERS
+     * ========================================================
+     */
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadInitialData = async () => {
+            setLoadingData(true);
+            setError("");
+
+            try {
+                const [
+                    projectsResponse,
+                    templatesResponse,
+                    usersResponse,
+                ] = await Promise.all([
+                    getProjects(),
+                    getTemplates(),
+                    getUsers(),
+                ]);
+
+                if (cancelled) {
+                    return;
+                }
+
+                setProjects(
+                    projectsResponse.projects ?? []
+                );
+
+                setTemplates(
+                    templatesResponse.templates ?? []
+                );
+
+                setUsers(
+                    usersResponse.users ?? []
+                );
+            } catch (err) {
+                if (!cancelled) {
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "Failed to load task data."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoadingData(false);
+                }
+            }
+        };
+
+        void loadInitialData();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    /*
+     * ========================================================
+     * LOAD FOLDERS WHEN TEMPLATE CHANGES
+     * ========================================================
+     */
+
+    useEffect(() => {
+        if (!form.template_id) {
+            return;
+        }
+
+        let cancelled = false;
+
+        const loadFolders = async () => {
+            setFoldersLoading(true);
+            setError("");
+
+            try {
+                const response = await getTemplateFolders(
+                    form.template_id
+                );
+
+                if (!cancelled) {
+                    setFolders(response.folders ?? []);
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    setFolders([]);
+
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : "Failed to load folders."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setFoldersLoading(false);
+                }
+            }
+        };
+
+        void loadFolders();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [form.template_id]);    /*
+     * ========================================================
+     * UPDATE FIELD
+     * ========================================================
+     */
 
     const updateField = <
         K extends keyof CreateTaskPayload
@@ -163,9 +345,64 @@ function TaskModalForm({
         }));
     };
 
-    /* ========================================================
-       SUBMIT
-    ======================================================== */
+    /*
+     * ========================================================
+     * PROJECT CHANGE
+     * ========================================================
+     *
+     * When a project is selected:
+     *
+     * project_id = selected project.project_id
+     *
+     * If the project has a tid:
+     * template_id = project.tid
+     *
+     * Folder is reset because folders belong to templates.
+     */
+
+    const handleProjectChange = (
+        projectId: number
+    ) => {
+        const project = projects.find(
+            (item) =>
+                item.project_id === projectId
+        );
+
+        setForm((previous) => ({
+            ...previous,
+            project_id: projectId,
+
+            template_id:
+                project?.tid ??
+                0,
+
+            folder_id: 0,
+        }));
+    };
+
+    /*
+     * ========================================================
+     * TEMPLATE CHANGE
+     * ========================================================
+     */
+
+    const handleTemplateChange = (
+        templateId: number
+    ) => {
+        setForm((previous) => ({
+            ...previous,
+            template_id: templateId,
+            folder_id: 0,
+        }));
+
+        setFolders([]);
+    };
+
+    /*
+     * ========================================================
+     * SUBMIT
+     * ========================================================
+     */
 
     const handleSubmit = async (
         event: React.FormEvent<HTMLFormElement>
@@ -174,22 +411,24 @@ function TaskModalForm({
 
         setError("");
 
-        /* ----------------------------------------------------
-           Validation
-        ---------------------------------------------------- */
+        /*
+         * ----------------------------------------------------
+         * Validation
+         * ----------------------------------------------------
+         */
 
-        if (form.project_id <= 0) {
-            setError("Project ID is required.");
+        if (!form.project_id) {
+            setError("Please select a project.");
             return;
         }
 
-        if (form.template_id <= 0) {
-            setError("Template ID is required.");
+        if (!form.template_id) {
+            setError("Please select a template.");
             return;
         }
 
-        if (form.folder_id <= 0) {
-            setError("Folder ID is required.");
+        if (!form.folder_id) {
+            setError("Please select a folder.");
             return;
         }
 
@@ -218,23 +457,25 @@ function TaskModalForm({
             return;
         }
 
-        if (form.assigned_by <= 0) {
+        if (!form.assigned_by) {
             setError(
-                "Assigned by is required."
+                "Please select who assigned the task."
             );
             return;
         }
 
-        if (form.assigned_to <= 0) {
+        if (!form.assigned_to) {
             setError(
-                "Assigned to is required."
+                "Please select the user assigned to the task."
             );
             return;
         }
 
-        /* ----------------------------------------------------
-           Parse levels
-        ---------------------------------------------------- */
+        /*
+         * ----------------------------------------------------
+         * Levels
+         * ----------------------------------------------------
+         */
 
         const parsedLevels =
             levelsInput
@@ -244,14 +485,14 @@ function TaskModalForm({
                 )
                 .filter(Boolean);
 
-        /* ----------------------------------------------------
-           Parse key parameters
-        ---------------------------------------------------- */
+        /*
+         * ----------------------------------------------------
+         * Key parameters
+         * ----------------------------------------------------
+         */
 
-        let parsedKeyParams: Record<
-            string,
-            unknown
-        > = {};
+        let parsedKeyParams:
+            Record<string, unknown> = {};
 
         if (keyParamsInput.trim()) {
             try {
@@ -284,14 +525,21 @@ function TaskModalForm({
             }
         }
 
-        /* ----------------------------------------------------
-           Create API payload
-        ---------------------------------------------------- */
+        /*
+         * ----------------------------------------------------
+         * Payload
+         * ----------------------------------------------------
+         */
 
         const payload: CreateTaskPayload = {
-            project_id: form.project_id,
-            template_id: form.template_id,
-            folder_id: form.folder_id,
+            project_id:
+                form.project_id,
+
+            template_id:
+                form.template_id,
+
+            folder_id:
+                form.folder_id,
 
             task_type:
                 form.task_type.trim(),
@@ -323,21 +571,17 @@ function TaskModalForm({
         try {
             let savedTask: Task;
 
-            /* ------------------------------------------------
-               UPDATE
-            ------------------------------------------------ */
+            /*
+             * ------------------------------------------------
+             * UPDATE
+             * ------------------------------------------------
+             */
 
             if (isEdit && task) {
                 const updatePayload:
                     UpdateTaskPayload = {
                     ...payload,
 
-                    /*
-                     * API requires status for update.
-                     *
-                     * Preserve the current status.
-                     * If undefined, use Pending = 1.
-                     */
                     status:
                         task.status ?? 1,
                 };
@@ -349,9 +593,11 @@ function TaskModalForm({
                     );
             }
 
-            /* ------------------------------------------------
-               CREATE
-            ------------------------------------------------ */
+            /*
+             * ------------------------------------------------
+             * CREATE
+             * ------------------------------------------------
+             */
 
             else {
                 savedTask =
@@ -360,26 +606,42 @@ function TaskModalForm({
                     );
             }
 
-            /*
-             * Notify parent.
-             */
             onSuccess(savedTask);
         } catch (err) {
             setError(
                 err instanceof Error
                     ? err.message
                     : isEdit
-                    ? "Failed to update task."
-                    : "Failed to create task."
+                        ? "Failed to update task."
+                        : "Failed to create task."
             );
         } finally {
             setLoading(false);
         }
     };
 
-    /* ========================================================
-       RENDER
-    ======================================================== */
+    /*
+     * ========================================================
+     * USER DISPLAY NAME
+     * ========================================================
+     */
+
+    const getUserName = (
+        user: User
+    ) => {
+        const fullName =
+            `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim();
+
+        return fullName ||
+            user.loginname ||
+            `User ${user.uid}`;
+    };
+
+    /*
+     * ========================================================
+     * RENDER
+     * ========================================================
+     */
 
     return (
         <div
@@ -387,7 +649,7 @@ function TaskModalForm({
             onMouseDown={(event) => {
                 if (
                     event.target ===
-                        event.currentTarget &&
+                    event.currentTarget &&
                     !loading
                 ) {
                     onClose();
@@ -428,347 +690,549 @@ function TaskModalForm({
                 </div>
 
                 {/* =================================================
-                    FORM
+                    LOADING INITIAL DATA
                 ================================================== */}
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="min-h-0 overflow-y-auto"
-                >
-                    <div className="space-y-6 p-6">
+                {loadingData ? (
+                    <div className="flex min-h-[400px] flex-col items-center justify-center">
+                        <Loader2
+                            size={30}
+                            className="animate-spin text-gray-500"
+                        />
 
-                        {/* =================================================
-                            ERROR
-                        ================================================== */}
-
-                        {error && (
-                            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* =================================================
-                            TASK LOCATION
-                        ================================================== */}
-
-                        <section>
-                            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-                                Task Location
-                            </h3>
-
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-
-                                <NumberInput
-                                    label="Project ID"
-                                    value={
-                                        form.project_id
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "project_id",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                                <NumberInput
-                                    label="Template ID"
-                                    value={
-                                        form.template_id
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "template_id",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                                <NumberInput
-                                    label="Folder ID"
-                                    value={
-                                        form.folder_id
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "folder_id",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                            </div>
-                        </section>
-
-                        {/* =================================================
-                            TASK INFORMATION
-                        ================================================== */}
-
-                        <section>
-                            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-                                Task Information
-                            </h3>
-
-                            <div className="space-y-4">
-
-                                <TextInput
-                                    label="Task Type"
-                                    value={
-                                        form.task_type
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "task_type",
-                                            value
-                                        )
-                                    }
-                                    placeholder="e.g. Content Review"
-                                    required
-                                />
-
-                                <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Description
-                                    </label>
-
-                                    <textarea
-                                        value={
-                                            form.task_description
-                                        }
-                                        onChange={(
-                                            event
-                                        ) =>
-                                            updateField(
-                                                "task_description",
-                                                event
-                                                    .target
-                                                    .value
-                                            )
-                                        }
-                                        rows={4}
-                                        placeholder="Describe the task..."
-                                        className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-                                    />
-                                </div>
-
-                            </div>
-                        </section>
-
-                        {/* =================================================
-                            SCHEDULE
-                        ================================================== */}
-
-                        <section>
-                            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-                                Schedule
-                            </h3>
-
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-                                <TextInput
-                                    label="Start Date"
-                                    type="date"
-                                    value={
-                                        form.start_date
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "start_date",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                                <TextInput
-                                    label="End Date"
-                                    type="date"
-                                    value={
-                                        form.end_date
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "end_date",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                            </div>
-                        </section>
-
-                        {/* =================================================
-                            ASSIGNMENT
-                        ================================================== */}
-
-                        <section>
-                            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-                                Assignment
-                            </h3>
-
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-                                <NumberInput
-                                    label="Assigned By"
-                                    value={
-                                        form.assigned_by
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "assigned_by",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                                <NumberInput
-                                    label="Assigned To"
-                                    value={
-                                        form.assigned_to
-                                    }
-                                    onChange={(
-                                        value
-                                    ) =>
-                                        updateField(
-                                            "assigned_to",
-                                            value
-                                        )
-                                    }
-                                    required
-                                />
-
-                            </div>
-                        </section>
-
-                        {/* =================================================
-                            LEVELS
-                        ================================================== */}
-
-                        <section>
-                            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Levels
-                            </label>
-
-                            <input
-                                type="text"
-                                value={
-                                    levelsInput
-                                }
-                                onChange={(
-                                    event
-                                ) =>
-                                    setLevelsInput(
-                                        event.target.value
-                                    )
-                                }
-                                placeholder="Editor, Reviewer, Writer"
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-                            />
-
-                            <p className="mt-1.5 text-xs text-gray-400">
-                                Separate multiple levels with commas.
-                            </p>
-                        </section>
-
-                        {/* =================================================
-                            KEY PARAMETERS
-                        ================================================== */}
-
-                        <section>
-                            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Key Parameters
-                            </label>
-
-                            <textarea
-                                value={
-                                    keyParamsInput
-                                }
-                                onChange={(
-                                    event
-                                ) =>
-                                    setKeyParamsInput(
-                                        event.target.value
-                                    )
-                                }
-                                rows={5}
-                                placeholder={`{
-  "priority": "high"
-}`}
-                                className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 font-mono text-xs text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-                            />
-
-                            <p className="mt-1.5 text-xs text-gray-400">
-                                Optional JSON object containing additional task parameters.
-                            </p>
-                        </section>
-
+                        <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                            Loading task data...
+                        </p>
                     </div>
+                ) : (
+                    <form
+                        onSubmit={handleSubmit}
+                        className="min-h-0 overflow-y-auto"
+                    >
+                        <div className="space-y-6 p-6">
 
-                    {/* =================================================
-                        FOOTER
-                    ================================================== */}
+                            {/* =================================================
+                                ERROR
+                            ================================================== */}
 
-                    <div className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
-
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={loading}
-                            className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                        >
-                            Cancel
-                        </button>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-                        >
-                            {loading && (
-                                <Loader2
-                                    size={16}
-                                    className="animate-spin"
-                                />
+                            {error && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+                                    {error}
+                                </div>
                             )}
 
-                            {loading
-                                ? isEdit
-                                    ? "Updating..."
-                                    : "Creating..."
-                                : isEdit
-                                ? "Update Task"
-                                : "Create Task"}
-                        </button>
+                            {/* =================================================
+                                TASK LOCATION
+                            ================================================== */}
 
-                    </div>
-                </form>
+                            <section>
+                                <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                                    Task Location
+                                </h3>
+
+                                <div className="space-y-4">
+
+                                    {/* Project */}
+
+                                    <SelectInput
+                                        label="Project"
+                                        value={
+                                            form.project_id
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            handleProjectChange(
+                                                Number(
+                                                    value
+                                                )
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value={0}>
+                                            Select project
+                                        </option>
+
+                                        {projects.map(
+                                            (
+                                                project
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        project.project_id
+                                                    }
+                                                    value={
+                                                        project.project_id
+                                                    }
+                                                >
+                                                    {project.projectname ||
+                                                        `Project ${project.project_id}`}
+                                                </option>
+                                            )
+                                        )}
+                                    </SelectInput>
+
+                                    {/* Template */}
+
+                                    <SelectInput
+                                        label="Template"
+                                        value={
+                                            form.template_id
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            handleTemplateChange(
+                                                Number(
+                                                    value
+                                                )
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value={0}>
+                                            Select template
+                                        </option>
+
+                                        {templates.map(
+                                            (
+                                                template
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        template.tid
+                                                    }
+                                                    value={
+                                                        template.tid
+                                                    }
+                                                >
+                                                    {template.name}
+                                                </option>
+                                            )
+                                        )}
+                                    </SelectInput>
+
+                                    {/* Folder */}
+
+                                    <SelectInput
+                                        label="Folder"
+                                        value={
+                                            form.folder_id
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            updateField(
+                                                "folder_id",
+                                                Number(
+                                                    value
+                                                )
+                                            )
+                                        }
+                                        required
+                                        disabled={
+                                            !form.template_id ||
+                                            foldersLoading
+                                        }
+                                    >
+                                        <option value={0}>
+                                            {foldersLoading
+                                                ? "Loading folders..."
+                                                : !form.template_id
+                                                    ? "Select template first"
+                                                    : "Select folder"}
+                                        </option>
+
+                                        {folders.map(
+                                            (
+                                                folder
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        folder.fid
+                                                    }
+                                                    value={
+                                                        folder.fid
+                                                    }
+                                                >
+                                                    {folder.fname}
+                                                </option>
+                                            )
+                                        )}
+                                    </SelectInput>
+
+                                </div>
+                            </section>
+
+                            {/* =================================================
+                                TASK INFORMATION
+                            ================================================== */}
+
+                            <section>
+                                <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                                    Task Information
+                                </h3>
+
+                                <div className="space-y-4">
+
+                                    <TextInput
+                                        label="Task Type"
+                                        value={
+                                            form.task_type
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            updateField(
+                                                "task_type",
+                                                value
+                                            )
+                                        }
+                                        placeholder="e.g. Content Review"
+                                        required
+                                    />
+
+                                    <div>
+                                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Description
+                                        </label>
+
+                                        <textarea
+                                            value={
+                                                form.task_description
+                                            }
+                                            onChange={(
+                                                event
+                                            ) =>
+                                                updateField(
+                                                    "task_description",
+                                                    event
+                                                        .target
+                                                        .value
+                                                )
+                                            }
+                                            rows={4}
+                                            placeholder="Describe the task..."
+                                            className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                                        />
+                                    </div>
+
+                                </div>
+                            </section>
+
+                            {/* =================================================
+                                SCHEDULE
+                            ================================================== */}
+
+                            <section>
+                                <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                                    Schedule
+                                </h3>
+
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                                    <TextInput
+                                        label="Start Date"
+                                        type="date"
+                                        value={
+                                            form.start_date
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            updateField(
+                                                "start_date",
+                                                value
+                                            )
+                                        }
+                                        required
+                                    />
+
+                                    <TextInput
+                                        label="End Date"
+                                        type="date"
+                                        value={
+                                            form.end_date
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            updateField(
+                                                "end_date",
+                                                value
+                                            )
+                                        }
+                                        required
+                                    />
+
+                                </div>
+                            </section>
+
+                            {/* =================================================
+                                ASSIGNMENT
+                            ================================================== */}
+
+                            <section>
+                                <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+                                    Assignment
+                                </h3>
+
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                                    {/* Assigned By */}
+
+                                    <SelectInput
+                                        label="Assigned By"
+                                        value={
+                                            form.assigned_by
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            updateField(
+                                                "assigned_by",
+                                                Number(
+                                                    value
+                                                )
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value={0}>
+                                            Select user
+                                        </option>
+
+                                        {users.map(
+                                            (
+                                                user
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        user.uid
+                                                    }
+                                                    value={
+                                                        user.uid
+                                                    }
+                                                >
+                                                    {getUserName(
+                                                        user
+                                                    )}
+                                                </option>
+                                            )
+                                        )}
+                                    </SelectInput>
+
+                                    {/* Assigned To */}
+
+                                    <SelectInput
+                                        label="Assigned To"
+                                        value={
+                                            form.assigned_to
+                                        }
+                                        onChange={(
+                                            value
+                                        ) =>
+                                            updateField(
+                                                "assigned_to",
+                                                Number(
+                                                    value
+                                                )
+                                            )
+                                        }
+                                        required
+                                    >
+                                        <option value={0}>
+                                            Select user
+                                        </option>
+
+                                        {users.map(
+                                            (
+                                                user
+                                            ) => (
+                                                <option
+                                                    key={
+                                                        user.uid
+                                                    }
+                                                    value={
+                                                        user.uid
+                                                    }
+                                                >
+                                                    {getUserName(
+                                                        user
+                                                    )}
+                                                </option>
+                                            )
+                                        )}
+                                    </SelectInput>
+
+                                </div>
+                            </section>
+
+                            {/* =================================================
+                                LEVELS
+                            ================================================== */}
+
+                            <section>
+                                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Levels
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={
+                                        levelsInput
+                                    }
+                                    onChange={(
+                                        event
+                                    ) =>
+                                        setLevelsInput(
+                                            event
+                                                .target
+                                                .value
+                                        )
+                                    }
+                                    placeholder="Editor, Reviewer, Writer"
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                                />
+
+                                <p className="mt-1.5 text-xs text-gray-400">
+                                    Separate multiple levels with commas.
+                                </p>
+                            </section>
+
+                            {/* =================================================
+                                KEY PARAMETERS
+                            ================================================== */}
+
+                            <section>
+                                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Key Parameters
+                                </label>
+
+                                <textarea
+                                    value={
+                                        keyParamsInput
+                                    }
+                                    onChange={(
+                                        event
+                                    ) =>
+                                        setKeyParamsInput(
+                                            event
+                                                .target
+                                                .value
+                                        )
+                                    }
+                                    rows={5}
+                                    placeholder={`{
+  "priority": "high"
+}`}
+                                    className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 font-mono text-xs text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                                />
+
+                                <p className="mt-1.5 text-xs text-gray-400">
+                                    Optional JSON object containing additional task parameters.
+                                </p>
+                            </section>
+
+                        </div>
+
+                        {/* =================================================
+                            FOOTER
+                        ================================================== */}
+
+                        <div className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
+
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={loading}
+                                className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
+                            >
+                                {loading && (
+                                    <Loader2
+                                        size={16}
+                                        className="animate-spin"
+                                    />
+                                )}
+
+                                {loading
+                                    ? isEdit
+                                        ? "Updating..."
+                                        : "Creating..."
+                                    : isEdit
+                                        ? "Update Task"
+                                        : "Create Task"}
+                            </button>
+
+                        </div>
+                    </form>
+                )}
+
             </div>
         </div>
     );
 }
 
-/* ============================================================
-   TEXT INPUT
-============================================================ */
+/*
+ * ============================================================
+ * SELECT INPUT
+ * ============================================================
+ */
+
+interface SelectInputProps {
+    label: string;
+    value: number;
+    onChange: (value: string) => void;
+    children: React.ReactNode;
+    required?: boolean;
+    disabled?: boolean;
+}
+
+function SelectInput({
+    label,
+    value,
+    onChange,
+    children,
+    required = false,
+    disabled = false,
+}: SelectInputProps) {
+    return (
+        <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {label}
+            </label>
+
+            <select
+                value={value}
+                onChange={(event) =>
+                    onChange(
+                        event.target.value
+                    )
+                }
+                required={required}
+                disabled={disabled}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:disabled:bg-gray-900"
+            >
+                {children}
+            </select>
+        </div>
+    );
+}
+
+/*
+ * ============================================================
+ * TEXT INPUT
+ * ============================================================
+ */
 
 interface TextInputProps {
     label: string;
@@ -804,50 +1268,6 @@ function TextInput({
                 placeholder={placeholder}
                 required={required}
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-            />
-        </div>
-    );
-}
-
-/* ============================================================
-   NUMBER INPUT
-============================================================ */
-
-interface NumberInputProps {
-    label: string;
-    value: number;
-    onChange: (value: number) => void;
-    required?: boolean;
-}
-
-function NumberInput({
-    label,
-    value,
-    onChange,
-    required = false,
-}: NumberInputProps) {
-    return (
-        <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {label}
-            </label>
-
-            <input
-                type="number"
-                min="1"
-                value={value || ""}
-                onChange={(event) => {
-                    const value =
-                        event.target.value === ""
-                            ? 0
-                            : Number(
-                                  event.target.value
-                              );
-
-                    onChange(value);
-                }}
-                required={required}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
             />
         </div>
     );
