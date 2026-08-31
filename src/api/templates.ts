@@ -1,15 +1,19 @@
 import { apiRequest } from "./client";
+import type {
+  ProjectTemplate,
+  ProjectTemplateListResponse,
+} from "../types/projectTemplate";
 
-export interface Template {
-  tid: number;
-  name: string;
-  name_desc: string;
-  projecttype: number;
+export async function getTemplates() {
+  return apiRequest<ProjectTemplateListResponse>(
+    "/api/gettemplates"
+  );
 }
 
-export interface TemplatesResponse {
-  templates: Template[];
-  total: number;
+export async function getTemplate(tid: number) {
+  return apiRequest<ProjectTemplate>(
+    `/api/gettemplate/${tid}`
+  );
 }
 
 export interface CreateTemplateData {
@@ -18,22 +22,10 @@ export interface CreateTemplateData {
   projecttype: number;
 }
 
-export async function getTemplates() {
-  return apiRequest<TemplatesResponse>(
-    "/api/gettemplates"
-  );
-}
-
-export async function getTemplate(tid: number) {
-  return apiRequest<Template>(
-    `/api/gettemplate/${tid}`
-  );
-}
-
 export async function createTemplate(
   data: CreateTemplateData
 ) {
-  return apiRequest<Template>(
+  return apiRequest<ProjectTemplate>(
     "/api/createtemplate",
     {
       method: "POST",
@@ -42,12 +34,11 @@ export async function createTemplate(
   );
 }
 
-// Keep these for later CRUD work
 export async function updateTemplate(
   tid: number,
   data: CreateTemplateData
 ) {
-  return apiRequest<Template>(
+  return apiRequest<ProjectTemplate>(
     `/api/updatetemplate/${tid}`,
     {
       method: "PUT",

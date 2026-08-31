@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import FolderTree, {
+  type FolderNode,
+} from "../project-create/FolderTree";
+
 import {
     ChevronLeft,
     Check,
@@ -53,11 +57,6 @@ interface RoleRow {
     folderId: number;
     folderName: string;
     role: string;
-}
-
-interface FolderNode {
-    folder: Folder;
-    children: FolderNode[];
 }
 
 export default function FolderAssignmentForm({
@@ -180,49 +179,6 @@ export default function FolderAssignmentForm({
      * Folder tree
      * ----------------------------------------
      */
-
-    const folderTree = useMemo(() => {
-        const map = new Map<number, FolderNode>();
-
-        folders.forEach((folder) => {
-            map.set(folder.fid, {
-                folder,
-                children: [],
-            });
-        });
-
-        const roots: FolderNode[] = [];
-
-        folders.forEach((folder) => {
-            const node = map.get(folder.fid);
-
-            if (!node) {
-                return;
-            }
-
-            /*
-             * pid = 0 / missing parent
-             * means root folder.
-             */
-
-            if (
-                !folder.pid ||
-                folder.pid === 0 ||
-                !map.has(folder.pid)
-            ) {
-                roots.push(node);
-                return;
-            }
-
-            const parent = map.get(folder.pid);
-
-            if (parent) {
-                parent.children.push(node);
-            }
-        });
-
-        return roots;
-    }, [folders]);
 
     /*
      * ----------------------------------------
@@ -703,8 +659,8 @@ export default function FolderAssignmentForm({
                                 setOpenRole(isOpen ? null : key)
                             }
                             className={`flex min-h-[42px] w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-left text-sm transition hover:border-gray-400 ${roleError
-                                    ? "border-red-400"
-                                    : "border-gray-300"
+                                ? "border-red-400"
+                                : "border-gray-300"
                                 }`}
                         >
                             <div className="min-w-0 flex-1">
@@ -823,8 +779,8 @@ export default function FolderAssignmentForm({
                                                         )
                                                     }
                                                     className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition ${selected
-                                                            ? "bg-blue-50"
-                                                            : "hover:bg-gray-50"
+                                                        ? "bg-blue-50"
+                                                        : "hover:bg-gray-50"
                                                         }`}
                                                 >
 
@@ -832,8 +788,8 @@ export default function FolderAssignmentForm({
 
                                                     <span
                                                         className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${selected
-                                                                ? "border-blue-600 bg-blue-600"
-                                                                : "border-gray-300 bg-white"
+                                                            ? "border-blue-600 bg-blue-600"
+                                                            : "border-gray-300 bg-white"
                                                             }`}
                                                     >
                                                         {selected && (
@@ -935,7 +891,7 @@ export default function FolderAssignmentForm({
 
     function renderFolder(
         node: FolderNode,
-        level = 0
+        level: number
     ): React.ReactNode {
         const folder = node.folder;
 
@@ -1052,22 +1008,6 @@ export default function FolderAssignmentForm({
 
                 </div>
 
-                {/* Children */}
-
-                {node.children.length > 0 && (
-                    <div className="mt-3 space-y-3">
-
-                        {node.children.map(
-                            (child) =>
-                                renderFolder(
-                                    child,
-                                    level + 1
-                                )
-                        )}
-
-                    </div>
-                )}
-
             </div>
         );
     }
@@ -1172,13 +1112,10 @@ export default function FolderAssignmentForm({
 
                 {/* Folder tree */}
 
-                <div className="space-y-3">
-
-                    {folderTree.map((node) =>
-                        renderFolder(node)
-                    )}
-
-                </div>
+                <FolderTree
+                    folders={folders}
+                    renderFolder={renderFolder}
+                />
 
                 {/* No roles */}
 

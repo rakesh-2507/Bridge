@@ -1,4 +1,10 @@
-import { useMemo, useState } from "react";
+
+import { useState } from "react";
+
+import FolderTree, {
+  type FolderNode,
+} from "../project-create/FolderTree";
+
 import {
   CalendarDays,
   ChevronLeft,
@@ -9,7 +15,6 @@ import {
 } from "lucide-react";
 
 import type { FolderSchedule } from "../../types/projectTemplate";
-
 import type { Folder } from "../../api/folders";
 
 interface FolderScheduleFormProps {
@@ -29,11 +34,6 @@ interface FolderScheduleFormProps {
   ) => void | Promise<void>;
 }
 
-interface FolderNode {
-  folder: Folder;
-  children: FolderNode[];
-}
-
 export default function FolderScheduleForm({
   folders,
   projectStartDate,
@@ -43,85 +43,18 @@ export default function FolderScheduleForm({
   onBack,
   onSubmit,
 }: FolderScheduleFormProps) {
-  /*
-   * Local schedule state.
-   *
-   * No useEffect synchronization is needed.
-   * The wizard owns the latest schedules and passes
-   * them again whenever this step is mounted/rendered.
-   */
   const [schedules, setSchedules] =
     useState<FolderSchedule[]>(initialSchedules);
 
-  const [errors, setErrors] = useState<
-    Record<number, string>
-  >({});
+  const [errors, setErrors] =
+    useState<Record<number, string>>({});
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
-  /*
-   * ----------------------------------------
-   * Build folder tree
-   * ----------------------------------------
-   */
-
-  const folderTree = useMemo(() => {
-    const folderMap = new Map<number, FolderNode>();
-
-    folders.forEach((folder) => {
-      folderMap.set(folder.fid, {
-        folder,
-        children: [],
-      });
-    });
-
-    const roots: FolderNode[] = [];
-
-    folders.forEach((folder) => {
-      const node = folderMap.get(folder.fid);
-
-      if (!node) {
-        return;
-      }
-
-      /*
-       * Root folder
-       */
-      if (
-        !folder.pid ||
-        folder.pid === 0 ||
-        !folderMap.has(folder.pid)
-      ) {
-        roots.push(node);
-        return;
-      }
-
-      /*
-       * Child folder
-       */
-      const parent = folderMap.get(folder.pid);
-
-      if (parent) {
-        parent.children.push(node);
-      }
-    });
-
-    return roots;
-  }, [folders]);
-
-  /*
-   * ----------------------------------------
-   * Get folder schedule
-   * ----------------------------------------
-   */
-
-  function getSchedule(
-    folderId: number
-  ): FolderSchedule {
+  function getSchedule(folderId: number): FolderSchedule {
     const existing = schedules.find(
-      (schedule) =>
-        schedule.folder_id === folderId
+      (schedule) => schedule.folder_id === folderId
     );
 
     if (existing) {
@@ -135,12 +68,6 @@ export default function FolderScheduleForm({
     };
   }
 
-  /*
-   * ----------------------------------------
-   * Update folder date
-   * ----------------------------------------
-   */
-
   function updateSchedule(
     folderId: number,
     field: "start_date" | "end_date",
@@ -148,8 +75,7 @@ export default function FolderScheduleForm({
   ) {
     setSchedules((current) => {
       const existingIndex = current.findIndex(
-        (schedule) =>
-          schedule.folder_id === folderId
+        (schedule) => schedule.folder_id === folderId
       );
 
       if (existingIndex === -1) {
@@ -169,24 +95,18 @@ export default function FolderScheduleForm({
         ];
       }
 
-      return current.map(
-        (schedule, index) => {
-          if (index !== existingIndex) {
-            return schedule;
-          }
-
-          return {
-            ...schedule,
-            [field]: value,
-          };
+      return current.map((schedule, index) => {
+        if (index !== existingIndex) {
+          return schedule;
         }
-      );
+
+        return {
+          ...schedule,
+          [field]: value,
+        };
+      });
     });
 
-    /*
-     * Clear validation error when
-     * the user changes the field.
-     */
     setErrors((current) => {
       if (!current[folderId]) {
         return current;
@@ -202,17 +122,8 @@ export default function FolderScheduleForm({
     });
   }
 
-  /*
-   * ----------------------------------------
-   * Validate schedules
-   * ----------------------------------------
-   */
-
   function validate(): boolean {
-    const validationErrors: Record<
-      number,
-      string
-    > = {};
+    const validationErrors: Record<number, string> = {};
 
     folders.forEach((folder) => {
       const schedule = getSchedule(folder.fid);
@@ -220,14 +131,12 @@ export default function FolderScheduleForm({
       if (!schedule.start_date) {
         validationErrors[folder.fid] =
           "Start date is required.";
-
         return;
       }
 
       if (!schedule.end_date) {
         validationErrors[folder.fid] =
           "End date is required.";
-
         return;
       }
 
@@ -237,7 +146,6 @@ export default function FolderScheduleForm({
       ) {
         validationErrors[folder.fid] =
           "Folder start date cannot be before the project start date.";
-
         return;
       }
 
@@ -247,14 +155,10 @@ export default function FolderScheduleForm({
       ) {
         validationErrors[folder.fid] =
           "Folder end date cannot be after the project end date.";
-
         return;
       }
 
-      if (
-        schedule.start_date >
-        schedule.end_date
-      ) {
+      if (schedule.start_date > schedule.end_date) {
         validationErrors[folder.fid] =
           "Start date cannot be after the end date.";
       }
@@ -262,16 +166,8 @@ export default function FolderScheduleForm({
 
     setErrors(validationErrors);
 
-    return (
-      Object.keys(validationErrors).length === 0
-    );
+    return Object.keys(validationErrors).length === 0;
   }
-
-  /*
-   * ----------------------------------------
-   * Submit
-   * ----------------------------------------
-   */
 
   async function handleSubmit() {
     if (!validate()) {
@@ -279,38 +175,26 @@ export default function FolderScheduleForm({
     }
 
     const completeSchedules: FolderSchedule[] =
-      folders.map((folder) =>
-        getSchedule(folder.fid)
-      );
+      folders.map((folder) => getSchedule(folder.fid));
 
     try {
       setIsSubmitting(true);
-
       await onSubmit(completeSchedules);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  /*
-   * ----------------------------------------
-   * Recursive folder renderer
-   * ----------------------------------------
-   */
-
   function renderFolder(
     node: FolderNode,
-    level = 0
+    level: number
   ): React.ReactNode {
     const folder = node.folder;
-
     const schedule = getSchedule(folder.fid);
-
-    const hasError =
-      Boolean(errors[folder.fid]);
+    const hasError = Boolean(errors[folder.fid]);
 
     return (
-      <div key={folder.fid}>
+      <div>
         <div
           className={`
             rounded-xl border
@@ -384,19 +268,14 @@ export default function FolderScheduleForm({
                 "
               >
                 <CalendarDays size={14} />
-
                 Start Date
               </label>
 
               <input
                 id={`folder-start-${folder.fid}`}
                 type="date"
-                min={
-                  projectStartDate || undefined
-                }
-                max={
-                  projectEndDate || undefined
-                }
+                min={projectStartDate || undefined}
+                max={projectEndDate || undefined}
                 value={schedule.start_date}
                 onChange={(event) =>
                   updateSchedule(
@@ -441,7 +320,6 @@ export default function FolderScheduleForm({
                 "
               >
                 <CalendarDays size={14} />
-
                 End Date
               </label>
 
@@ -453,9 +331,7 @@ export default function FolderScheduleForm({
                   projectStartDate ||
                   undefined
                 }
-                max={
-                  projectEndDate || undefined
-                }
+                max={projectEndDate || undefined}
                 value={schedule.end_date}
                 onChange={(event) =>
                   updateSchedule(
@@ -485,7 +361,7 @@ export default function FolderScheduleForm({
             </div>
           </div>
 
-          {/* Error */}
+          {/* Validation error */}
 
           {hasError && (
             <div className="border-t border-red-100 bg-red-50 px-4 py-3">
@@ -495,28 +371,9 @@ export default function FolderScheduleForm({
             </div>
           )}
         </div>
-
-        {/* Children */}
-
-        {node.children.length > 0 && (
-          <div className="mt-3 space-y-3">
-            {node.children.map((child) =>
-              renderFolder(
-                child,
-                level + 1
-              )
-            )}
-          </div>
-        )}
       </div>
     );
   }
-
-  /*
-   * ----------------------------------------
-   * Loading
-   * ----------------------------------------
-   */
 
   if (isLoading) {
     return (
@@ -526,18 +383,11 @@ export default function FolderScheduleForm({
             size={20}
             className="animate-spin"
           />
-
           Loading template folders...
         </div>
       </div>
     );
   }
-
-  /*
-   * ----------------------------------------
-   * No folders
-   * ----------------------------------------
-   */
 
   if (folders.length === 0) {
     return (
@@ -549,8 +399,7 @@ export default function FolderScheduleForm({
             </p>
 
             <p className="mt-1 text-sm text-yellow-700">
-              The selected template does not
-              contain any folders.
+              The selected template does not contain any folders.
             </p>
           </div>
         </div>
@@ -576,19 +425,12 @@ export default function FolderScheduleForm({
             "
           >
             <ChevronLeft size={17} />
-
             Back
           </button>
         </div>
       </>
     );
   }
-
-  /*
-   * ----------------------------------------
-   * Main
-   * ----------------------------------------
-   */
 
   return (
     <>
@@ -608,8 +450,7 @@ export default function FolderScheduleForm({
           </div>
 
           <p className="mt-1 text-sm text-gray-500">
-            Set the start and end dates for every
-            folder and subfolder.
+            Set the start and end dates for every folder and subfolder.
           </p>
         </div>
 
@@ -638,19 +479,17 @@ export default function FolderScheduleForm({
             </div>
 
             <div className="text-xs text-blue-700">
-              Folder dates must stay within this
-              project period.
+              Folder dates must stay within this project period.
             </div>
           </div>
         </div>
 
         {/* Folder tree */}
 
-        <div className="space-y-3">
-          {folderTree.map((node) =>
-            renderFolder(node)
-          )}
-        </div>
+        <FolderTree
+          folders={folders}
+          renderFolder={renderFolder}
+        />
       </div>
 
       {/* Footer */}
@@ -680,7 +519,6 @@ export default function FolderScheduleForm({
           "
         >
           <ChevronLeft size={17} />
-
           Back
         </button>
 
@@ -711,13 +549,11 @@ export default function FolderScheduleForm({
                 size={17}
                 className="animate-spin"
               />
-
               Loading...
             </>
           ) : (
             <>
               Next: Members & Roles
-
               <ChevronRight size={17} />
             </>
           )}

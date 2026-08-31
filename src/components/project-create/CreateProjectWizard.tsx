@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import ProjectDetailsForm from "./ProjectDetailsForm";
 import FolderScheduleForm from "./FolderScheduleForm";
 import FolderAssignmentForm from "./FolderAssignmentForm";
+import { useNavigate } from "react-router-dom";
 
 import {
   getTemplateFolders,
@@ -27,10 +28,6 @@ import type {
 } from "../../api/folders";
 
 type Step = 1 | 2 | 3;
-
-/* ----------------------------------------
- * Initial Project
- * ---------------------------------------- */
 
 const initialProject: CreateProjectFromTemplateDetails = {
   template_id: 0,
@@ -56,55 +53,31 @@ const initialProject: CreateProjectFromTemplateDetails = {
 };
 
 export default function CreateProjectWizard() {
-  /* ----------------------------------------
-   * Step
-   * ---------------------------------------- */
+
+  const navigate = useNavigate();
 
   const [step, setStep] =
     useState<Step>(1);
 
-  /* ----------------------------------------
-   * Project
-   * ---------------------------------------- */
 
   const [project, setProject] =
     useState<CreateProjectFromTemplateDetails>(
       initialProject
     );
 
-  /* ----------------------------------------
-   * Template folders
-   * ---------------------------------------- */
-
   const [folders, setFolders] =
     useState<Folder[]>([]);
-
-  /* ----------------------------------------
-   * Folder roles
-   * ---------------------------------------- */
 
   const [folderRoles, setFolderRoles] =
     useState<FolderRolesResponse | null>(
       null
     );
 
-  /* ----------------------------------------
-   * Folder schedules
-   * ---------------------------------------- */
-
   const [folderSchedules, setFolderSchedules] =
     useState<FolderSchedule[]>([]);
 
-  /* ----------------------------------------
-   * Folder assignments
-   * ---------------------------------------- */
-
   const [folderAssignments, setFolderAssignments] =
     useState<FolderAssignment[]>([]);
-
-  /* ----------------------------------------
-   * Loading
-   * ---------------------------------------- */
 
   const [isLoadingFolders, setIsLoadingFolders] =
     useState(false);
@@ -115,32 +88,15 @@ export default function CreateProjectWizard() {
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
-  /* ----------------------------------------
-   * Error
-   * ---------------------------------------- */
-
   const [error, setError] =
     useState<string | null>(null);
-
-  /* ========================================
-   * STEP 1
-   * Project Details
-   * ======================================== */
 
   const handleProjectSubmit = async (
     data: CreateProjectFromTemplateDetails
   ) => {
     setError(null);
 
-    /*
-     * Save project details.
-     */
-
     setProject(data);
-
-    /*
-     * Load folders for selected template.
-     */
 
     try {
       setIsLoadingFolders(true);
@@ -152,11 +108,6 @@ export default function CreateProjectWizard() {
 
       setFolders(response.folders);
 
-      /*
-       * Initialize schedule
-       * for every folder.
-       */
-
       const schedules: FolderSchedule[] =
         response.folders.map(
           (folder) => ({
@@ -167,10 +118,6 @@ export default function CreateProjectWizard() {
         );
 
       setFolderSchedules(schedules);
-
-      /*
-       * Move to Step 2.
-       */
 
       setStep(2);
     } catch (err) {
@@ -187,10 +134,6 @@ export default function CreateProjectWizard() {
     }
   };
 
-  /* ========================================
-   * STEP 2
-   * Folder Schedule
-   * ======================================== */
 
   const handleFolderScheduleSubmit = async (
     schedules: FolderSchedule[]
@@ -202,10 +145,6 @@ export default function CreateProjectWizard() {
     try {
       setIsLoadingRoles(true);
 
-      /*
-       * Load roles configured for
-       * the selected template.
-       */
 
       const response =
         await getTemplateFolderRoles(
@@ -214,11 +153,6 @@ export default function CreateProjectWizard() {
 
       setFolderRoles(response);
 
-      /*
-       * Create initial folder assignments.
-       *
-       * Dates are copied from Step 2.
-       */
 
       const assignments: FolderAssignment[] =
         schedules.map(
@@ -240,10 +174,6 @@ export default function CreateProjectWizard() {
         assignments
       );
 
-      /*
-       * Move to Step 3.
-       */
-
       setStep(3);
     } catch (err) {
       console.error(
@@ -259,21 +189,12 @@ export default function CreateProjectWizard() {
     }
   };
 
-  /* ========================================
-   * STEP 3
-   * Create Project
-   * ======================================== */
-
   const handleCreateProject = async (
     assignments: FolderAssignment[]
   ) => {
     setError(null);
 
     setFolderAssignments(assignments);
-
-    /*
-     * Final API payload.
-     */
 
     const payload: CreateProjectFromTemplatePayload =
     {
@@ -285,24 +206,11 @@ export default function CreateProjectWizard() {
     try {
       setIsSubmitting(true);
 
-      await createProjectFromTemplate(
-        payload
-      );
+      await createProjectFromTemplate(payload);
 
-      console.log(
-        "Project created successfully"
-      );
-
-      alert(
-        "Project created successfully!"
-      );
-
-      /*
-       * Later:
-       *
-       * navigate("/projects");
-       */
-
+      console.log("Project created successfully");
+      alert("Project created successfully!");
+      navigate("/projects");
     } catch (err) {
       console.error(
         "Failed to create project:",
@@ -317,10 +225,6 @@ export default function CreateProjectWizard() {
     }
   };
 
-  /* ========================================
-   * BACK
-   * ======================================== */
-
   const handleBack = () => {
     setError(null);
 
@@ -333,10 +237,6 @@ export default function CreateProjectWizard() {
       setStep(2);
     }
   };
-
-  /* ========================================
-   * STEP INDICATOR
-   * ======================================== */
 
   const steps = [
     {
@@ -353,16 +253,9 @@ export default function CreateProjectWizard() {
     },
   ];
 
-  /* ========================================
-   * RENDER
-   * ======================================== */
-
   return (
     <div className="mx-auto w-full max-w-6xl">
 
-      {/* ------------------------------------
-          Header
-      ------------------------------------ */}
 
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-gray-900">
@@ -374,10 +267,6 @@ export default function CreateProjectWizard() {
           template.
         </p>
       </div>
-
-      {/* ------------------------------------
-          Step Indicator
-      ------------------------------------ */}
 
       <div className="mb-8">
         <div className="flex items-center">
@@ -395,8 +284,6 @@ export default function CreateProjectWizard() {
                   key={item.number}
                   className="flex flex-1 items-center"
                 >
-
-                  {/* Step */}
 
                   <div className="flex items-center gap-3">
 
@@ -443,8 +330,6 @@ export default function CreateProjectWizard() {
 
                   </div>
 
-                  {/* Connector */}
-
                   {index <
                     steps.length - 1 && (
                       <div
@@ -469,25 +354,13 @@ export default function CreateProjectWizard() {
         </div>
       </div>
 
-      {/* ------------------------------------
-          Error
-      ------------------------------------ */}
-
       {error && (
         <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {/* ------------------------------------
-          Form Container
-      ------------------------------------ */}
-
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-
-        {/* ==================================
-            STEP 1
-        ================================== */}
 
         {step === 1 && (
           <ProjectDetailsForm
@@ -497,10 +370,6 @@ export default function CreateProjectWizard() {
             }
           />
         )}
-
-        {/* ==================================
-            STEP 2
-        ================================== */}
 
         {step === 2 && (
           <FolderScheduleForm
@@ -523,10 +392,6 @@ export default function CreateProjectWizard() {
             }
           />
         )}
-
-        {/* ==================================
-            STEP 3
-        ================================== */}
 
         {step === 3 && (
           <FolderAssignmentForm
