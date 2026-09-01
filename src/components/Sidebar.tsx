@@ -1,5 +1,4 @@
 import {
-  FolderKanban,
   LayoutDashboard,
   Moon,
   Sun,
@@ -54,23 +53,6 @@ function Sidebar({ darkMode, setDarkMode }: SidebarProps) {
             </span>
           </NavLink>
 
-          {/* Projects */}
-          <NavLink
-            to="/projects"
-            className={({ isActive }) =>
-              `group relative flex items-center justify-center rounded-lg p-3 transition ${
-                isActive
-                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
-              }`
-            }
-          >
-            <FolderKanban size={22} strokeWidth={1.8} />
-
-            <span className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-md bg-gray-900 px-3 py-2 text-sm text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-white dark:text-gray-900">
-              Projects
-            </span>
-          </NavLink>
 
         </nav>
 
