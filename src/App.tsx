@@ -71,7 +71,7 @@ function App() {
                     setDarkMode={setDarkMode}
                   />
 
-                  <main className="flex-1 bg-gray-50 p-2 transition-colors dark:bg-gray-950 lg:p-4">
+                  <main className="flex-1 bg-gray-50 transition-colors dark:bg-gray-950">
                     <Outlet />
                   </main>
 

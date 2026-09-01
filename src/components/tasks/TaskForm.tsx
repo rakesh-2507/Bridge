@@ -53,12 +53,6 @@ function TaskForm({
 }: TaskFormProps) {
     const isEdit = Boolean(task);
 
-    /*
-     * ============================================================
-     * FORM STATE
-     * ============================================================
-     */
-
     const [form, setForm] =
         useState<CreateTaskPayload>(() => {
             if (!task) {
@@ -99,12 +93,6 @@ function TaskForm({
             };
         });
 
-    /*
-     * ============================================================
-     * API DATA
-     * ============================================================
-     */
-
     const [projects, setProjects] =
         useState<Project[]>([]);
 
@@ -116,12 +104,6 @@ function TaskForm({
 
     const [users, setUsers] =
         useState<User[]>([]);
-
-    /*
-     * ============================================================
-     * LOADING
-     * ============================================================
-     */
 
     const [loadingData, setLoadingData] =
         useState(true);
@@ -135,33 +117,10 @@ function TaskForm({
     const [error, setError] =
         useState("");
 
-    /*
-     * ============================================================
-     * TEXT INPUTS
-     * ============================================================
-     */
-
     const [levelsInput, setLevelsInput] =
         useState(
             task?.levels?.join(", ") ?? ""
         );
-
-    const [keyParamsInput, setKeyParamsInput] =
-        useState(
-            task?.key_params
-                ? JSON.stringify(
-                    task.key_params,
-                    null,
-                    2
-                )
-                : ""
-        );
-
-    /*
-     * ============================================================
-     * LOAD PROJECTS / TEMPLATES / USERS
-     * ============================================================
-     */
 
     useEffect(() => {
         let cancelled = false;
@@ -218,12 +177,6 @@ function TaskForm({
         };
     }, []);
 
-    /*
-     * ============================================================
-     * LOAD FOLDERS WHEN TEMPLATE CHANGES
-     * ============================================================
-     */
-
     useEffect(() => {
         if (!form.template_id) {
             return;
@@ -269,11 +222,7 @@ function TaskForm({
         return () => {
             cancelled = true;
         };
-    }, [form.template_id]);    /*
-     * ============================================================
-     * UPDATE FIELD
-     * ============================================================
-     */
+    }, [form.template_id]);
 
     const updateField = <
         K extends keyof CreateTaskPayload
@@ -286,12 +235,6 @@ function TaskForm({
             [field]: value,
         }));
     };
-
-    /*
-     * ============================================================
-     * PROJECT CHANGE
-     * ============================================================
-     */
 
     const handleProjectChange = (
         projectId: number
@@ -313,12 +256,6 @@ function TaskForm({
         }));
     };
 
-    /*
-     * ============================================================
-     * TEMPLATE CHANGE
-     * ============================================================
-     */
-
     const handleTemplateChange = (
         templateId: number
     ) => {
@@ -333,22 +270,12 @@ function TaskForm({
         setFolders([]);
     };
 
-    /*
-     * ============================================================
-     * SUBMIT
-     * ============================================================
-     */
-
     const handleSubmit = async (
         event: React.FormEvent<HTMLFormElement>
     ) => {
         event.preventDefault();
 
         setError("");
-
-        /*
-         * Validation
-         */
 
         if (!form.project_id) {
             setError("Please select a project.");
@@ -404,10 +331,6 @@ function TaskForm({
             return;
         }
 
-        /*
-         * Levels
-         */
-
         const parsedLevels =
             levelsInput
                 .split(",")
@@ -415,48 +338,6 @@ function TaskForm({
                     level.trim()
                 )
                 .filter(Boolean);
-
-        /*
-         * Key parameters
-         */
-
-        let parsedKeyParams:
-            Record<string, unknown> = {};
-
-        if (keyParamsInput.trim()) {
-            try {
-                const parsed =
-                    JSON.parse(
-                        keyParamsInput
-                    );
-
-                if (
-                    parsed === null ||
-                    typeof parsed !== "object" ||
-                    Array.isArray(parsed)
-                ) {
-                    setError(
-                        "Key parameters must be a JSON object."
-                    );
-                    return;
-                }
-
-                parsedKeyParams =
-                    parsed as Record<
-                        string,
-                        unknown
-                    >;
-            } catch {
-                setError(
-                    "Key parameters contain invalid JSON."
-                );
-                return;
-            }
-        }
-
-        /*
-         * Payload
-         */
 
         const payload: CreateTaskPayload = {
             project_id:
@@ -475,7 +356,7 @@ function TaskForm({
                 form.task_description.trim(),
 
             key_params:
-                parsedKeyParams,
+                form.key_params,
 
             levels:
                 parsedLevels,
@@ -498,10 +379,6 @@ function TaskForm({
         try {
             let savedTask: Task;
 
-            /*
-             * UPDATE
-             */
-
             if (isEdit && task) {
                 const updatePayload:
                     UpdateTaskPayload = {
@@ -517,10 +394,6 @@ function TaskForm({
                         updatePayload
                     );
             }
-
-            /*
-             * CREATE
-             */
 
             else {
                 savedTask =
@@ -543,12 +416,6 @@ function TaskForm({
         }
     };
 
-    /*
-     * ============================================================
-     * USER DISPLAY NAME
-     * ============================================================
-     */
-
     const getUserName = (
         user: User
     ) => {
@@ -561,12 +428,6 @@ function TaskForm({
             `User ${user.uid}`
         );
     };
-
-    /*
-     * ============================================================
-     * LOADING
-     * ============================================================
-     */
 
     if (loadingData) {
         return (
@@ -583,24 +444,13 @@ function TaskForm({
         );
     }
 
-    /*
-     * ============================================================
-     * FORM
-     * ============================================================
-     */
-
     return (
         <form
             onSubmit={handleSubmit}
             className="w-full"
         >
-            {/* ====================================================
-                FORM BODY
-            ===================================================== */}
 
             <div className="space-y-6 p-6">
-
-                {/* ERROR */}
 
                 {error && (
                     <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
@@ -608,26 +458,17 @@ function TaskForm({
                     </div>
                 )}
 
-                {/* =================================================
-                    TASK LOCATION
-                ================================================== */}
-
                 <section>
                     <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
                         Task Location
                     </h3>
 
-                    <div className="space-y-4">
-
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <SelectInput
                             label="Project"
-                            value={
-                                form.project_id
-                            }
+                            value={form.project_id}
                             onChange={(value) =>
-                                handleProjectChange(
-                                    Number(value)
-                                )
+                                handleProjectChange(Number(value))
                             }
                             required
                         >
@@ -635,32 +476,22 @@ function TaskForm({
                                 Select project
                             </option>
 
-                            {projects.map(
-                                (project) => (
-                                    <option
-                                        key={
-                                            project.project_id
-                                        }
-                                        value={
-                                            project.project_id
-                                        }
-                                    >
-                                        {project.projectname ||
-                                            `Project ${project.project_id}`}
-                                    </option>
-                                )
-                            )}
+                            {projects.map((project) => (
+                                <option
+                                    key={project.project_id}
+                                    value={project.project_id}
+                                >
+                                    {project.projectname ||
+                                        `Project ${project.project_id}`}
+                                </option>
+                            ))}
                         </SelectInput>
 
                         <SelectInput
                             label="Template"
-                            value={
-                                form.template_id
-                            }
+                            value={form.template_id}
                             onChange={(value) =>
-                                handleTemplateChange(
-                                    Number(value)
-                                )
+                                handleTemplateChange(Number(value))
                             }
                             required
                         >
@@ -668,27 +499,19 @@ function TaskForm({
                                 Select template
                             </option>
 
-                            {templates.map(
-                                (template) => (
-                                    <option
-                                        key={
-                                            template.tid
-                                        }
-                                        value={
-                                            template.tid
-                                        }
-                                    >
-                                        {template.name}
-                                    </option>
-                                )
-                            )}
+                            {templates.map((template) => (
+                                <option
+                                    key={template.tid}
+                                    value={template.tid}
+                                >
+                                    {template.name}
+                                </option>
+                            ))}
                         </SelectInput>
 
                         <SelectInput
                             label="Folder"
-                            value={
-                                form.folder_id
-                            }
+                            value={form.folder_id}
                             onChange={(value) =>
                                 updateField(
                                     "folder_id",
@@ -709,28 +532,17 @@ function TaskForm({
                                         : "Select folder"}
                             </option>
 
-                            {folders.map(
-                                (folder) => (
-                                    <option
-                                        key={
-                                            folder.fid
-                                        }
-                                        value={
-                                            folder.fid
-                                        }
-                                    >
-                                        {folder.fname}
-                                    </option>
-                                )
-                            )}
+                            {folders.map((folder) => (
+                                <option
+                                    key={folder.fid}
+                                    value={folder.fid}
+                                >
+                                    {folder.fname}
+                                </option>
+                            ))}
                         </SelectInput>
-
                     </div>
                 </section>
-
-                {/* =================================================
-                    TASK INFORMATION
-                ================================================== */}
 
                 <section>
                     <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
@@ -779,10 +591,6 @@ function TaskForm({
                     </div>
                 </section>
 
-                {/* =================================================
-                    SCHEDULE
-                ================================================== */}
-
                 <section>
                     <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
                         Schedule
@@ -822,10 +630,6 @@ function TaskForm({
 
                     </div>
                 </section>
-
-                {/* =================================================
-                    ASSIGNMENT
-                ================================================== */}
 
                 <section>
                     <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
@@ -907,10 +711,6 @@ function TaskForm({
                     </div>
                 </section>
 
-                {/* =================================================
-                    LEVELS
-                ================================================== */}
-
                 <section>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Levels
@@ -934,42 +734,7 @@ function TaskForm({
                         Separate multiple levels with commas.
                     </p>
                 </section>
-
-                {/* =================================================
-                    KEY PARAMETERS
-                ================================================== */}
-
-                <section>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Key Parameters
-                    </label>
-
-                    <textarea
-                        value={
-                            keyParamsInput
-                        }
-                        onChange={(event) =>
-                            setKeyParamsInput(
-                                event.target.value
-                            )
-                        }
-                        rows={5}
-                        placeholder={`{
-  "priority": "high"
-}`}
-                        className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2.5 font-mono text-xs text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-                    />
-
-                    <p className="mt-1.5 text-xs text-gray-400">
-                        Optional JSON object containing additional task parameters.
-                    </p>
-                </section>
-
             </div>
-
-            {/* ====================================================
-                FOOTER
-            ===================================================== */}
 
             <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4 sm:flex-row sm:justify-end dark:border-gray-800 dark:bg-gray-900">
 
@@ -1007,12 +772,6 @@ function TaskForm({
         </form>
     );
 }
-
-/*
- * ============================================================
- * SELECT INPUT
- * ============================================================
- */
 
 interface SelectInputProps {
     label: string;
@@ -1053,12 +812,6 @@ function SelectInput({
         </div>
     );
 }
-
-/*
- * ============================================================
- * TEXT INPUT
- * ============================================================
- */
 
 interface TextInputProps {
     label: string;

@@ -7,10 +7,7 @@ import {
 } from "react";
 
 import {
-    ArrowLeft,
-    CalendarDays,
     Loader2,
-    Plus,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -24,6 +21,8 @@ import type { Task } from "../../types/task";
 import TaskDateStrip from "../../components/tasks/TaskDateStrip";
 import TaskList from "../../components/tasks/TaskList";
 import TaskDetails from "../../components/tasks/TaskDetails";
+
+
 
 function TodayTasksPage() {
     const navigate = useNavigate();
@@ -46,11 +45,33 @@ function TodayTasksPage() {
     const [error, setError] =
         useState("");
 
-    /*
-     * ========================================================
-     * LOAD TASKS
-     * ========================================================
-     */
+    const getTaskCount = (
+        date: string
+    ): number => {
+        return tasks.filter((task) => {
+            if (
+                !task.start_date ||
+                !task.end_date
+            ) {
+                return false;
+            }
+
+            const start =
+                normalizeDate(
+                    task.start_date
+                );
+
+            const end =
+                normalizeDate(
+                    task.end_date
+                );
+
+            return (
+                date >= start &&
+                date <= end
+            );
+        }).length;
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -88,12 +109,6 @@ function TodayTasksPage() {
         };
     }, []);
 
-    /*
-     * ========================================================
-     * FILTER BY SELECTED DATE
-     * ========================================================
-     */
-
     const dateTasks =
         useMemo(() => {
             return tasks.filter(
@@ -125,12 +140,6 @@ function TodayTasksPage() {
             );
         }, [tasks, selectedDate]);
 
-    /*
-     * ========================================================
-     * DELETE
-     * ========================================================
-     */
-
     const handleDeleted = (
         taskId: number
     ) => {
@@ -145,22 +154,11 @@ function TodayTasksPage() {
         setSelectedTask(null);
     };
 
-    /*
-     * ========================================================
-     * DATE CHANGE
-     * ========================================================
-     */
-
     const handleDateChange = (
         date: string
     ) => {
         setSelectedDate(date);
 
-        /*
-         * If selected task isn't active
-         * on the newly selected date,
-         * clear the details panel.
-         */
         setSelectedTask(
             (current) => {
                 if (!current) {
@@ -214,91 +212,19 @@ function TodayTasksPage() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-64px)] flex-col bg-gray-50 dark:bg-gray-950">
-            {/* =====================================================
-                HEADER
-            ====================================================== */}
-
-            <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() =>
-                                navigate(
-                                    "/tasks"
-                                )
-                            }
-                            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                            aria-label="Back to tasks"
-                        >
-                            <ArrowLeft
-                                size={18}
-                            />
-                        </button>
-
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <CalendarDays
-                                    size={18}
-                                    className="text-gray-500"
-                                />
-
-                                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                                    Today Tasks
-                                </h1>
-                            </div>
-
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                {formatSelectedDate(
-                                    selectedDate
-                                )}
-                            </p>
-                        </div>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={() =>
-                            navigate(
-                                "/tasks/create"
-                            )
-                        }
-                        className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-gray-900"
-                    >
-                        <Plus size={16} />
-
-                        Create Task
-                    </button>
-                </div>
-            </div>
-
-            {/* =====================================================
-                DATE STRIP
-            ====================================================== */}
+        <div className="flex h-[calc(100vh-64px)] min-w-0 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
 
             <TaskDateStrip
-                selectedDate={
-                    selectedDate
-                }
-                onDateChange={
-                    handleDateChange
-                }
+                selectedDate={selectedDate}
+                onDateChange={handleDateChange}
+                getTaskCount={getTaskCount}
             />
 
-            {/* =====================================================
-                ERROR
-            ====================================================== */}
-
             {error && (
-                <div className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+                <div className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
                     {error}
                 </div>
             )}
-
-            {/* =====================================================
-                MASTER DETAIL
-            ====================================================== */}
 
             <div className="min-h-0 flex-1">
                 <div className="grid h-full grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)]">
@@ -318,29 +244,24 @@ function TodayTasksPage() {
                     />
 
                     <TaskDetails
-                        task={
-                            selectedTask
-                        }
-                        onEdit={(
-                            task
-                        ) =>
+                        task={selectedTask}
+                        onEdit={(task) =>
                             navigate(
-                                `/tasks/${task.task_id}/edit`
+                                `/tasks/${task.task_id}/edit`,
+                                {
+                                    state: {
+                                        task,
+                                    },
+                                }
                             )
                         }
-                        onDeleted={
-                            handleDeleted
-                        }
+                        onDeleted={handleDeleted}
                     />
                 </div>
             </div>
         </div>
     );
 }
-
-/* ============================================================
-   DATE HELPERS
-============================================================ */
 
 function getDateKey(
     date: Date
@@ -363,25 +284,6 @@ function normalizeDate(
     date: string
 ): string {
     return date.slice(0, 10);
-}
-
-function formatSelectedDate(
-    dateKey: string
-): string {
-    const date =
-        new Date(
-            `${dateKey}T00:00:00`
-        );
-
-    return date.toLocaleDateString(
-        "en-US",
-        {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-        }
-    );
 }
 
 function formatShortDate(

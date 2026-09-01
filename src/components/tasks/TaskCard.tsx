@@ -1,5 +1,3 @@
-// src/components/tasks/TaskCard.tsx
-
 import {
     CalendarDays,
     Clock3,
@@ -9,37 +7,56 @@ import {
 import type { Task } from "../../types/task";
 import TaskStatus from "./TaskStatus";
 
+type TaskCardColor =
+    | "yellow"
+    | "purple";
+
 interface TaskCardProps {
     task: Task;
     selected?: boolean;
+    color?: TaskCardColor;
     onClick: () => void;
 }
 
 function TaskCard({
     task,
     selected = false,
+    color = "yellow",
     onClick,
 }: TaskCardProps) {
+    const colorClasses: Record<
+        TaskCardColor,
+        string
+    > = {
+        yellow:
+            "border-yellow-300 bg-yellow-500",
+
+        purple:
+            "border-purple-300 bg-purple-500",
+    };
+
     return (
         <button
             type="button"
             onClick={onClick}
             className={[
-                "w-full rounded-xl border p-4 text-left transition",
+                "w-full rounded-xl border p-4 text-left transition-all duration-200",
+                colorClasses[color],
+
                 selected
-                    ? "border-gray-900 bg-gray-50 shadow-sm dark:border-white dark:bg-gray-800"
-                    : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700",
+                    ? "shadow-lg ring-2 ring-gray-900/20"
+                    : "hover:-translate-y-0.5 hover:shadow-md",
             ].join(" ")}
         >
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <h3 className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    <h3 className="truncate text-sm font-semibold text-white">
                         {task.task_type ||
                             "Untitled Task"}
                     </h3>
 
-                    <p className="mt-1 text-xs text-gray-400">
+                    <p className="mt-1 text-xs text-white/70">
                         Task #{task.task_id}
                     </p>
                 </div>
@@ -50,14 +67,14 @@ function TaskCard({
             </div>
 
             {/* Description */}
-            <p className="mt-3 line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
+            <p className="mt-3 line-clamp-2 text-xs leading-5 text-white/80">
                 {task.task_description ||
                     "No description available."}
             </p>
 
             {/* Dates */}
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-                <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-1.5 text-xs text-white/80">
                     <CalendarDays size={14} />
 
                     <span>
@@ -75,7 +92,7 @@ function TaskCard({
             </div>
 
             {/* Folder */}
-            <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+            <div className="mt-3 flex items-center gap-1.5 text-xs text-white/70">
                 <Folder size={14} />
 
                 <span>
@@ -84,7 +101,7 @@ function TaskCard({
             </div>
 
             {/* Time / status indicator */}
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-400">
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-white/70">
                 <Clock3 size={13} />
 
                 {task.status === 3

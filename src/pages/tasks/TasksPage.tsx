@@ -1,5 +1,3 @@
-// src/pages/tasks/TasksPage.tsx
-
 import {
     useEffect,
     useState,
@@ -20,6 +18,18 @@ import type { Task } from "../../types/task";
 import TaskList from "../../components/tasks/TaskList";
 import TaskDetails from "../../components/tasks/TaskDetails";
 
+type TaskCardColor =
+    | "yellow"
+    | "purple";
+
+const getTaskCardColor = (
+    index: number
+): TaskCardColor => {
+    return index % 2 === 0
+        ? "yellow"
+        : "purple";
+};
+
 function TasksPage() {
     const navigate = useNavigate();
 
@@ -34,12 +44,6 @@ function TasksPage() {
 
     const [error, setError] =
         useState("");
-
-    /*
-     * ========================================================
-     * LOAD TASKS
-     * ========================================================
-     */
 
     useEffect(() => {
         let cancelled = false;
@@ -56,9 +60,6 @@ function TasksPage() {
                     return;
                 }
 
-                /*
-                 * getTasks() returns Task[]
-                 */
                 setTasks(response ?? []);
             } catch (err) {
                 if (!cancelled) {
@@ -82,23 +83,11 @@ function TasksPage() {
         };
     }, []);
 
-    /*
-     * ========================================================
-     * PENDING TASKS
-     * ========================================================
-     */
-
     const pendingTasks =
         tasks.filter(
             (task) =>
                 task.status !== 3
         );
-
-    /*
-     * ========================================================
-     * DELETE
-     * ========================================================
-     */
 
     const handleDeleted = (
         taskId: number
@@ -113,12 +102,6 @@ function TasksPage() {
 
         setSelectedTask(null);
     };
-
-    /*
-     * ========================================================
-     * LOADING
-     * ========================================================
-     */
 
     if (loading) {
         return (
@@ -137,18 +120,9 @@ function TasksPage() {
         );
     }
 
-    /*
-     * ========================================================
-     * PAGE
-     * ========================================================
-     */
 
     return (
         <div className="flex h-[calc(100vh-64px)] flex-col bg-gray-50 dark:bg-gray-950">
-
-            {/* =================================================
-                HEADER
-            ================================================== */}
 
             <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
 
@@ -166,8 +140,6 @@ function TasksPage() {
 
                     <div className="flex items-center gap-2">
 
-                        {/* Today Tasks */}
-
                         <button
                             type="button"
                             onClick={() =>
@@ -183,8 +155,6 @@ function TasksPage() {
 
                             Today Tasks
                         </button>
-
-                        {/* Create Task */}
 
                         <button
                             type="button"
@@ -206,27 +176,15 @@ function TasksPage() {
                 </div>
             </div>
 
-            {/* =================================================
-                ERROR
-            ================================================== */}
-
             {error && (
                 <div className="mx-6 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
                     {error}
                 </div>
             )}
 
-            {/* =================================================
-                MASTER / DETAIL
-            ================================================== */}
-
             <div className="min-h-0 flex-1">
 
                 <div className="grid h-full grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)]">
-
-                    {/* =================================================
-                        LEFT - TASK LIST
-                    ================================================== */}
 
                     <TaskList
                         tasks={pendingTasks}
@@ -234,15 +192,27 @@ function TasksPage() {
                         onSelect={setSelectedTask}
                     />
 
-                    {/* =================================================
-                        RIGHT - TASK DETAILS
-                    ================================================== */}
-
                     <TaskDetails
                         task={selectedTask}
+                        taskColor={
+                            selectedTask
+                                ? getTaskCardColor(
+                                    pendingTasks.findIndex(
+                                        (task) =>
+                                            task.task_id ===
+                                            selectedTask.task_id
+                                    )
+                                )
+                                : "yellow"
+                        }
                         onEdit={(task) =>
                             navigate(
-                                `/tasks/${task.task_id}/edit`
+                                `/tasks/${task.task_id}/edit`,
+                                {
+                                    state: {
+                                        task,
+                                    },
+                                }
                             )
                         }
                         onDeleted={handleDeleted}
