@@ -1,75 +1,154 @@
-# React + TypeScript + Vite
+# Bridge Workflow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React-based web application for managing projects, templates, users, companies, and other workflow-related operations.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* **React** – UI development
+* **TypeScript** – Type-safe JavaScript
+* **Vite** – Development server and build tool
+* **Tailwind CSS** – Styling and responsive layouts
+* **React Router** – Client-side routing
+* **Lucide React** – Icons
+* **Fetch API** – Backend API communication
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Authentication** – Login using username and password
+* **Protected Routes** – Restrict access to application pages based on login state
+* **Masters Dashboard** – Central navigation to master data modules
+* **Projects** – Project management
+* **Templates** – Workflow template management
+* **Users** – User management
+* **Companies** – Company management
+* **Responsive UI** – Layout designed for different screen sizes
+* **Theme Support** – Light and dark theme support
 
-## Expanding the ESLint configuration
+## Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Make sure the following are installed:
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+* [Node.js](https://nodejs.org/)
+* npm
+* [Git](https://git-scm.com/)
+* A GitHub account for repository hosting
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Clone the repository
 
+```bash
+git clone https://github.com/YOUR_USERNAME/bridge-react.git
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Replace `YOUR_USERNAME` and `bridge-react` with your GitHub username and repository name.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 2. Navigate to the project
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+cd bridge-react
 ```
+
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+### 4. Start the development server
+
+```bash
+npm run dev
+```
+
+Open the local URL displayed in your terminal. The development server is configured to use port `5000`.
+
+## Available Scripts
+
+| Command           | Description                          |
+| ----------------- | ------------------------------------ |
+| `npm run dev`     | Start the development server         |
+| `npm run build`   | Build the application for production |
+| `npm run preview` | Preview the production build         |
+| `npm run lint`    | Run ESLint checks                    |
+
+## Project Structure
+
+```text
+bridge/
+├── public/
+├── src/
+│   ├── api/
+│   │   └── auth.ts
+│   ├── components/
+│   │   └── shared/
+│   │       ├── MainLayout.tsx
+│   │       └── ThemeContext.tsx
+│   ├── pages/
+│   │   ├── Login.tsx
+│   │   ├── Masters.tsx
+│   │   ├── ProjectsPage.tsx
+│   │   ├── TemplatesPage.tsx
+│   │   ├── UsersPage.tsx
+│   │   └── CompaniesPage.tsx
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+├── .gitignore
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+```
+
+*The structure above is illustrative. Adjust the filenames and folders to match your actual project.*
+
+## API Configuration
+
+The application currently uses a Vite development proxy for API requests.
+
+The proxy target is configured in `vite.config.ts`:
+
+```ts
+proxy: {
+  "/api": {
+    target: "https://bridge.sidpz.com",
+    changeOrigin: true,
+    secure: true,
+  },
+}
+```
+
+The authentication module uses:
+
+```ts
+const API_BASE_URL = "/api";
+```
+
+Authentication endpoints:
+
+* `POST /api/login` – Authenticate a user
+* `POST /api/refresh-token` – Refresh an access token
+
+The Vite proxy is intended for local development. Configure an appropriate API URL or reverse proxy for production deployment.
+
+## Authentication and Security
+
+* Protected routes check for an access token before displaying authenticated pages.
+* Authentication tokens are currently stored in browser storage.
+* Backend APIs must independently validate authentication and authorization.
+* Never commit passwords, tokens, private keys, or environment files containing secrets.
+* For production, review token storage and session management security.
+
+## Git Workflow
+
+To commit and push your changes:
+
+```bash
+git add .
+git commit -m "Describe your changes"
+git push
+```
+
+Ensure `node_modules/` and sensitive environment files are excluded through `.gitignore`.
