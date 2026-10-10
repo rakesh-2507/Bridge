@@ -48,6 +48,11 @@ interface ApiFolder {
     children?: unknown[] | null;
 }
 
+interface RoleForm {
+    name: string;
+    folderIds: number[];
+}
+
 interface ApiRole {
     rolename: string;
 }
@@ -755,6 +760,72 @@ function PreviewFolder({ folder, depth = 0 }: { folder: ParsedFolder; depth?: nu
     );
 }
 
+interface RoleFolderCheckboxProps {
+    folders: FolderForm[];
+    selectedFolderIds: number[];
+    onToggle: (folderId: number) => void;
+    disabled?: boolean;
+    depth?: number;
+}
+
+function RoleFolderCheckbox({
+    folders,
+    selectedFolderIds,
+    onToggle,
+    disabled = false,
+    depth = 0,
+}: RoleFolderCheckboxProps) {
+    return (
+        <div className="space-y-1">
+            {folders.map((folder) => {
+                const checked = selectedFolderIds.includes(folder.id);
+
+                return (
+                    <div key={folder.id} className="min-w-0">
+                        <label
+                            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                            style={{ marginLeft: `${depth * 20}px` }}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={disabled}
+                                onChange={() => onToggle(folder.id)}
+                                className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                            />
+
+                            <Folder
+                                size={17}
+                                className="shrink-0 text-blue-600 dark:text-blue-400"
+                            />
+
+                            <span className="min-w-0 flex-1 break-words text-sm text-gray-800 dark:text-gray-200">
+                                {folder.fname.trim() || "Untitled folder"}
+                            </span>
+
+                            {folder.children.length > 0 && (
+                                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                    {folder.children.length}
+                                </span>
+                            )}
+                        </label>
+
+                        {folder.children.length > 0 && (
+                            <RoleFolderCheckbox
+                                folders={folder.children}
+                                selectedFolderIds={selectedFolderIds}
+                                onToggle={onToggle}
+                                disabled={disabled}
+                                depth={depth + 1}
+                            />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 function toTemplateFolderPayload(
     folder: FolderForm,
 ): TemplateCompletePayload["folders"][number] {
@@ -785,8 +856,13 @@ export default function CreateTemplate() {
     const [folders, setFolders] = useState<FolderForm[]>([]);
     const [nextFolderId, setNextFolderId] = useState(1);
 
-    const [roles, setRoles] = useState<string[]>([]);
+    const [roles, setRoles] = useState<RoleForm[]>([]);
     const [roleDraft, setRoleDraft] = useState("");
+    const [selectedRoleName, setSelectedRoleName] = useState<string | null>(null);
+
+    const selectedRole = roles.find(
+        (role) => role.name === selectedRoleName
+    );
 
     const [currentStep, setCurrentStep] = useState(1);
     const [folderMode, setFolderMode] = useState<ImportMode>("manual");
@@ -848,12 +924,20 @@ export default function CreateTemplate() {
                 setNextFolderId(countAllFolders(mappedFolders) + 1);
 
                 const apiRoles = (details.roles ?? []) as ApiRole[];
-                setRoles(
-                    apiRoles
-                        .map((role) => role.rolename)
-                        .filter((role): role is string => typeof role === "string" && !!role.trim()),
-                );
 
+                const loadedRoles: RoleForm[] = apiRoles
+                    .map((role) => role.rolename)
+                    .filter(
+                        (role): role is string =>
+                            typeof role === "string" && !!role.trim()
+                    )
+                    .map((roleName) => ({
+                        name: roleName.trim(),
+                        folderIds: [],
+                    }));
+
+                setRoles(loadedRoles);
+                setSelectedRoleName(loadedRoles[0]?.name ?? null);
                 setRoleDraft("");
                 setCurrentStep(1);
             } catch (err) {
@@ -1221,19 +1305,63 @@ export default function CreateTemplate() {
             return;
         }
 
-        if (roles.some((role) => role.toLowerCase() === roleName.toLowerCase())) {
+        if (
+            roles.some(
+                (role) =>
+                    role.name.toLowerCase() === roleName.toLowerCase()
+            )
+        ) {
             setError(`Role "${roleName}" has already been added.`);
             return;
         }
 
-        setRoles((current) => [...current, roleName]);
+        const newRole: RoleForm = {
+            name: roleName,
+            folderIds: [],
+        };
+
+        setRoles((current) => [...current, newRole]);
+        setSelectedRoleName(roleName);
         setRoleDraft("");
         setError("");
         setSuccess("");
     }
 
     function removeRole(roleName: string) {
-        setRoles((current) => current.filter((role) => role !== roleName));
+        const remainingRoles = roles.filter(
+            (role) => role.name !== roleName
+        );
+
+        setRoles(remainingRoles);
+
+        if (selectedRoleName === roleName) {
+            setSelectedRoleName(remainingRoles[0]?.name ?? null);
+        }
+
+        setError("");
+        setSuccess("");
+    }
+
+    function toggleRoleFolder(folderId: number) {
+        if (!selectedRoleName) return;
+
+        setRoles((current) =>
+            current.map((role) => {
+                if (role.name !== selectedRoleName) {
+                    return role;
+                }
+
+                const alreadySelected = role.folderIds.includes(folderId);
+
+                return {
+                    ...role,
+                    folderIds: alreadySelected
+                        ? role.folderIds.filter((id) => id !== folderId)
+                        : [...role.folderIds, folderId],
+                };
+            })
+        );
+
         setError("");
         setSuccess("");
     }
@@ -1270,7 +1398,7 @@ export default function CreateTemplate() {
             name_desc: nameDesc.trim(),
             projecttype: Number(projectType),
             folders: folders.map(toTemplateFolderPayload),
-            roles: roles.map((role) => role.trim()),
+            roles: roles.map((role) => role.name.trim()),
         };
 
         try {
@@ -1476,8 +1604,11 @@ export default function CreateTemplate() {
                                                         <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">{parsedPreview.length} root folder(s)</span>
                                                     </div>
                                                     <div className="max-h-80 space-y-4 overflow-y-auto">
-                                                        {parsedPreview.map((folder, index) => (
-                                                            <div key={`${folder.fname}-${index}`} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+                                                        {parsedPreview.map((folder) => (
+                                                            <div
+                                                                key={folder.fname}
+                                                                className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
+                                                            >
                                                                 <PreviewFolder folder={folder} />
                                                             </div>
                                                         ))}
@@ -1541,69 +1672,280 @@ export default function CreateTemplate() {
                         )}
 
                         {currentStep === 3 && (
-                            <div className="grid grid-cols-1 gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_320px]">
-                                <div className="min-w-0 space-y-5">
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Define Template Roles</h3>
-                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add the roles that participate in this template's workflow.</p>
+                            <div className="grid grid-cols-1 items-start gap-6 p-5 sm:p-7 lg:grid-cols-[300px_minmax(0,1fr)]">
+                                {/* LEFT PANEL: CREATE AND SELECT ROLES */}
+                                <aside className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                                    <div className="mb-4 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2">
+                                            <Users
+                                                size={19}
+                                                className="text-blue-600 dark:text-blue-400"
+                                            />
+                                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                Roles
+                                            </h3>
+                                        </div>
+
+                                        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                            {roles.length}
+                                        </span>
                                     </div>
 
-                                    <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-700">
-                                        <label htmlFor="role-name" className={labelClass}>Role Name *</label>
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <input id="role-name" value={roleDraft} onChange={(event) => setRoleDraft(event.target.value)} onKeyDown={(event) => {
+                                    <label htmlFor="role-name" className={labelClass}>
+                                        Create Role *
+                                    </label>
+
+                                    <div className="space-y-2">
+                                        <input
+                                            id="role-name"
+                                            value={roleDraft}
+                                            onChange={(event) => setRoleDraft(event.target.value)}
+                                            onKeyDown={(event) => {
                                                 if (event.key === "Enter") {
                                                     event.preventDefault();
                                                     addRole();
                                                 }
-                                            }} placeholder="e.g. Author" className={inputClass} disabled={disabled} />
-                                            <button type="button" onClick={addRole} disabled={disabled} className={`${primaryButtonClass} shrink-0`}><CirclePlus size={16} /> Add Role</button>
-                                        </div>
-                                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Duplicate role names are not allowed.</p>
+                                            }}
+                                            placeholder="e.g. Author"
+                                            className={inputClass}
+                                            disabled={disabled}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            onClick={addRole}
+                                            disabled={disabled || !roleDraft.trim()}
+                                            className={`${primaryButtonClass} w-full`}
+                                        >
+                                            <CirclePlus size={16} />
+                                            Add Role
+                                        </button>
                                     </div>
 
-                                    {roles.length > 0 ? (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Added Roles</h3>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">{roles.length} roles</span>
-                                            </div>
-                                            {roles.map((role, index) => (
-                                                <div key={`${role}-${index}`} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-3 py-3 dark:border-gray-700">
-                                                    <div className="flex min-w-0 items-center gap-3">
-                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400"><Users size={16} /></div>
-                                                        <div className="min-w-0">
-                                                            <p className="break-words text-sm font-medium text-gray-900 dark:text-white">{role}</p>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">Role {index + 1}</p>
-                                                        </div>
-                                                    </div>
-                                                    <button type="button" onClick={() => removeRole(role)} disabled={disabled} aria-label={`Remove role ${role}`} className="shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950"><Trash2 size={16} /></button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-xl border border-dashed border-gray-300 px-4 py-10 text-center dark:border-gray-700">
-                                            <Users size={30} className="mx-auto text-gray-400" />
-                                            <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">No roles added yet</p>
-                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Add at least one role before submitting.</p>
-                                        </div>
-                                    )}
-                                </div>
+                                    <p className="mb-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Select a role to configure its folder access.
+                                    </p>
 
-                                <aside className="h-fit rounded-xl border border-gray-200 bg-gray-50/80 p-5 dark:border-gray-700 dark:bg-gray-800/50">
-                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">Template Summary</h3>
-                                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Review your configuration.</p>
-                                    <dl className="mt-5 space-y-4 text-sm">
-                                        <div><dt className="text-gray-500 dark:text-gray-400">Template Name</dt><dd className="mt-1 break-words font-medium text-gray-900 dark:text-white">{name || "—"}</dd></div>
-                                        <div><dt className="text-gray-500 dark:text-gray-400">Description</dt><dd className="mt-1 break-words text-gray-700 dark:text-gray-200">{nameDesc || "—"}</dd></div>
-                                        <div><dt className="text-gray-500 dark:text-gray-400">Project Type</dt><dd className="mt-1 font-medium text-gray-900 dark:text-white">{selectedProjectType}</dd></div>
-                                        <div className="border-t border-gray-200 pt-4 dark:border-gray-700"><dt className="text-gray-500 dark:text-gray-400">Root Folders</dt><dd className="mt-1 flex items-center gap-2 font-medium text-gray-900 dark:text-white"><Folder size={16} className="text-blue-600 dark:text-blue-400" />{folders.length}</dd></div>
-                                        <div><dt className="text-gray-500 dark:text-gray-400">Subfolders</dt><dd className="mt-1 font-medium text-gray-900 dark:text-white">{subfolderCount}</dd></div>
-                                        <div><dt className="text-gray-500 dark:text-gray-400">Total Folders</dt><dd className="mt-1 font-medium text-gray-900 dark:text-white">{countAllFolders(folders)}</dd></div>
-                                        <div><dt className="text-gray-500 dark:text-gray-400">Roles</dt><dd className="mt-1 flex items-center gap-2 font-medium text-gray-900 dark:text-white"><Users size={16} className="text-blue-600 dark:text-blue-400" />{roles.length}</dd></div>
+                                    <div className="space-y-2">
+                                        {roles.map((role) => {
+                                            const active = selectedRoleName === role.name;
+
+                                            return (
+                                                <div
+                                                    key={role.name}
+                                                    className={`flex items-center gap-2 rounded-xl border p-3 transition ${active
+                                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
+                                                            : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                                        }`}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedRoleName(role.name)}
+                                                        aria-pressed={active}
+                                                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                                                    >
+                                                        <span
+                                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${active
+                                                                ? "bg-blue-600 text-white"
+                                                                : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300"
+                                                                }`}
+                                                        >
+                                                            <Users size={16} />
+                                                        </span>
+
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block break-words text-sm font-medium text-gray-900 dark:text-white">
+                                                                {role.name}
+                                                            </span>
+
+                                                            <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                                                                {role.folderIds.length} folder(s) selected
+                                                            </span>
+                                                        </span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeRole(role.name)}
+                                                        disabled={disabled}
+                                                        aria-label={`Remove role ${role.name}`}
+                                                        className="shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {roles.length === 0 && (
+                                            <div className="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-700">
+                                                <Users
+                                                    size={28}
+                                                    className="mx-auto text-gray-400"
+                                                />
+                                                <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                                    No roles created
+                                                </p>
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    Create a role to assign folder access.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </aside>
+
+                                {/* RIGHT PANEL: FOLDER ACCESS FOR THE SELECTED ROLE */}
+                                <section className="min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                                    <div className="border-b border-gray-200 p-4 dark:border-gray-700 sm:p-5">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <Folder
+                                                        size={19}
+                                                        className="text-blue-600 dark:text-blue-400"
+                                                    />
+                                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                        Folder Structure
+                                                    </h3>
+                                                </div>
+
+                                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    {selectedRole
+                                                        ? `Choose folders and subfolders accessible to "${selectedRole.name}".`
+                                                        : "Select a role from the left to configure folder access."}
+                                                </p>
+                                            </div>
+
+                                            {selectedRole && (
+                                                <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                    {selectedRole.folderIds.length} selected
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 sm:p-5">
+                                        {!selectedRole ? (
+                                            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 px-4 text-center dark:border-gray-700">
+                                                <Users size={30} className="text-gray-400" />
+                                                <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                                    Select a role
+                                                </p>
+                                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    Choose a role or create a new one to see the folder tree.
+                                                </p>
+                                            </div>
+                                        ) : folders.length === 0 ? (
+                                            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 px-4 text-center dark:border-gray-700">
+                                                <Folder size={30} className="text-gray-400" />
+                                                <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                                    No folders available
+                                                </p>
+                                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    Go back to Step 2 and add folders first.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        Check each folder or subfolder separately.
+                                                    </p>
+
+                                                    <button
+                                                        type="button"
+                                                        disabled={disabled || selectedRole.folderIds.length === 0}
+                                                        onClick={() => {
+                                                            if (!selectedRoleName) return;
+
+                                                            setRoles((current) =>
+                                                                current.map((role) =>
+                                                                    role.name === selectedRoleName
+                                                                        ? { ...role, folderIds: [] }
+                                                                        : role
+                                                                )
+                                                            );
+                                                        }}
+                                                        className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-400"
+                                                    >
+                                                        Clear selection
+                                                    </button>
+                                                </div>
+
+                                                <div className="max-h-[520px] overflow-y-auto rounded-xl border border-gray-100 p-2 dark:border-gray-800 sm:p-3">
+                                                    <RoleFolderCheckbox
+                                                        folders={folders}
+                                                        selectedFolderIds={selectedRole.folderIds}
+                                                        onToggle={toggleRoleFolder}
+                                                        disabled={disabled}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </section>
+
+                                {/* TEMPLATE SUMMARY */}
+                                <aside className="rounded-xl border border-gray-200 bg-gray-50/80 p-5 dark:border-gray-700 dark:bg-gray-800/50 lg:col-span-2">
+                                    <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                                        Template Summary
+                                    </h3>
+
+                                    <dl className="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                                        <div>
+                                            <dt className="text-gray-500 dark:text-gray-400">
+                                                Template Name
+                                            </dt>
+                                            <dd className="mt-1 break-words font-medium text-gray-900 dark:text-white">
+                                                {name || "—"}
+                                            </dd>
+                                        </div>
+
+                                        <div>
+                                            <dt className="text-gray-500 dark:text-gray-400">
+                                                Project Type
+                                            </dt>
+                                            <dd className="mt-1 font-medium text-gray-900 dark:text-white">
+                                                {selectedProjectType}
+                                            </dd>
+                                        </div>
+
+                                        <div>
+                                            <dt className="text-gray-500 dark:text-gray-400">
+                                                Total Folders
+                                            </dt>
+                                            <dd className="mt-1 font-medium text-gray-900 dark:text-white">
+                                                {countAllFolders(folders)}
+                                            </dd>
+                                        </div>
+
+                                        <div>
+                                            <dt className="text-gray-500 dark:text-gray-400">
+                                                Roles
+                                            </dt>
+                                            <dd className="mt-1 font-medium text-gray-900 dark:text-white">
+                                                {roles.length}
+                                            </dd>
+                                        </div>
+
+                                        <div>
+                                            <dt className="text-gray-500 dark:text-gray-400">
+                                                Folder Assignments
+                                            </dt>
+                                            <dd className="mt-1 font-medium text-gray-900 dark:text-white">
+                                                {roles.reduce(
+                                                    (total, role) => total + role.folderIds.length,
+                                                    0
+                                                )}
+                                            </dd>
+                                        </div>
                                     </dl>
+
                                     <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/40">
-                                        <p className="text-xs leading-5 text-blue-800 dark:text-blue-200">Review all details before creating the template. You can return to previous steps to make changes.</p>
+                                        <p className="text-xs leading-5 text-blue-800 dark:text-blue-200">
+                                            Each role has its own folder selection. Selecting another role
+                                            preserves the current role's selections.
+                                        </p>
                                     </div>
                                 </aside>
                             </div>
