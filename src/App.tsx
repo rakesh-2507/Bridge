@@ -12,6 +12,7 @@ import Company from "./pages/Company";
 import Projects from "./pages/Projects";
 import CreateTemplate from "./pages/CreateTemplate";
 import TemplatesPage from "./pages/TemplatesPage";
+import CreateProject from "./pages/CreateProject";
 
 // Basic authentication guard.
 // Later, role-specific guards can be added here.
@@ -45,7 +46,7 @@ export default function App() {
           <Route path="/companies" element={<Company />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/templates/create" element={<CreateTemplate />} />
-
+          <Route path="/projects/create" element={<CreateProject />} />
         </Route>
       </Route>
 

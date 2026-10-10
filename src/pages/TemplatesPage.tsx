@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
     Folder,
@@ -27,6 +28,10 @@ import {
 
 type FolderKey = string;
 
+type FolderNode = CreatedTemplateFolder & {
+    children?: (FolderNode | string)[];
+};
+
 export default function TemplatesPage() {
     const navigate = useNavigate();
 
@@ -39,7 +44,7 @@ export default function TemplatesPage() {
     const [error, setError] = useState("");
     const [detailsError, setDetailsError] = useState("");
 
-    const [expandedFolders, setExpandedFolders] = useState<Set<number>>(
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
         new Set(),
     );
 
@@ -47,36 +52,49 @@ export default function TemplatesPage() {
 
     // Prevent stale API requests from overwriting newer selections.
     const detailsRequestId = useRef(0);
+    const templatesRequestId = useRef(0);
 
     // Load all templates.
     const loadTemplates = useCallback(async () => {
+        const requestId = ++templatesRequestId.current;
+
         try {
             setLoading(true);
             setError("");
 
             const response = await getTemplates();
-            setTemplates(response ?? []);
+
+            if (requestId === templatesRequestId.current) {
+                setTemplates(response ?? []);
+            }
         } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Failed to load templates.",
-            );
+            if (requestId === templatesRequestId.current) {
+                setError(
+                    err instanceof Error
+                        ? err.message
+                        : "Failed to load templates.",
+                );
+            }
         } finally {
-            setLoading(false);
+            if (requestId === templatesRequestId.current) {
+                setLoading(false);
+            }
         }
     }, []);
+
 
     useEffect(() => {
         let cancelled = false;
 
         const fetchTemplates = async () => {
             try {
+                setLoading(true);
+                setError("");
+
                 const response = await getTemplates();
 
                 if (!cancelled) {
                     setTemplates(response ?? []);
-                    setError("");
                 }
             } catch (err) {
                 if (!cancelled) {
@@ -122,14 +140,13 @@ export default function TemplatesPage() {
         try {
             await deleteTemplate(templateId);
 
-            // Remove the deleted template from the list.
             setTemplates((previous) =>
                 previous.filter((template) => template.tid !== templateId),
             );
 
-            // Clear the selected template and its folder state.
             setSelectedTemplate(null);
             setExpandedFolders(new Set());
+            setDetailsLoading(false);
         } catch (err) {
             setError(
                 err instanceof Error
@@ -182,95 +199,78 @@ export default function TemplatesPage() {
         });
     };
 
-    // Expand or collapse a folder with a valid numeric ID.
-    const toggleFolder = (fid: number) => {
+    // Use IDs where available, otherwise use a path-based key.
+    const getFolderKey = (
+        folder: FolderNode,
+        path: string,
+    ): FolderKey => {
+        if (typeof folder.fid === "number") {
+            return `fid-${folder.fid}`;
+        }
+
+        return path;
+    };
+
+    // Expand or collapse a folder.
+    const toggleFolder = (folderKey: FolderKey) => {
         setExpandedFolders((previous) => {
             const next = new Set(previous);
 
-            if (next.has(fid)) {
-                next.delete(fid);
+            if (next.has(folderKey)) {
+                next.delete(folderKey);
             } else {
-                next.add(fid);
+                next.add(folderKey);
             }
 
             return next;
         });
     };
 
-    // Generate a stable key for rendering, including folders with missing IDs.
-    const getFolderKey = (
-        folder: CreatedTemplateFolder,
-        folders: CreatedTemplateFolder[],
-    ): FolderKey => {
-        if (typeof folder.fid === "number") {
-            return `fid-${folder.fid}`;
-        }
-
-        return `index-${folders.indexOf(folder)}`;
-    };
-
-    // Determine whether a folder belongs to another folder.
-    const isChildOf = (
-        folder: CreatedTemplateFolder,
-        parent: CreatedTemplateFolder,
-    ): boolean => {
-        if (folder === parent) {
-            return false;
-        }
-
-        const matchesParentId =
-            typeof folder.pid === "number" &&
-            typeof parent.fid === "number" &&
-            folder.pid === parent.fid;
-
-        const matchesChildName =
-            typeof folder.fname === "string" &&
-            (parent.children ?? []).includes(folder.fname);
-
-        return matchesParentId || matchesChildName;
-    };
-
-    // Get the child folders of a parent.
-    const getChildFolders = (
-        parent: CreatedTemplateFolder,
-        folders: CreatedTemplateFolder[],
-    ): CreatedTemplateFolder[] => {
-        return folders.filter((folder) => isChildOf(folder, parent));
-    };
-
-    // Find folders without a parent.
-    const getRootFolders = (
-        folders: CreatedTemplateFolder[],
-    ): CreatedTemplateFolder[] => {
-        return folders.filter(
-            (folder) =>
-                !folders.some((parent) => isChildOf(folder, parent)),
-        );
-    };
-
-    // Render the folder hierarchy recursively.
+    // Render nested folders recursively.
     const renderFolder = (
-        folder: CreatedTemplateFolder,
-        folders: CreatedTemplateFolder[],
+        folder: FolderNode,
+        path: string,
         depth = 0,
         ancestors: Set<FolderKey> = new Set(),
     ): ReactNode => {
-        const folderKey = getFolderKey(folder, folders);
+        const folderKey = getFolderKey(folder, path);
 
         // Avoid infinite recursion if the API contains a cycle.
         if (ancestors.has(folderKey)) {
             return null;
         }
 
-        const children = getChildFolders(folder, folders);
+        const rawChildren = Array.isArray(folder.children)
+            ? folder.children
+            : [];
+
+        // Keep folder objects and convert string children to displayable nodes.
+        const children: FolderNode[] = rawChildren.flatMap(
+            (child): FolderNode[] => {
+                if (typeof child === "string") {
+                    return [
+                        {
+                            fname: child,
+                            fnamedesc: "",
+                            children: [],
+                        },
+                    ];
+                }
+
+                if (
+                    child &&
+                    typeof child === "object" &&
+                    typeof child.fname === "string"
+                ) {
+                    return [child as FolderNode];
+                }
+
+                return [];
+            },
+        );
+
         const hasChildren = children.length > 0;
-
-        // The API's fid is optional, so only numeric IDs are expandable.
-        const folderId =
-            typeof folder.fid === "number" ? folder.fid : null;
-
-        const isExpanded =
-            folderId !== null && expandedFolders.has(folderId);
+        const isExpanded = expandedFolders.has(folderKey);
 
         const nextAncestors = new Set(ancestors);
         nextAncestors.add(folderKey);
@@ -280,11 +280,11 @@ export default function TemplatesPage() {
                 <button
                     type="button"
                     onClick={() => {
-                        if (folderId !== null && hasChildren) {
-                            toggleFolder(folderId);
+                        if (hasChildren) {
+                            toggleFolder(folderKey);
                         }
                     }}
-                    disabled={folderId === null || !hasChildren}
+                    disabled={!hasChildren}
                     style={{
                         paddingLeft: `${16 + depth * 24}px`,
                     }}
@@ -328,10 +328,10 @@ export default function TemplatesPage() {
 
                 {isExpanded && hasChildren && (
                     <div>
-                        {children.map((child) =>
+                        {children.map((child, index) =>
                             renderFolder(
                                 child,
-                                folders,
+                                `${path}/${child.fid ?? child.fname}-${index}`,
                                 depth + 1,
                                 nextAncestors,
                             ),
@@ -342,8 +342,40 @@ export default function TemplatesPage() {
         );
     };
 
-    const folders = selectedTemplate?.folders ?? [];
+    const folders = (selectedTemplate?.folders ?? []) as FolderNode[];
     const roles = selectedTemplate?.roles ?? [];
+
+    // Nested API responses may contain children directly.
+    // If the API returns a flat list, use pid to identify root folders.
+    const getRootFolders = (items: FolderNode[]): FolderNode[] => {
+        const hasNestedObjects = items.some(
+            (folder) =>
+                Array.isArray(folder.children) &&
+                folder.children.some(
+                    (child) => child !== null && typeof child === "object",
+                ),
+        );
+
+        if (hasNestedObjects) {
+            return items.filter(
+                (folder) => folder.pid === null || folder.pid === undefined,
+            );
+        }
+
+        const folderIds = new Set(
+            items
+                .map((folder) => folder.fid)
+                .filter((id): id is number => typeof id === "number"),
+        );
+
+        // A flat response has parent IDs; nested roots normally have null pid.
+        return items.filter(
+            (folder) =>
+                folder.pid === null ||
+                folder.pid === undefined ||
+                !folderIds.has(folder.pid),
+        );
+    };
 
     return (
         <div className="min-h-[calc(100vh-90px)] bg-slate-50 p-4 dark:bg-slate-950 sm:p-6">
@@ -411,7 +443,6 @@ export default function TemplatesPage() {
                                 <h2 className="font-semibold text-slate-900 dark:text-white">
                                     All Templates
                                 </h2>
-
                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                     Select a template to see its details
                                 </p>
@@ -430,15 +461,12 @@ export default function TemplatesPage() {
                         ) : templates.length === 0 ? (
                             <div className="px-5 py-12 text-center">
                                 <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-
                                 <p className="font-medium text-slate-700 dark:text-slate-200">
                                     No templates found
                                 </p>
-
                                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                                     Create a template to see it here.
                                 </p>
-
                                 <button
                                     type="button"
                                     onClick={() => navigate("/templates/create")}
@@ -479,12 +507,10 @@ export default function TemplatesPage() {
                                                 <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                                                     {template.name}
                                                 </p>
-
                                                 <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
                                                     {template.name_desc ||
                                                         "No description available"}
                                                 </p>
-
                                                 <p className="mt-2 text-xs text-slate-400">
                                                     Template ID: {template.tid}
                                                 </p>
@@ -504,7 +530,6 @@ export default function TemplatesPage() {
                             <div className="flex min-h-72 items-center justify-center rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                                 <div className="text-center">
                                     <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-blue-600" />
-
                                     <p className="text-sm text-slate-500 dark:text-slate-400">
                                         Loading template details...
                                     </p>
@@ -517,12 +542,10 @@ export default function TemplatesPage() {
                             >
                                 <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                                     <AlertCircle className="h-5 w-5" />
-
                                     <p className="font-medium">
                                         Unable to load template
                                     </p>
                                 </div>
-
                                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                     {detailsError}
                                 </p>
@@ -532,11 +555,9 @@ export default function TemplatesPage() {
                                 <div className="mb-4 rounded-2xl bg-blue-50 p-4 dark:bg-blue-950">
                                     <FolderOpen className="h-9 w-9 text-blue-600 dark:text-blue-400" />
                                 </div>
-
                                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
                                     Select a Template
                                 </h2>
-
                                 <p className="mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
                                     Click any template from the list to explore its folder structure and configured roles.
                                 </p>
@@ -555,17 +576,14 @@ export default function TemplatesPage() {
                                                 <h2 className="break-words text-xl font-bold text-slate-900 dark:text-white">
                                                     {selectedTemplate.name}
                                                 </h2>
-
                                                 <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                                                     {selectedTemplate.name_desc ||
                                                         "No description available."}
                                                 </p>
-
                                                 <div className="mt-3 flex flex-wrap gap-2">
                                                     <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                                                         ID: {selectedTemplate.tid}
                                                     </span>
-
                                                     <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                                                         Project Type:{" "}
                                                         {selectedTemplate.projecttype}
@@ -587,7 +605,9 @@ export default function TemplatesPage() {
 
                                             <button
                                                 type="button"
-                                                onClick={() => void handleDeleteTemplate()}
+                                                onClick={() =>
+                                                    void handleDeleteTemplate()
+                                                }
                                                 disabled={deleting}
                                                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950 dark:focus:ring-offset-slate-900"
                                             >
@@ -596,7 +616,9 @@ export default function TemplatesPage() {
                                                 ) : (
                                                     <Trash2 className="h-4 w-4" />
                                                 )}
-                                                {deleting ? "Deleting..." : "Delete Template"}
+                                                {deleting
+                                                    ? "Deleting..."
+                                                    : "Delete Template"}
                                             </button>
                                         </div>
                                     </div>
@@ -609,12 +631,10 @@ export default function TemplatesPage() {
                                             <div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-950">
                                                 <Folder className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                                             </div>
-
                                             <div>
                                                 <h3 className="font-semibold text-slate-900 dark:text-white">
                                                     Folder Structure
                                                 </h3>
-
                                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                     Expand folders to view child folders
                                                 </p>
@@ -622,20 +642,23 @@ export default function TemplatesPage() {
                                         </div>
 
                                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                                            {folders.length} folders
+                                            {folders.length} root folders
                                         </span>
                                     </div>
 
                                     {folders.length > 0 ? (
                                         <div className="p-2">
-                                            {getRootFolders(folders).map((folder) =>
-                                                renderFolder(folder, folders),
+                                            {getRootFolders(folders).map(
+                                                (folder, index) =>
+                                                    renderFolder(
+                                                        folder,
+                                                        `root-${folder.fid ?? folder.fname}-${index}`,
+                                                    ),
                                             )}
                                         </div>
                                     ) : (
                                         <div className="p-8 text-center">
                                             <Folder className="mx-auto mb-2 h-8 w-8 text-slate-300" />
-
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 No folders configured for this template.
                                             </p>
@@ -650,12 +673,10 @@ export default function TemplatesPage() {
                                             <div className="rounded-lg bg-purple-50 p-2 dark:bg-purple-950">
                                                 <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                                             </div>
-
                                             <div>
                                                 <h3 className="font-semibold text-slate-900 dark:text-white">
                                                     Template Roles
                                                 </h3>
-
                                                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                     Roles configured for this template
                                                 </p>
@@ -671,11 +692,13 @@ export default function TemplatesPage() {
                                         <div className="flex flex-wrap gap-3 p-5">
                                             {roles.map((role, index) => (
                                                 <div
-                                                    key={role.roleid ?? `${role.rolename}-${index}`}
+                                                    key={
+                                                        role.roleid ??
+                                                        `${role.rolename}-${index}`
+                                                    }
                                                     className="flex items-center gap-2 rounded-lg border border-purple-100 bg-purple-50/70 px-4 py-3 dark:border-purple-900 dark:bg-purple-950/40"
                                                 >
                                                     <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-
                                                     <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
                                                         {role.rolename}
                                                     </span>
@@ -685,7 +708,6 @@ export default function TemplatesPage() {
                                     ) : (
                                         <div className="p-8 text-center">
                                             <Users className="mx-auto mb-2 h-8 w-8 text-slate-300" />
-
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 No roles configured for this template.
                                             </p>
