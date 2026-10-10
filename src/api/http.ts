@@ -1,4 +1,7 @@
-const API_BASE_URL = "https://bridge.sidpz.com/api";
+
+const API_BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : "https://bridge.sidpz.com/api";
 
 interface ValidationError {
   loc?: (string | number)[];
