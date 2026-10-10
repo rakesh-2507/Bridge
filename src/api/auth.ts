@@ -1,5 +1,8 @@
 
-const API_BASE_URL = "/api";
+
+const API_BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : "https://bridge.sidpz.com/api";
 
 export interface LoginRequest {
   loginname: string;
