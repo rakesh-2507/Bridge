@@ -213,19 +213,16 @@ export default function CreateProject() {
         }));
     }
 
-    function handleMembersChange(
-        event: React.ChangeEvent<HTMLSelectElement>,
-    ) {
-        const selectedIds = Array.from(
-            event.target.selectedOptions,
-            (option) => option.value,
-        );
 
+    function handleMemberToggle(userId: string) {
         setForm((previous) => ({
             ...previous,
-            member_ids: selectedIds,
+            member_ids: previous.member_ids.includes(userId)
+                ? previous.member_ids.filter((id) => id !== userId)
+                : [...previous.member_ids, userId],
         }));
     }
+
 
     async function handleSubmit(
         event: FormEvent<HTMLFormElement>,
@@ -311,10 +308,10 @@ export default function CreateProject() {
     const optionsDisabled = loadingOptions || loading;
 
     return (
-        <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6 lg:p-8">
-            <div className="mx-auto max-w-5xl space-y-6">
+        <div className="min-h-full w-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 sm:p-5 lg:p-6">
+            <div className="mx-auto flex w-full max-w-none flex-col">
                 {/* Header */}
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="flex flex-col justify-between gap-4 mb-4 sm:flex-row sm:items-center">
                     <div className="flex items-start gap-3">
                         <button
                             type="button"
@@ -380,313 +377,416 @@ export default function CreateProject() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Basic information */}
-                    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                            <div className="rounded-lg bg-blue-100 p-2 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                <FileText size={20} />
+                <form onSubmit={handleSubmit} className="w-full space-y-4">
+
+                    <div className="grid w-full grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
+                        {/* Basic information */}
+                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                                <div className="rounded-lg bg-blue-100 p-2 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                    <FileText size={20} />
+                                </div>
+
+                                <div>
+                                    <h2 className="font-semibold">Basic Information</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Project name and description
+                                    </p>
+                                </div>
                             </div>
 
-                            <div>
-                                <h2 className="font-semibold">Basic Information</h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Project name and description
-                                </p>
+                            <div className="grid gap-5 p-5">
+                                <div>
+                                    <label htmlFor="projectname" className={labelClass}>
+                                        Project Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="projectname"
+                                        name="projectname"
+                                        value={form.projectname}
+                                        onChange={handleChange}
+                                        placeholder="Enter project name"
+                                        className={inputClass}
+                                        maxLength={200}
+                                        required
+                                        disabled={loading}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="projectdesc" className={labelClass}>
+                                        Project Description
+                                    </label>
+                                    <textarea
+                                        id="projectdesc"
+                                        name="projectdesc"
+                                        value={form.projectdesc}
+                                        onChange={handleChange}
+                                        placeholder="Describe the purpose of this project"
+                                        rows={4}
+                                        className={inputClass}
+                                        disabled={loading}
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        </section>
 
-                        <div className="grid gap-5 p-5">
-                            <div>
-                                <label htmlFor="projectname" className={labelClass}>
-                                    Project Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    id="projectname"
-                                    name="projectname"
-                                    value={form.projectname}
-                                    onChange={handleChange}
-                                    placeholder="Enter project name"
-                                    className={inputClass}
-                                    maxLength={200}
-                                    required
-                                    disabled={loading}
-                                />
-                            </div>
+                        {/* Project configuration */}
+                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                                <div className="rounded-lg bg-violet-100 p-2 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                                    <Hash size={20} />
+                                </div>
 
-                            <div>
-                                <label htmlFor="projectdesc" className={labelClass}>
-                                    Project Description
-                                </label>
-                                <textarea
-                                    id="projectdesc"
-                                    name="projectdesc"
-                                    value={form.projectdesc}
-                                    onChange={handleChange}
-                                    placeholder="Describe the purpose of this project"
-                                    rows={4}
-                                    className={inputClass}
-                                    disabled={loading}
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Project configuration */}
-                    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                            <div className="rounded-lg bg-violet-100 p-2 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-                                <Hash size={20} />
-                            </div>
-
-                            <div>
-                                <h2 className="font-semibold">Project Configuration</h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Select a template, company, type and coordinator
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid gap-5 p-5 sm:grid-cols-2">
-                            {/* Template */}
-                            <div>
-                                <label htmlFor="tid" className={labelClass}>
-                                    Template <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="tid"
-                                    name="tid"
-                                    value={form.tid}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    required
-                                    disabled={optionsDisabled || templates.length === 0}
-                                >
-                                    <option value="">
-                                        {loadingOptions
-                                            ? "Loading templates..."
-                                            : templates.length
-                                                ? "Select a template"
-                                                : "No templates available"}
-                                    </option>
-
-                                    {templates.map((template, index) => {
-                                        const id = getOptionId(template, ["tid"]);
-
-                                        const label = getOptionLabel(
-                                            template,
-                                            [
-                                                "template_name",
-                                                "templatename",
-                                                "name",
-                                                "title",
-                                            ],
-                                            id ? `Template ${id}` : `Template ${index + 1}`,
-                                        );
-
-                                        if (!id) return null;
-
-                                        return (
-                                            <option key={id} value={id}>
-                                                {label}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
+                                <div>
+                                    <h2 className="font-semibold">Project Configuration</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Select a template, company, type and coordinator
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* Company */}
-                            <div>
-                                <label htmlFor="cid" className={labelClass}>
-                                    Company <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="cid"
-                                    name="cid"
-                                    value={form.cid}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    required
-                                    disabled={optionsDisabled || companies.length === 0}
-                                >
-                                    <option value="">
-                                        {loadingOptions
-                                            ? "Loading companies..."
-                                            : companies.length
-                                                ? "Select a company"
-                                                : "No companies available"}
-                                    </option>
-
-                                    {companies.map((company) => (
-                                        <option key={company.cid} value={company.cid}>
-                                            {company.company_name}
+                            <div className="grid gap-5 p-5 sm:grid-cols-2">
+                                {/* Template */}
+                                <div>
+                                    <label htmlFor="tid" className={labelClass}>
+                                        Template <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        id="tid"
+                                        name="tid"
+                                        value={form.tid}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        required
+                                        disabled={optionsDisabled || templates.length === 0}
+                                    >
+                                        <option value="">
+                                            {loadingOptions
+                                                ? "Loading templates..."
+                                                : templates.length
+                                                    ? "Select a template"
+                                                    : "No templates available"}
                                         </option>
-                                    ))}
-                                </select>
-                            </div>
 
-                            {/* Project type */}
-                            <div>
-                                <label htmlFor="projecttype" className={labelClass}>
-                                    Project Type <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="projecttype"
-                                    name="projecttype"
-                                    value={form.projecttype}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    required
-                                    disabled={optionsDisabled || projectTypes.length === 0}
-                                >
-                                    <option value="">
-                                        {loadingOptions
-                                            ? "Loading project types..."
-                                            : projectTypes.length
-                                                ? "Select a project type"
-                                                : "No project types available"}
-                                    </option>
+                                        {templates.map((template, index) => {
+                                            const id = getOptionId(template, ["tid"]);
 
-                                    {projectTypes.map((projectType, index) => {
-                                        const id = getOptionId(projectType, [
-                                            "projecttype",
-                                            "projecttypeid",
-                                            "project_type_id",
-                                            "ptid",
-                                            "id",
-                                        ]);
+                                            const label = getOptionLabel(
+                                                template,
+                                                [
+                                                    "template_name",
+                                                    "templatename",
+                                                    "name",
+                                                    "title",
+                                                ],
+                                                id ? `Template ${id}` : `Template ${index + 1}`,
+                                            );
 
-                                        const label = getOptionLabel(
-                                            projectType,
-                                            [
-                                                "project_type_name",
-                                                "projecttypename",
-                                                "project_type",
-                                                "typename",
-                                                "type_name",
-                                                "name",
-                                            ],
-                                            id ? `Project Type ${id}` : `Project Type ${index + 1}`,
-                                        );
+                                            if (!id) return null;
 
-                                        if (!id) return null;
+                                            return (
+                                                <option key={id} value={id}>
+                                                    {label}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
 
-                                        return (
-                                            <option key={id} value={id}>
-                                                {label}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                            </div>
-
-                            {/* Coordinator */}
-                            <div>
-                                <label htmlFor="coordinator" className={labelClass}>
-                                    Coordinator <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="coordinator"
-                                    name="coordinator"
-                                    value={form.coordinator}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    required
-                                    disabled={optionsDisabled || users.length === 0}
-                                >
-                                    <option value="">
-                                        {loadingOptions
-                                            ? "Loading users..."
-                                            : users.length
-                                                ? "Select a coordinator"
-                                                : "No users available"}
-                                    </option>
-
-                                    {users.map((user) => (
-                                        <option key={user.uid} value={user.uid}>
-                                            {getUserLabel(user)} (ID: {user.uid})
+                                {/* Company */}
+                                <div>
+                                    <label htmlFor="cid" className={labelClass}>
+                                        Company <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        id="cid"
+                                        name="cid"
+                                        value={form.cid}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        required
+                                        disabled={optionsDisabled || companies.length === 0}
+                                    >
+                                        <option value="">
+                                            {loadingOptions
+                                                ? "Loading companies..."
+                                                : companies.length
+                                                    ? "Select a company"
+                                                    : "No companies available"}
                                         </option>
-                                    ))}
-                                </select>
+
+                                        {companies.map((company) => (
+                                            <option key={company.cid} value={company.cid}>
+                                                {company.company_name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Project type */}
+                                <div>
+                                    <label htmlFor="projecttype" className={labelClass}>
+                                        Project Type <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        id="projecttype"
+                                        name="projecttype"
+                                        value={form.projecttype}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        required
+                                        disabled={optionsDisabled || projectTypes.length === 0}
+                                    >
+                                        <option value="">
+                                            {loadingOptions
+                                                ? "Loading project types..."
+                                                : projectTypes.length
+                                                    ? "Select a project type"
+                                                    : "No project types available"}
+                                        </option>
+
+                                        {projectTypes.map((projectType, index) => {
+                                            const id = getOptionId(projectType, [
+                                                "projecttype",
+                                                "projecttypeid",
+                                                "project_type_id",
+                                                "ptid",
+                                                "id",
+                                            ]);
+
+                                            const label = getOptionLabel(
+                                                projectType,
+                                                [
+                                                    "project_type_name",
+                                                    "projecttypename",
+                                                    "project_type",
+                                                    "typename",
+                                                    "type_name",
+                                                    "name",
+                                                ],
+                                                id ? `Project Type ${id}` : `Project Type ${index + 1}`,
+                                            );
+
+                                            if (!id) return null;
+
+                                            return (
+                                                <option key={id} value={id}>
+                                                    {label}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+
+                                {/* Coordinator */}
+                                <div>
+                                    <label htmlFor="coordinator" className={labelClass}>
+                                        Coordinator <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        id="coordinator"
+                                        name="coordinator"
+                                        value={form.coordinator}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        required
+                                        disabled={optionsDisabled || users.length === 0}
+                                    >
+                                        <option value="">
+                                            {loadingOptions
+                                                ? "Loading users..."
+                                                : users.length
+                                                    ? "Select a coordinator"
+                                                    : "No users available"}
+                                        </option>
+
+                                        {users.map((user) => (
+                                            <option key={user.uid} value={user.uid}>
+                                                {getUserLabel(user)} (ID: {user.uid})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Project management */}
+                                <div className="sm:col-span-2">
+                                    <label
+                                        htmlFor="is_project_manage"
+                                        className={labelClass}
+                                    >
+                                        Project Management
+                                    </label>
+
+                                    <select
+                                        id="is_project_manage"
+                                        name="is_project_manage"
+                                        value={form.is_project_manage}
+                                        onChange={handleChange}
+                                        className={inputClass}
+                                        disabled={loading}
+                                    >
+                                        <option value="0">Disabled</option>
+                                        <option value="1">Enabled</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </section>
+
+
+                        {/* Project members */}
+                        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                                <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                    <Users size={20} />
+                                </div>
+
+                                <div>
+                                    <h2 className="font-semibold">Project Members</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Select users and manage project members
+                                    </p>
+                                </div>
                             </div>
 
-                            {/* Project management */}
-                            <div className="sm:col-span-2">
-                                <label
-                                    htmlFor="is_project_manage"
-                                    className={labelClass}
-                                >
-                                    Project Management
-                                </label>
+                            <div className="grid gap-5 p-5 md:grid-cols-2">
+                                {/* Available users */}
+                                <div className="min-w-0">
+                                    <div className="mb-3 flex items-center justify-between gap-2">
+                                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            Available Users
+                                        </h3>
 
-                                <select
-                                    id="is_project_manage"
-                                    name="is_project_manage"
-                                    value={form.is_project_manage}
-                                    onChange={handleChange}
-                                    className={inputClass}
-                                    disabled={loading}
-                                >
-                                    <option value="0">Disabled</option>
-                                    <option value="1">Enabled</option>
-                                </select>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {users.length} users
+                                        </span>
+                                    </div>
+
+                                    <div className="max-h-80 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2 dark:border-slate-700">
+                                        {users.length === 0 ? (
+                                            <p className="p-3 text-sm text-slate-500 dark:text-slate-400">
+                                                {loadingOptions ? "Loading users..." : "No users available"}
+                                            </p>
+                                        ) : (
+                                            users.map((user) => {
+                                                const userId = String(user.uid);
+                                                const selected = form.member_ids.includes(userId);
+
+                                                return (
+                                                    <label
+                                                        key={user.uid}
+                                                        className={`flex cursor-pointer items-center gap-3 rounded-lg p-3 transition ${selected
+                                                            ? "bg-blue-50 dark:bg-blue-950/40"
+                                                            : "hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                            } ${optionsDisabled ? "cursor-not-allowed opacity-60" : ""}`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selected}
+                                                            onChange={() => handleMemberToggle(userId)}
+                                                            disabled={optionsDisabled}
+                                                            className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800"
+                                                        />
+
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                                                                {getUserLabel(user)}
+                                                            </span>
+                                                            <span className="block text-xs text-slate-500 dark:text-slate-400">
+                                                                ID: {user.uid}
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Selected members */}
+                                <div className="min-w-0">
+                                    <div className="mb-3 flex items-center justify-between gap-2">
+                                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            Selected Members
+                                        </h3>
+
+                                        <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                            {form.member_ids.length} selected
+                                        </span>
+                                    </div>
+
+                                    <div className="max-h-80 min-h-40 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/50">
+                                        {form.member_ids.length === 0 ? (
+                                            <div className="flex min-h-32 flex-col items-center justify-center text-center">
+                                                <Users size={28} className="mb-2 text-slate-400" />
+                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                                                    No members selected
+                                                </p>
+                                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                    Select users from the list to add them here.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            form.member_ids.map((userId) => {
+                                                const user = users.find(
+                                                    (item) => String(item.uid) === userId
+                                                );
+
+                                                if (!user) return null;
+
+                                                return (
+                                                    <div
+                                                        key={userId}
+                                                        className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                                                    >
+                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                            {getUserLabel(user).charAt(0).toUpperCase()}
+                                                        </div>
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                                                                {getUserLabel(user)}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                                ID: {user.uid}
+                                                            </p>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleMemberToggle(userId)}
+                                                            disabled={optionsDisabled}
+                                                            aria-label={`Remove ${getUserLabel(user)}`}
+                                                            title="Remove member"
+                                                            className="rounded-md p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {form.member_ids.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setForm((previous) => ({
+                                                    ...previous,
+                                                    member_ids: [],
+                                                }))
+                                            }
+                                            disabled={optionsDisabled}
+                                            className="mt-3 text-sm font-medium text-red-600 transition hover:text-red-700 disabled:opacity-50 dark:text-red-400"
+                                        >
+                                            Clear all members
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </section>
-
-                    {/* Project members */}
-                    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                        <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                            <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                                <Users size={20} />
-                            </div>
-
-                            <div>
-                                <h2 className="font-semibold">Project Members</h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Select one or more users to assign to the project
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="p-5">
-                            <label htmlFor="member_ids" className={labelClass}>
-                                Members
-                            </label>
-
-                            <select
-                                id="member_ids"
-                                name="member_ids"
-                                multiple
-                                value={form.member_ids}
-                                onChange={handleMembersChange}
-                                className={`${inputClass} min-h-40`}
-                                disabled={optionsDisabled || users.length === 0}
-                            >
-                                {users.map((user) => (
-                                    <option key={user.uid} value={String(user.uid)}>
-                                        {getUserLabel(user)} (ID: {user.uid})
-                                    </option>
-                                ))}
-                            </select>
-
-                            <p
-                                id="members-help"
-                                className="mt-2 text-xs text-slate-500 dark:text-slate-400"
-                            >
-                                Hold Ctrl (Windows) or Command (Mac) while clicking to
-                                select multiple users. Leave empty if no additional
-                                members are needed.
-                            </p>
-
-                            {form.member_ids.length > 0 && (
-                                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                                    {form.member_ids.length} member
-                                    {form.member_ids.length === 1 ? "" : "s"} selected
-                                </p>
-                            )}
-                        </div>
-                    </section>
+                        </section>
+                    </div>
 
                     {/* Actions */}
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
