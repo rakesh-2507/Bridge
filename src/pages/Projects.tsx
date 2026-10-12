@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,11 +20,14 @@ import {
   FileText,
   Hash,
   Plus,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 import {
   getProjects,
   getProject,
+  deleteProject,
   type Project,
   type ProjectFolder,
 } from "../api/projects";
@@ -127,8 +131,9 @@ function FolderTreeItem({
           {hasChildren ? (
             <ChevronRight
               size={16}
-              className={`transition-transform ${expanded ? "rotate-90" : ""
-                }`}
+              className={`transition-transform ${
+                expanded ? "rotate-90" : ""
+              }`}
             />
           ) : (
             <span className="inline-block w-4" />
@@ -182,6 +187,7 @@ function FolderTreeItem({
 
 export default function Projects() {
   const navigate = useNavigate();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -194,7 +200,7 @@ export default function Projects() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
 
-  // Load all projects for the table.
+  // Load all projects.
   useEffect(() => {
     let cancelled = false;
 
@@ -206,12 +212,16 @@ export default function Projects() {
           if (Array.isArray(response)) {
             setProjects(response);
           } else {
-            setError("The projects API returned an unexpected response.");
+            setError(
+              "The projects API returned an unexpected response.",
+            );
           }
         }
-      } catch (err) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          setError(getErrorMessage(err, "Failed to load projects."));
+          setError(
+            getErrorMessage(err, "Failed to load projects."),
+          );
         }
       } finally {
         if (!cancelled) {
@@ -227,17 +237,13 @@ export default function Projects() {
     };
   }, []);
 
-  // Load a single project's complete details.
-
-
+  // Load the selected project's complete details.
   useEffect(() => {
     if (selectedProjectId === null) {
       return;
     }
 
-    // TypeScript now knows this is a number.
-    const projectId: number = selectedProjectId;
-
+    const projectId = selectedProjectId;
     let cancelled = false;
 
     async function loadProjectDetails() {
@@ -274,7 +280,7 @@ export default function Projects() {
     };
   }, [selectedProjectId]);
 
-
+  // Refresh the project list.
   async function refreshProjects() {
     setLoading(true);
     setError("");
@@ -285,15 +291,20 @@ export default function Projects() {
       if (Array.isArray(response)) {
         setProjects(response);
       } else {
-        setError("The projects API returned an unexpected response.");
+        setError(
+          "The projects API returned an unexpected response.",
+        );
       }
-    } catch (err) {
-      setError(getErrorMessage(err, "Failed to load projects."));
+    } catch (err: unknown) {
+      setError(
+        getErrorMessage(err, "Failed to load projects."),
+      );
     } finally {
       setLoading(false);
     }
   }
 
+  // Refresh the selected project's details.
   async function refreshProjectDetails() {
     if (selectedProjectId === null) return;
 
@@ -303,7 +314,7 @@ export default function Projects() {
     try {
       const response = await getProject(selectedProjectId);
       setProjectDetails(response);
-    } catch (err) {
+    } catch (err: unknown) {
       setDetailsError(
         getErrorMessage(err, "Failed to load project details."),
       );
@@ -322,6 +333,40 @@ export default function Projects() {
     setSelectedProjectId(null);
     setProjectDetails(null);
     setDetailsError("");
+  }
+
+  // Delete handler must remain inside Projects so it can access state.
+  async function handleDeleteProject() {
+    if (selectedProjectId === null) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete project ${
+        projectDetails?.projectname ?? selectedProjectId
+      }? This action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setDetailsLoading(true);
+    setDetailsError("");
+
+    try {
+      await deleteProject(selectedProjectId);
+
+      setProjects((previous) =>
+        previous.filter(
+          (project) => project.project_id !== selectedProjectId,
+        ),
+      );
+
+      backToProjects();
+    } catch (err: unknown) {
+      setDetailsError(
+        getErrorMessage(err, "Failed to delete project."),
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
   }
 
   const filteredProjects = useMemo(() => {
@@ -348,6 +393,7 @@ export default function Projects() {
     return (
       <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6 lg:p-8">
         <div className="mx-auto space-y-6">
+          {/* Details header and actions */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-start gap-3">
               <button
@@ -376,18 +422,43 @@ export default function Projects() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => void refreshProjectDetails()}
-              disabled={detailsLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-            >
-              <RefreshCw
-                size={16}
-                className={detailsLoading ? "animate-spin" : ""}
-              />
-              Refresh Details
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    `/projects/create?edit=${selectedProjectId}`,
+                  )
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+              >
+                <Pencil size={16} />
+                Edit Project
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleDeleteProject()}
+                disabled={detailsLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
+              >
+                <Trash2 size={16} />
+                Delete Project
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void refreshProjectDetails()}
+                disabled={detailsLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+              >
+                <RefreshCw
+                  size={16}
+                  className={detailsLoading ? "animate-spin" : ""}
+                />
+                Refresh Details
+              </button>
+            </div>
           </div>
 
           {detailsError && (
@@ -437,7 +508,8 @@ export default function Projects() {
                   </div>
 
                   <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {projectDetails.projectdesc || "No description provided."}
+                    {projectDetails.projectdesc ||
+                      "No description provided."}
                   </p>
                 </div>
 
@@ -557,7 +629,9 @@ export default function Projects() {
                 </div>
 
                 <div className="p-3 sm:p-5">
-                  <FolderTree folders={projectDetails.folders ?? []} />
+                  <FolderTree
+                    folders={projectDetails.folders ?? []}
+                  />
                 </div>
               </section>
             </>
@@ -568,7 +642,9 @@ export default function Projects() {
                   size={32}
                   className="mx-auto mb-3 text-slate-400"
                 />
-                <p className="font-medium">Unable to display project details</p>
+                <p className="font-medium">
+                  Unable to display project details
+                </p>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Check the error above and try again.
                 </p>
@@ -576,7 +652,8 @@ export default function Projects() {
                 <button
                   type="button"
                   onClick={() => void refreshProjectDetails()}
-                  className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  disabled={detailsLoading}
+                  className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                 >
                   Try again
                 </button>
@@ -599,37 +676,38 @@ export default function Projects() {
             </div>
 
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Projects
+              </h1>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 View, search, and open project details.
               </p>
             </div>
           </div>
 
-          
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-  <button
-    type="button"
-    onClick={() => navigate("/projects/create")}
-    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
-  >
-    <Plus size={17} />
-    Create Project
-  </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => navigate("/projects/create")}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+            >
+              <Plus size={17} />
+              Create Project
+            </button>
 
-  <button
-    type="button"
-    onClick={() => void refreshProjects()}
-    disabled={loading}
-    className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-  >
-    <RefreshCw
-      size={16}
-      className={loading ? "animate-spin" : ""}
-    />
-    Refresh
-  </button>
-</div>
+            <button
+              type="button"
+              onClick={() => void refreshProjects()}
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+            >
+              <RefreshCw
+                size={16}
+                className={loading ? "animate-spin" : ""}
+              />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -731,7 +809,9 @@ export default function Projects() {
                   {filteredProjects.map((project) => (
                     <tr
                       key={project.project_id}
-                      onClick={() => openProject(project.project_id)}
+                      onClick={() =>
+                        openProject(project.project_id)
+                      }
                       onKeyDown={(event) => {
                         if (
                           event.key === "Enter" ||

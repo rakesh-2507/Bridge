@@ -14,12 +14,21 @@ export interface TemplateCreateFolder {
   children: TemplateCreateChildFolder[];
 }
 
+export interface TemplateRolePayload {
+  rolename: string;
+  folder_paths: string[];
+}
+
 export interface TemplateCompletePayload {
   name: string;
   name_desc: string;
   projecttype: number;
-  folders: TemplateCreateFolder[];
-  roles: string[];
+  folders: {
+    fname: string;
+    fnamedesc: string;
+    children: TemplateCompletePayload["folders"];
+  }[];
+  roles: TemplateRolePayload[];
 }
 
 // -------------------- Response Types --------------------
@@ -63,6 +72,18 @@ export interface TemplateListItem {
   projecttype: number;
 }
 
+export interface TemplateUpdatePayload {
+  name: string;
+  name_desc: string;
+  projecttype: number;
+  folders: {
+    fname: string;
+    fnamedesc: string;
+    children: TemplateUpdatePayload["folders"];
+  }[];
+  roles: TemplateRolePayload[];
+}
+
 // -------------------- API Functions --------------------
 
 /**
@@ -97,12 +118,14 @@ export function getTemplateDetails(
  * Update an existing template.
  * PUT /api/template/{tid}
  */
+
 export function updateTemplate(
   tid: number,
-  payload: TemplateCompletePayload,
+  payload: TemplateUpdatePayload,
 ): Promise<TemplateCompleteResponse> {
   return put<TemplateCompleteResponse>(`/template/${tid}`, payload);
 }
+
 
 /**
  * Delete a template.

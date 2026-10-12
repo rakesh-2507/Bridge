@@ -53,19 +53,21 @@ export interface ProjectPayload {
 }
 
 export interface UpdateProjectPayload extends ProjectPayload {
-  start_date: string;
-  end_date: string;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
 // ==============================
 // API Response Types
 // ==============================
 
-// GET /api/getprojects returns a direct array.
+// GET /api/getprojects
 export type ProjectsResponse = Project[];
 
+// GET /api/getproject/{project_id}
+export type ProjectDetailsResponse = Project;
+
 // GET /api/coordinator/{coordinator_id}/projects
-// Retained in case this endpoint returns a wrapped response.
 export interface CoordinatorProjectsResponse {
   projects: Project[];
   total: number;
@@ -88,9 +90,7 @@ export function getProjects<T = ProjectsResponse>(): Promise<T> {
 export function getProject<T = Project>(
   projectId: string | number,
 ): Promise<T> {
-  return get<T>(
-    `/getproject/${encodeURIComponent(String(projectId))}`,
-  );
+  return get<T>(`/getproject/${encodeURIComponent(String(projectId))}`);
 }
 
 // ==============================
@@ -98,9 +98,7 @@ export function getProject<T = Project>(
 // GET /api/coordinator/{coordinator_id}/projects
 // ==============================
 
-export function getCoordinatorProjects<
-  T = CoordinatorProjectsResponse,
->(
+export function getCoordinatorProjects<T = CoordinatorProjectsResponse>(
   coordinatorId: string | number,
 ): Promise<T> {
   return get<T>(
@@ -124,7 +122,7 @@ export function createProject<T = Project>(
 // PUT /api/updateproject/{project_id}
 // ==============================
 
-export function updateProject<T = Project>(
+export function updateProject<T = string>(
   projectId: string | number,
   payload: UpdateProjectPayload,
 ): Promise<T> {
@@ -142,7 +140,5 @@ export function updateProject<T = Project>(
 export function deleteProject<T = string>(
   projectId: string | number,
 ): Promise<T> {
-  return del<T>(
-    `/deleteproject/${encodeURIComponent(String(projectId))}`,
-  );
+  return del<T>(`/deleteproject/${encodeURIComponent(String(projectId))}`);
 }

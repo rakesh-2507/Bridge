@@ -30,12 +30,16 @@ import {
     type ProjectType,
 } from "../api/projectTypes";
 
+
 import {
     createTemplateComplete,
     getTemplateDetails,
+    updateTemplate,
     type TemplateCompletePayload,
     type TemplateCompleteResponse,
+    type TemplateUpdatePayload,
 } from "../api/templateCreate";
+
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -54,7 +58,11 @@ interface RoleForm {
 }
 
 interface ApiRole {
+    roleid?: number;
     rolename: string;
+    tid?: number;
+    folder_paths?: string[];
+    folder_ids?: number[];
 }
 
 interface TemplateNavigationState {
@@ -570,6 +578,49 @@ function normalizeFolders(apiFolders: ApiFolder[]): FolderForm[] {
     return roots.map((folder) => buildFlat(folder, new Set()));
 }
 
+function getFolderPaths(folders: FolderForm[]): Map<number, string> {
+    const paths = new Map<number, string>();
+
+    const visit = (items: FolderForm[], parentPath = "") => {
+        items.forEach((folder) => {
+            const path = parentPath
+                ? `${parentPath}/${folder.fname.trim()}`
+                : folder.fname.trim();
+
+            paths.set(folder.id, path);
+            visit(folder.children, path);
+        });
+    };
+
+    visit(folders);
+    return paths;
+}
+
+function getFolderIdsFromPaths(
+    folders: FolderForm[],
+    folderPaths: string[] = [],
+): number[] {
+    const pathToId = new Map<string, number>();
+
+    const visit = (items: FolderForm[], parentPath = "") => {
+        items.forEach((folder) => {
+            const path = parentPath
+                ? `${parentPath}/${folder.fname.trim()}`
+                : folder.fname.trim();
+
+            pathToId.set(path, folder.id);
+            visit(folder.children, path);
+        });
+    };
+
+    visit(folders);
+
+    return folderPaths.flatMap((path) => {
+        const id = pathToId.get(path);
+        return id === undefined ? [] : [id];
+    });
+}
+
 function countDescendants(folders: FolderForm[]): number {
     return folders.reduce(
         (total, folder) => total + folder.children.length + countDescendants(folder.children),
@@ -836,6 +887,31 @@ function toTemplateFolderPayload(
     };
 }
 
+
+function toTemplateUpdatePayload(
+    name: string,
+    nameDesc: string,
+    projectType: string,
+    folders: FolderForm[],
+    roles: RoleForm[],
+): TemplateUpdatePayload {
+    const folderPaths = getFolderPaths(folders);
+
+    return {
+        name: name.trim(),
+        name_desc: nameDesc.trim(),
+        projecttype: Number(projectType),
+        folders: folders.map(toTemplateFolderPayload),
+        roles: roles.map((role) => ({
+            rolename: role.name.trim(),
+            folder_paths: role.folderIds
+                .map((folderId) => folderPaths.get(folderId))
+                .filter((path): path is string => path !== undefined),
+        })),
+    };
+}
+
+
 export default function CreateTemplate() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -926,14 +1002,17 @@ export default function CreateTemplate() {
                 const apiRoles = (details.roles ?? []) as ApiRole[];
 
                 const loadedRoles: RoleForm[] = apiRoles
-                    .map((role) => role.rolename)
                     .filter(
-                        (role): role is string =>
-                            typeof role === "string" && !!role.trim()
+                        (role) =>
+                            typeof role.rolename === "string" &&
+                            !!role.rolename.trim(),
                     )
-                    .map((roleName) => ({
-                        name: roleName.trim(),
-                        folderIds: [],
+                    .map((role) => ({
+                        name: role.rolename.trim(),
+                        folderIds: getFolderIdsFromPaths(
+                            mappedFolders,
+                            role.folder_paths ?? [],
+                        ),
                     }));
 
                 setRoles(loadedRoles);
@@ -1366,13 +1445,21 @@ export default function CreateTemplate() {
         setSuccess("");
     }
 
+
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError("");
         setSuccess("");
 
-        if (loadingTemplate) return setError("Please wait until the template finishes loading.");
-        if (currentStep !== 3) return setError("Please complete the previous steps first.");
+        if (loadingTemplate) {
+            setError("Please wait until the template finishes loading.");
+            return;
+        }
+
+        if (currentStep !== 3) {
+            setError("Please complete the previous steps first.");
+            return;
+        }
 
         if (!name.trim() || !nameDesc.trim() || !projectType) {
             setError("Please complete all template details.");
@@ -1385,43 +1472,86 @@ export default function CreateTemplate() {
             return;
         }
 
-        if (roleDraft.trim()) return setError('Click "Add Role" to save the role you entered.');
-        if (!roles.length) return setError("Please add at least one role.");
-
-        if (isEditMode) {
-            setError("An update API is not configured yet. Your changes have not been saved.");
+        if (roleDraft.trim()) {
+            setError('Click "Add Role" to save the role you entered.');
             return;
         }
 
-        const payload: TemplateCompletePayload = {
+        if (!roles.length) {
+            setError("Please add at least one role.");
+            return;
+        }
+
+        if (isEditMode && !Number.isInteger(Number(editTemplateId))) {
+            setError("Invalid template ID. Please reopen the template and try again.");
+            return;
+        }
+
+        const createPayload: TemplateCompletePayload = {
             name: name.trim(),
             name_desc: nameDesc.trim(),
             projecttype: Number(projectType),
             folders: folders.map(toTemplateFolderPayload),
-            roles: roles.map((role) => role.name.trim()),
+            roles: [],
         };
+
+        const folderPaths = getFolderPaths(folders);
+
+        createPayload.roles = roles.map((role) => ({
+            rolename: role.name.trim(),
+            folder_paths: role.folderIds
+                .map((folderId) => folderPaths.get(folderId))
+                .filter((path): path is string => path !== undefined),
+        }));
 
         try {
             setSaving(true);
-            const response = await createTemplateComplete(payload);
 
-            setSuccess(response.message || "Template created successfully.");
-            setName("");
-            setNameDesc("");
-            setProjectType("");
-            setFolders([]);
-            setNextFolderId(1);
-            setRoles([]);
-            setRoleDraft("");
-            setCurrentStep(1);
-            setFolderMode("manual");
-            resetFileImport();
+            if (isEditMode) {
+                const payload = toTemplateUpdatePayload(
+                    name,
+                    nameDesc,
+                    projectType,
+                    folders,
+                    roles,
+                );
+
+                const response = await updateTemplate(
+                    Number(editTemplateId),
+                    payload,
+                );
+
+                setSuccess(response.message || "Template updated successfully.");
+            } else {
+                const response = await createTemplateComplete(createPayload);
+
+                setSuccess(response.message || "Template created successfully.");
+
+                setName("");
+                setNameDesc("");
+                setProjectType("");
+                setFolders([]);
+                setNextFolderId(1);
+                setRoles([]);
+                setRoleDraft("");
+                setSelectedRoleName(null);
+                setCurrentStep(1);
+                setFolderMode("manual");
+                resetFileImport();
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to create the template. Please try again.");
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : isEditMode
+                        ? "Unable to update the template. Please try again."
+                        : "Unable to create the template. Please try again.",
+            );
         } finally {
             setSaving(false);
         }
     }
+
 
     const subfolderCount = countDescendants(folders);
     const selectedProjectType =
@@ -1734,8 +1864,8 @@ export default function CreateTemplate() {
                                                 <div
                                                     key={role.name}
                                                     className={`flex items-center gap-2 rounded-xl border p-3 transition ${active
-                                                            ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
-                                                            : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
+                                                        : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
                                                         }`}
                                                 >
                                                     <button
@@ -1977,11 +2107,19 @@ export default function CreateTemplate() {
                                         }
                                         className={primaryButtonClass}
                                     >
+
                                         {saving ? (
-                                            <><Loader2 size={17} className="animate-spin" /> Creating Template...</>
+                                            <>
+                                                <Loader2 size={17} className="animate-spin" />
+                                                {isEditMode ? "Updating Template..." : "Creating Template..."}
+                                            </>
                                         ) : (
-                                            <><Check size={17} /> {isEditMode ? "Update Template" : "Create Template"}</>
+                                            <>
+                                                <Check size={17} />
+                                                {isEditMode ? "Update Template" : "Create Template"}
+                                            </>
                                         )}
+
                                     </button>
                                 )}
                             </div>
