@@ -18,8 +18,16 @@ export interface Project {
   coordinator: number | null;
   is_project_manage: number;
   projecttype: number | null;
+
   member_ids?: number[];
+  members?: ProjectMember[];
+
   folders?: ProjectFolder[];
+}
+
+export interface ProjectMember {
+  memberid: number;
+  assigned_role_ids: number[];
 }
 
 export interface ProjectFolder {
@@ -120,18 +128,18 @@ export function deleteProject<T = string>(
   return del<T>(`/deleteproject/${encodeURIComponent(String(projectId))}`);
 }
 
-// Coordinator API'S
-
-// Assigned Projects API
+// ==============================
+// Coordinator API
 // GET /api/coordinator/assignedprojects
+// ==============================
 
-export interface CoordinatorProjectsResponse {
+export interface CoordinatorProjectsData {
   projects: Project[];
-  total: number;
+  total?: number;
 }
 
-export function getCoordinatorProjects<
-  T = CoordinatorProjectsResponse
->(): Promise<T> {
-  return get<T>("/coordinator/assignedprojects");
+export type CoordinatorProjectsResponse = Project[] | CoordinatorProjectsData;
+
+export function getCoordinatorProjects(): Promise<CoordinatorProjectsResponse> {
+  return get<CoordinatorProjectsResponse>("/coordinator/assignedprojects");
 }
