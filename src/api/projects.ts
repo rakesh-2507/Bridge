@@ -57,21 +57,11 @@ export interface UpdateProjectPayload extends ProjectPayload {
   end_date?: string | null;
 }
 
-// ==============================
-// API Response Types
-// ==============================
-
 // GET /api/getprojects
 export type ProjectsResponse = Project[];
 
 // GET /api/getproject/{project_id}
 export type ProjectDetailsResponse = Project;
-
-// GET /api/coordinator/{coordinator_id}/projects
-export interface CoordinatorProjectsResponse {
-  projects: Project[];
-  total: number;
-}
 
 // ==============================
 // Get All Projects
@@ -91,19 +81,6 @@ export function getProject<T = Project>(
   projectId: string | number,
 ): Promise<T> {
   return get<T>(`/getproject/${encodeURIComponent(String(projectId))}`);
-}
-
-// ==============================
-// Get Coordinator Projects
-// GET /api/coordinator/{coordinator_id}/projects
-// ==============================
-
-export function getCoordinatorProjects<T = CoordinatorProjectsResponse>(
-  coordinatorId: string | number,
-): Promise<T> {
-  return get<T>(
-    `/coordinator/${encodeURIComponent(String(coordinatorId))}/projects`,
-  );
 }
 
 // ==============================
@@ -141,4 +118,20 @@ export function deleteProject<T = string>(
   projectId: string | number,
 ): Promise<T> {
   return del<T>(`/deleteproject/${encodeURIComponent(String(projectId))}`);
+}
+
+// Coordinator API'S
+
+// Assigned Projects API
+// GET /api/coordinator/assignedprojects
+
+export interface CoordinatorProjectsResponse {
+  projects: Project[];
+  total: number;
+}
+
+export function getCoordinatorProjects<
+  T = CoordinatorProjectsResponse
+>(): Promise<T> {
+  return get<T>("/coordinator/assignedprojects");
 }

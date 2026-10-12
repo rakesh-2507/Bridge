@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LoaderCircle, LockKeyhole, UserRound } from "lucide-react";
-import { login } from "../api/auth";
+import { login, getCurrentUser } from "../api/auth";
 
 export default function Login() {
     const navigate = useNavigate();
@@ -24,31 +24,43 @@ export default function Login() {
 
         setLoading(true);
 
-
         try {
             const result = await login({
                 loginname: loginname.trim(),
                 password,
             });
 
-            if (!result.access_token || !result.refresh_token) {
-                throw new Error("The server did not return valid authentication tokens.");
+            // Use the returned user first, then the saved profile.
+            const user = result?.user ?? getCurrentUser();
+
+            if (!user) {
+                throw new Error(
+                    "Login succeeded, but user details could not be loaded. Please sign in again."
+                );
             }
 
-            localStorage.setItem("access_token", result.access_token);
-            localStorage.setItem("refresh_token", result.refresh_token);
-            localStorage.setItem("token_type", result.token_type || "bearer");
+            const userType = String(
+                user.mtype ?? user.role ?? ""
+            )
+                .trim()
+                .toLowerCase();
 
-            navigate("/masters", { replace: true });
-        } catch (err) {
+            if (userType === "sysadmin") {
+                navigate("/masters", { replace: true });
+            } else {
+                // All authenticated non-admin users use the coordinator workflow.
+                navigate("/dashboard", { replace: true });
+            }
+        } catch (err: unknown) {
             setError(
                 err instanceof Error
                     ? err.message
-                    : "Unable to connect to the server. Please try again.",
+                    : "Unable to connect to the server. Please try again."
             );
         } finally {
             setLoading(false);
         }
+
     };
 
     return (

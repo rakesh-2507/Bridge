@@ -1,10 +1,13 @@
-
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import Login from "./pages/Login";
 import Masters from "./pages/Masters";
 import MainLayout from "./components/shared/MainLayout";
-
 
 import UsersPage from "./pages/UsersPage";
 import FolderPage from "./pages/Folder";
@@ -13,45 +16,96 @@ import Projects from "./pages/Projects";
 import CreateTemplate from "./pages/CreateTemplate";
 import TemplatesPage from "./pages/TemplatesPage";
 import CreateProject from "./pages/CreateProject";
+import CoordinatorProjects from "./pages/CoordinatorProjects";
+import WelcomePage from "./pages/Home";
 
-// Basic authentication guard.
-// Later, role-specific guards can be added here.
+import {
+  getCurrentUser,
+  isAuthenticated,
+} from "./api/auth";
+
+function getUserType(): string {
+  const user = getCurrentUser();
+
+  return String(user?.mtype ?? user?.role ?? "")
+    .trim()
+    .toLowerCase();
+}
+
 function ProtectedRoute() {
-  const accessToken = localStorage.getItem("access_token");
-
-  if (!accessToken) {
+  if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
 }
 
+function PublicRoute() {
+  if (isAuthenticated()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+}
+
+function AdminRoute() {
+  if (getUserType() === "sysadmin") {
+    return <Outlet />;
+  }
+
+  return <Navigate to="/" replace />;
+}
+
+function HomeRedirect() {
+  if (getUserType() === "sysadmin") {
+    return <Navigate to="/masters" replace />;
+  }
+
+  // The welcome page checks assigned projects and redirects
+  // users to the projects page when projects exist.
+  return <Navigate to="/home" replace />;
+}
+
 export default function App() {
   return (
     <Routes>
-      {/* Login is available without authentication */}
-      <Route path="/login" element={<Login />} />
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<Login />} />
+      </Route>
 
-      {/* All workspace pages require a stored access token */}
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
+          <Route path="/" element={<HomeRedirect />} />
+
+          <Route path="/home" element={<WelcomePage />} />
+
           <Route
-            path="/"
-            element={<Navigate to="/masters" replace />}
+            path="/dashboard"
+            element={<CoordinatorProjects />}
           />
-          <Route path="/masters" element={<Masters />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/folders" element={<FolderPage />} />
-          <Route path="/companies" element={<Company />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/templates/create" element={<CreateTemplate />} />
-          <Route path="/projects/create" element={<CreateProject />} />
+
+          <Route element={<AdminRoute />}>
+            <Route path="/masters" element={<Masters />} />
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/folders" element={<FolderPage />} />
+            <Route path="/companies" element={<Company />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/create" element={<CreateProject />} />
+            <Route path="/templates/create" element={<CreateTemplate />} />
+          </Route>
         </Route>
       </Route>
 
-      {/* Unknown routes return to login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to={isAuthenticated() ? "/" : "/login"}
+            replace
+          />
+        }
+      />
     </Routes>
   );
 }
