@@ -23,7 +23,7 @@ export interface Project {
   members?: ProjectMember[];
 
   folders?: ProjectFolder[];
-  available_roles?: ProjectRole[]
+  available_roles?: ProjectRole[];
 }
 
 export interface ProjectMember {
@@ -146,31 +146,92 @@ export function getCoordinatorProjects(): Promise<CoordinatorProjectsResponse> {
 }
 
 export interface ProjectAssignment {
-    memberid: number;
-    rollid: number;
+  member_ids: number[];
+  rollid: number;
 }
 
 export interface CoordinatorProjectSetupPayload {
-    // start_date: string;
-    // end_date: string;
-    assignments: ProjectAssignment[];
+  assignments: ProjectAssignment[];
 }
 
 export async function setupCoordinatorProject(
-    projectId: number,
-    payload: CoordinatorProjectSetupPayload,
+  projectId: number,
+  payload: CoordinatorProjectSetupPayload,
 ) {
-    return put(
-        `/coordinator/projects/${projectId}/setup`,
-        payload,
-    );
+  return put(`/coordinator/projects/${projectId}/setup`, payload);
 }
 
 export interface ProjectRole {
-    rollid: number;
-    rolename: string;
-    folder_access: {
-        fid: number;
-        fname: string;
-    }[];
+  rollid: number;
+  rolename: string;
+  folder_access: {
+    fid: number;
+    fname: string;
+  }[];
+}
+
+export interface FolderTimelineKeyPerson {
+  uid: number;
+  loginname: string;
+  firstname: string;
+  lastname: string;
+}
+
+export interface ProjectFolderTimelineItem {
+  fid: number;
+  fname: string;
+
+  parent_fid: number | null;
+  is_parent: boolean;
+
+  predecessorsid: number | null;
+  days: number | null;
+  startdate: string | null;
+  enddate: string | null;
+
+  keypersonid: number | null;
+  key_person_options: FolderTimelineKeyPerson[];
+
+  remarks: string | null;
+  status: string;
+}
+
+export interface ProjectFolderTimelineResponse {
+  project_id: number;
+  project_start_date: string | null;
+  project_end_date: string | null;
+  folders: ProjectFolderTimelineItem[];
+}
+
+export function getProjectFolderTimeline(
+  projectId: number | string,
+): Promise<ProjectFolderTimelineResponse> {
+  return get<ProjectFolderTimelineResponse>(
+    `/coordinator/projects/${encodeURIComponent(String(projectId))}/folder-timeline`,
+  );
+}
+
+
+export interface ProjectFolderTimelineSaveItem {
+    fid: number;
+    predecessorsid: number;
+    days: number;
+    keypersonid: number;
+    remarks: string;
+}
+
+export interface SaveProjectFolderTimelinePayload {
+    start_date: string;
+    folders: ProjectFolderTimelineSaveItem[];
+}
+
+
+export function saveProjectFolderTimeline<T = unknown>(
+  projectId: number | string,
+  payload: SaveProjectFolderTimelinePayload,
+): Promise<T> {
+  return put<T>(
+    `/coordinator/projects/${encodeURIComponent(String(projectId))}/folder-timeline`,
+    payload,
+  );
 }

@@ -18,8 +18,8 @@ import TemplatesPage from "./pages/TemplatesPage";
 import CreateProject from "./pages/CreateProject";
 import CoordinatorProjects from "./pages/CoordinatorProjects";
 import WelcomePage from "./pages/Home";
-// import CoordinatorProjectSetup from "./pages/CoordinatorProjectSetup";
-import CoordinatorProjectSetupDemo from "./pages/CoordinatorProjectSetupDemo";
+import CoordinatorProjectSetup from "./pages/CoordinatorProjectSetup";
+// import CoordinatorProjectSetupDemo from "./pages/CoordinatorProjectSetupDemo";
 
 import {
   getCurrentUser,
@@ -101,16 +101,16 @@ export default function App() {
           />
 
           {/* Coordinator project setup */}
-          {/* <Route
+          <Route
             path="/dashboard/projects/:projectId/setup"
             element={<CoordinatorProjectSetup />
 
             }
-          /> */}
-          <Route
+          />
+          {/* <Route
             path="/dashboard/projects/:projectId/setup"
             element={<CoordinatorProjectSetupDemo />}
-          />
+          /> */}
 
           {/* System administrator routes */}
           <Route element={<AdminRoute />}>
