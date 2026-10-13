@@ -57,8 +57,8 @@ export default function CoordinatorProjectSetup() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    const [startDate, setStartDate] = useState("");
-    const [endDate, setEndDate] = useState("");
+    // const [startDate, setStartDate] = useState("");
+    // const [endDate, setEndDate] = useState("");
 
     const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
     const [assignmentsByMember, setAssignmentsByMember] = useState<
@@ -103,8 +103,8 @@ export default function CoordinatorProjectSetup() {
             }
 
             setProject(foundProject);
-            setStartDate(foundProject.start_date ?? "");
-            setEndDate(foundProject.end_date ?? "");
+            // setStartDate(foundProject.start_date ?? "");
+            // setEndDate(foundProject.end_date ?? "");
 
             const initialAssignments: Record<number, number[]> = {};
             const initialSelected: number[] = [];
@@ -168,8 +168,8 @@ export default function CoordinatorProjectSetup() {
                 }
 
                 setProject(foundProject);
-                setStartDate(foundProject.start_date ?? "");
-                setEndDate(foundProject.end_date ?? "");
+                // setStartDate(foundProject.start_date ?? "");
+                // setEndDate(foundProject.end_date ?? "");
 
                 const initialAssignments: Record<number, number[]> = {};
                 const initialSelected: number[] = [];
@@ -310,15 +310,15 @@ export default function CoordinatorProjectSetup() {
             return;
         }
 
-        if (!startDate || !endDate) {
-            setError("Please select both start and end dates.");
-            return;
-        }
+        // if (!startDate || !endDate) {
+        //     setError("Please select both start and end dates.");
+        //     return;
+        // }
 
-        if (endDate < startDate) {
-            setError("End date cannot be earlier than start date.");
-            return;
-        }
+        // if (endDate < startDate) {
+        //     setError("End date cannot be earlier than start date.");
+        //     return;
+        // }
 
         if (selectedMembers.length === 0) {
             setError("Please select at least one member.");
@@ -354,8 +354,8 @@ export default function CoordinatorProjectSetup() {
 
         try {
             await setupCoordinatorProject(project.project_id, {
-                start_date: startDate,
-                end_date: endDate,
+                // start_date: startDate,
+                // end_date: endDate,
                 assignments,
             });
 
@@ -535,7 +535,7 @@ export default function CoordinatorProjectSetup() {
                                     />
                                 </div>
 
-                                <div>
+                                {/* <div>
                                     <label
                                         htmlFor="start-date"
                                         className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -554,9 +554,9 @@ export default function CoordinatorProjectSetup() {
                                         }}
                                         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
-                                </div>
+                                </div> */}
 
-                                <div>
+                                {/* <div>
                                     <label
                                         htmlFor="end-date"
                                         className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -576,7 +576,7 @@ export default function CoordinatorProjectSetup() {
                                         }}
                                         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
-                                </div>
+                                </div> */}
                             </div>
                         </section>
 

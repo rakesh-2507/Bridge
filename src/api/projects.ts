@@ -151,8 +151,8 @@ export interface ProjectAssignment {
 }
 
 export interface CoordinatorProjectSetupPayload {
-    start_date: string;
-    end_date: string;
+    // start_date: string;
+    // end_date: string;
     assignments: ProjectAssignment[];
 }
 
