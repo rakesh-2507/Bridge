@@ -23,6 +23,7 @@ export interface Project {
   members?: ProjectMember[];
 
   folders?: ProjectFolder[];
+  available_roles?: ProjectRole[]
 }
 
 export interface ProjectMember {
@@ -142,4 +143,34 @@ export type CoordinatorProjectsResponse = Project[] | CoordinatorProjectsData;
 
 export function getCoordinatorProjects(): Promise<CoordinatorProjectsResponse> {
   return get<CoordinatorProjectsResponse>("/coordinator/assignedprojects");
+}
+
+export interface ProjectAssignment {
+    memberid: number;
+    rollid: number;
+}
+
+export interface CoordinatorProjectSetupPayload {
+    start_date: string;
+    end_date: string;
+    assignments: ProjectAssignment[];
+}
+
+export async function setupCoordinatorProject(
+    projectId: number,
+    payload: CoordinatorProjectSetupPayload,
+) {
+    return put(
+        `/coordinator/projects/${projectId}/setup`,
+        payload,
+    );
+}
+
+export interface ProjectRole {
+    rollid: number;
+    rolename: string;
+    folder_access: {
+        fid: number;
+        fname: string;
+    }[];
 }

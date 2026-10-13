@@ -10,7 +10,7 @@ import {
     Search,
     Users,
 } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
 import {
     getCoordinatorProjects,
     type Project,
@@ -172,8 +172,10 @@ function NoProjects({
 
 function ProjectRow({
     project,
+    onSelect,
 }: {
     project: Project;
+    onSelect: (project: Project) => void;
 }) {
     const [foldersExpanded, setFoldersExpanded] = useState(false);
 
@@ -200,9 +202,13 @@ function ProjectRow({
                         </div>
 
                         <div className="min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-white">
+                            <button
+                                type="button"
+                                onClick={() => onSelect(project)}
+                                className="text-left font-semibold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
+                            >
                                 {project.projectname || "Untitled Project"}
-                            </p>
+                            </button>
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                 ID: {project.project_id}
                             </p>
@@ -328,12 +334,17 @@ function ProjectRow({
 // ========================================
 
 export default function CoordinatorProjects() {
+    const navigate = useNavigate();
+
+    const handleProjectSelect = (project: Project) => {
+        navigate(`/dashboard/projects/${project.project_id}/setup`);
+    };
+
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
-
     // ========================================
     // Fetch Projects
     // ========================================
@@ -570,6 +581,7 @@ export default function CoordinatorProjects() {
                                                         <ProjectRow
                                                             key={project.project_id}
                                                             project={project}
+                                                            onSelect={handleProjectSelect}
                                                         />
                                                     ),
                                                 )}
