@@ -1,4 +1,3 @@
-
 const API_BASE_URL = import.meta.env.DEV
   ? "/api"
   : "https://bridge.sidpz.com/api";
@@ -33,19 +32,16 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/refresh-token`,
-          {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              refresh_token: refreshToken,
-            }),
+        const response = await fetch(`${API_BASE_URL}/refresh-token`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            refresh_token: refreshToken,
+          }),
+        });
 
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
@@ -56,8 +52,7 @@ async function refreshAccessToken(): Promise<string | null> {
           return null;
         }
 
-        const data =
-          (await response.json()) as RefreshResponse;
+        const data = (await response.json()) as RefreshResponse;
 
         if (!data.access_token) {
           return null;
@@ -108,17 +103,10 @@ async function sendRequest(
   });
 }
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const accessToken = localStorage.getItem("access_token");
 
-  let response = await sendRequest(
-    path,
-    options,
-    accessToken,
-  );
+  let response = await sendRequest(path, options, accessToken);
 
   // Refresh once if an authenticated API request returns 401.
   if (
@@ -129,11 +117,7 @@ async function request<T>(
     const newAccessToken = await refreshAccessToken();
 
     if (newAccessToken) {
-      response = await sendRequest(
-        path,
-        options,
-        newAccessToken,
-      );
+      response = await sendRequest(path, options, newAccessToken);
     }
   }
 
@@ -145,14 +129,10 @@ async function request<T>(
       data = JSON.parse(text) as unknown;
     } catch {
       if (!response.ok) {
-        throw new Error(
-          `Request failed (${response.status}): ${text}`,
-        );
+        throw new Error(`Request failed (${response.status}): ${text}`);
       }
 
-      throw new Error(
-        "The server returned an invalid JSON response.",
-      );
+      throw new Error("The server returned an invalid JSON response.");
     }
   }
 
@@ -162,8 +142,16 @@ async function request<T>(
         ? (data as ApiError)
         : undefined;
 
+    // Log the complete backend response for debugging.
+    console.error("API request failed:", {
+      path,
+      status: response.status,
+      statusText: response.statusText,
+      response: data ?? text,
+    });
+
     const detail = error?.detail;
-    let message = `Request failed (HTTP ${response.status}).`;
+    let message = `Request failed (${response.status}): ${response.statusText}`;
 
     if (typeof detail === "string") {
       message = detail;
@@ -174,7 +162,7 @@ async function request<T>(
             const location = item.loc?.join(".");
             return location
               ? `${location}: ${item.msg ?? "Invalid value"}`
-              : item.msg ?? "";
+              : (item.msg ?? "");
           })
           .filter(Boolean)
           .join(", ") || message;
@@ -192,20 +180,14 @@ export function get<T>(path: string): Promise<T> {
   return request<T>(path, { method: "GET" });
 }
 
-export function post<T>(
-  path: string,
-  payload: unknown,
-): Promise<T> {
+export function post<T>(path: string, payload: unknown): Promise<T> {
   return request<T>(path, {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export function put<T>(
-  path: string,
-  payload: unknown,
-): Promise<T> {
+export function put<T>(path: string, payload: unknown): Promise<T> {
   return request<T>(path, {
     method: "PUT",
     body: JSON.stringify(payload),

@@ -39,9 +39,13 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           <Layers3 size={21} />
         </div>
 
-        <span className="text-lg font-bold text-slate-900 dark:text-white">
+        <span
+          className="text-2xl text-slate-900 dark:text-white"
+          style={{ fontFamily: "'Norican', cursive" }}
+        >
           Bridge
         </span>
+
       </div>
 
       <div className="flex items-center gap-2">

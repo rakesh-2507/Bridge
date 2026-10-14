@@ -670,13 +670,26 @@ export default function CoordinatorProjectSetup() {
 
         const payload: SaveProjectFolderTimelinePayload = {
             start_date: timelineStartDate,
-            folders: scheduledFolders.map((folder) => ({
-                fid: folder.fid,
-                predecessorsid: folder.predecessorsid ?? 0,
-                days: Number(folder.days),
-                keypersonid: folder.keypersonid ?? 0,
-                remarks: folder.remarks ?? "",
-            })),
+            folders: timelineFolders.map((folder) => {
+                const isContainer = isContainerFolder(
+                    folder,
+                    timelineFolders
+                );
+
+                return {
+                    fid: folder.fid,
+                    predecessorsid: isContainer
+                        ? null
+                        : folder.predecessorsid || null,
+                    days: isContainer
+                        ? null
+                        : Number(folder.days),
+                    keypersonid: isContainer
+                        ? null
+                        : folder.keypersonid || null,
+                    remarks: folder.remarks ?? "",
+                };
+            }),
         };
 
         setSaving(true);
@@ -690,16 +703,23 @@ export default function CoordinatorProjectSetup() {
             );
 
             setSuccess("Folder timeline saved successfully.");
-        } catch (err) {
-            console.error("Failed to save folder timeline:", err);
+
+        } catch (error) {
+            console.error("Failed to save folder timeline:", error);
+
+            if (error instanceof Error) {
+                console.error("Error message:", error.message);
+            }
+
             setError(
-                err instanceof Error
-                    ? err.message
-                    : "Failed to save the folder timeline. Please try again.",
+                error instanceof Error
+                    ? error.message
+                    : "Failed to save folder timeline."
             );
         } finally {
             setSaving(false);
         }
+
     };
 
     // ========================================
@@ -1263,27 +1283,19 @@ export default function CoordinatorProjectSetup() {
 
                                                             {/* Duration */}
                                                             <td className="px-4 py-3">
-                                                                {container ? (
-                                                                    <span className="text-gray-400">—</span>
-                                                                ) : (
+                                                                {!container && (
                                                                     <input
                                                                         type="number"
                                                                         min={1}
                                                                         step={1}
                                                                         value={folder.days ?? ""}
                                                                         onChange={(event) =>
-                                                                            updateTimelineFolder(
-                                                                                folder.fid,
-                                                                                {
-                                                                                    days:
-                                                                                        event.target.value ===
-                                                                                            ""
-                                                                                            ? null
-                                                                                            : Number(
-                                                                                                event.target.value,
-                                                                                            ),
-                                                                                },
-                                                                            )
+                                                                            updateTimelineFolder(folder.fid, {
+                                                                                days:
+                                                                                    event.target.value === ""
+                                                                                        ? null
+                                                                                        : Number(event.target.value),
+                                                                            })
                                                                         }
                                                                         aria-label={`Duration for ${folder.fname}`}
                                                                         className={`${inputClass} w-24`}
@@ -1293,57 +1305,39 @@ export default function CoordinatorProjectSetup() {
 
                                                             {/* Start date */}
                                                             <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
-                                                                {dates.start || "—"}
+                                                                {!container ? dates.start : ""}
                                                             </td>
 
                                                             {/* End date */}
                                                             <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
-                                                                {dates.end || "—"}
+                                                                {!container ? dates.end : ""}
                                                             </td>
 
                                                             {/* Key person */}
                                                             <td className="px-4 py-3">
-                                                                {container ? (
-                                                                    <span className="text-gray-400">—</span>
-                                                                ) : (
+                                                                {!container && (
                                                                     <select
-                                                                        value={
-                                                                            folder.keypersonid ??
-                                                                            0
-                                                                        }
+                                                                        value={folder.keypersonid ?? 0}
                                                                         onChange={(event) =>
-                                                                            updateTimelineFolder(
-                                                                                folder.fid,
-                                                                                {
-                                                                                    keypersonid:
-                                                                                        Number(
-                                                                                            event.target.value,
-                                                                                        ) || null,
-                                                                                },
-                                                                            )
+                                                                            updateTimelineFolder(folder.fid, {
+                                                                                keypersonid:
+                                                                                    Number(event.target.value) || null,
+                                                                            })
                                                                         }
                                                                         aria-label={`Key person for ${folder.fname}`}
                                                                         className={`${inputClass} w-48`}
                                                                     >
-                                                                        <option value={0}>
-                                                                            Unassigned
-                                                                        </option>
-                                                                        {folder.key_person_options.map(
-                                                                            (person) => (
-                                                                                <option
-                                                                                    key={person.uid}
-                                                                                    value={person.uid}
-                                                                                >
-                                                                                    {[
-                                                                                        person.firstname,
-                                                                                        person.lastname,
-                                                                                    ]
-                                                                                        .filter(Boolean)
-                                                                                        .join(" ") ||
-                                                                                        person.loginname}
-                                                                                </option>
-                                                                            ),
-                                                                        )}
+                                                                        <option value={0}>Unassigned</option>
+                                                                        {folder.key_person_options.map((person) => (
+                                                                            <option key={person.uid} value={person.uid}>
+                                                                                {[
+                                                                                    person.firstname,
+                                                                                    person.lastname,
+                                                                                ]
+                                                                                    .filter(Boolean)
+                                                                                    .join(" ") || person.loginname}
+                                                                            </option>
+                                                                        ))}
                                                                     </select>
                                                                 )}
                                                             </td>

@@ -211,20 +211,18 @@ export function getProjectFolderTimeline(
   );
 }
 
-
 export interface ProjectFolderTimelineSaveItem {
-    fid: number;
-    predecessorsid: number;
-    days: number;
-    keypersonid: number;
-    remarks: string;
+  fid: number;
+  days: number | null;
+  predecessorsid: number | null;
+  keypersonid: number | null;
+  remarks: string;
 }
 
 export interface SaveProjectFolderTimelinePayload {
-    start_date: string;
-    folders: ProjectFolderTimelineSaveItem[];
+  start_date: string;
+  folders: ProjectFolderTimelineSaveItem[];
 }
-
 
 export function saveProjectFolderTimeline<T = unknown>(
   projectId: number | string,

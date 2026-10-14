@@ -399,12 +399,6 @@ export default function CreateProject() {
             if (isEditMode && editId) {
                 const updatePayload: UpdateProjectPayload = {
                     ...payload,
-                    ...(form.start_date && {
-                        start_date: form.start_date,
-                    }),
-                    ...(form.end_date && {
-                        end_date: form.end_date,
-                    }),
                 };
 
                 await updateProject(editId, updatePayload);
@@ -848,8 +842,8 @@ export default function CreateProject() {
                                                     <label
                                                         key={user.uid}
                                                         className={`flex items-center gap-3 rounded-lg p-3 transition ${optionsDisabled
-                                                                ? "cursor-not-allowed opacity-60"
-                                                                : "cursor-pointer"
+                                                            ? "cursor-not-allowed opacity-60"
+                                                            : "cursor-pointer"
                                                             } ${selected
                                                                 ? "bg-blue-50 dark:bg-blue-950/40"
                                                                 : "hover:bg-slate-50 dark:hover:bg-slate-800"
