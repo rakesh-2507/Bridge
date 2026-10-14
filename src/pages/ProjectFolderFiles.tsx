@@ -1,14 +1,14 @@
 
 import { useEffect, useState } from "react";
 import {
-    ArrowLeft,
+    // ArrowLeft,
     Folder,
     FileText,
     Loader2,
     AlertCircle,
     RefreshCw,
 } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 import {
     getProjectFolderFiles,
@@ -68,7 +68,7 @@ function normalizeFiles(response: unknown): FolderFile[] {
 }
 
 export default function ProjectFolderFiles() {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const location = useLocation();
     const { projectId, folderId } = useParams<{
         projectId: string;
@@ -187,14 +187,14 @@ export default function ProjectFolderFiles() {
     }, [projectId, folderId]);
 
 
-    const handleBack = () => {
-        navigate(
-            project
-                ? `/dashboard/projects/${projectId}`
-                : "/dashboard/projects",
-            project ? { state: { project } } : undefined,
-        );
-    };
+    // const handleBack = () => {
+    //     navigate(
+    //         project
+    //             ? `/dashboard/projects/${projectId}`
+    //             : "/dashboard/projects",
+    //         project ? { state: { project } } : undefined,
+    //     );
+    // };
 
     const getFileName = (file: FolderFile) =>
         file.filename ?? file.file_name ?? file.name ?? "Unnamed file";
@@ -203,14 +203,14 @@ export default function ProjectFolderFiles() {
         <div className="min-h-full w-full bg-gray-50 p-4 dark:bg-gray-900 sm:p-6">
             <div className="mx-auto w-full max-w-5xl space-y-6">
                 {/* Back navigation */}
-                <button
+                {/* <button
                     type="button"
                     onClick={handleBack}
                     className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                     <ArrowLeft size={18} />
                     Back to folders
-                </button>
+                </button> */}
 
                 {/* Folder heading */}
                 <div className="flex items-center gap-3">

@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +22,6 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-
 import {
   getProjects,
   getProject,
@@ -31,23 +29,23 @@ import {
   type Project,
   type ProjectFolder,
 } from "../api/projects";
-
+// ==============================
+// Helpers
+// ==============================
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
-
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
-
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-
   return date.toLocaleDateString();
 }
-
+// ==============================
+// Information Card
+// ==============================
 function InfoCard({
   icon,
   label,
@@ -63,20 +61,23 @@ function InfoCard({
         {icon}
         <span className="text-sm">{label}</span>
       </div>
-
       <div className="break-words text-base font-semibold text-slate-900 dark:text-slate-100">
         {value ?? "—"}
       </div>
     </div>
   );
 }
-
+// ==============================
+// Recursive Folder Tree
+// ==============================
 function FolderTree({
   folders,
   level = 0,
+  onFolderClick,
 }: {
   folders: ProjectFolder[];
   level?: number;
+  onFolderClick: (folder: ProjectFolder) => void;
 }) {
   if (folders.length === 0) {
     return (
@@ -85,7 +86,6 @@ function FolderTree({
       </p>
     );
   }
-
   return (
     <div className="space-y-1">
       {folders.map((folder) => (
@@ -93,22 +93,24 @@ function FolderTree({
           key={folder.pfid}
           folder={folder}
           level={level}
+          onFolderClick={onFolderClick}
         />
       ))}
     </div>
   );
 }
-
 function FolderTreeItem({
   folder,
   level,
+  onFolderClick,
 }: {
   folder: ProjectFolder;
   level: number;
+  onFolderClick: (folder: ProjectFolder) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const hasChildren = (folder.children?.length ?? 0) > 0;
-
+  const children = folder.children ?? [];
+  const hasChildren = children.length > 0;
   return (
     <div>
       <div
@@ -131,15 +133,13 @@ function FolderTreeItem({
           {hasChildren ? (
             <ChevronRight
               size={16}
-              className={`transition-transform ${
-                expanded ? "rotate-90" : ""
-              }`}
+              className={`transition-transform ${expanded ? "rotate-90" : ""
+                }`}
             />
           ) : (
             <span className="inline-block w-4" />
           )}
         </button>
-
         {hasChildren && expanded ? (
           <FolderOpen
             size={19}
@@ -151,76 +151,79 @@ function FolderTreeItem({
             className="mt-0.5 shrink-0 text-amber-500"
           />
         )}
-
-        <div className="min-w-0 flex-1">
-          <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
+        <button
+          type="button"
+          onClick={() => onFolderClick(folder)}
+          className="min-w-0 flex-1 rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          title={`Open files in ${folder.fname}`}
+        >
+          <p className="break-words text-sm font-medium text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
             {folder.fname}
           </p>
-
           {folder.fdesc && (
             <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">
               {folder.fdesc}
             </p>
           )}
-
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>Folder ID: {folder.fid}</span>
             <span>•</span>
             <span>
               {hasChildren
-                ? `${folder.children.length} subfolder(s)`
+                ? `${children.length} subfolder(s)`
                 : "No subfolders"}
             </span>
           </div>
-        </div>
+        </button>
       </div>
-
       {hasChildren && expanded && (
         <FolderTree
-          folders={folder.children}
+          folders={children}
           level={level + 1}
+          onFolderClick={onFolderClick}
         />
       )}
     </div>
   );
 }
-
+// ==============================
+// Projects Page
+// ==============================
 export default function Projects() {
   const navigate = useNavigate();
-
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-
   const [selectedProjectId, setSelectedProjectId] =
     useState<number | null>(null);
   const [projectDetails, setProjectDetails] =
     useState<Project | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
-
-  // Load all projects.
+  // Folder tree modal state
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  // ==============================
+  // Load Projects
+  // ==============================
   useEffect(() => {
     let cancelled = false;
-
     async function initializeProjects() {
       try {
         const response = await getProjects<Project[]>();
-
         if (!cancelled) {
           if (Array.isArray(response)) {
             setProjects(response);
           } else {
             setError(
-              "The projects API returned an unexpected response.",
+              "The projects API returned an unexpected response."
             );
           }
         }
       } catch (err: unknown) {
         if (!cancelled) {
           setError(
-            getErrorMessage(err, "Failed to load projects."),
+            getErrorMessage(err, "Failed to load projects.")
           );
         }
       } finally {
@@ -229,31 +232,27 @@ export default function Projects() {
         }
       }
     }
-
     void initializeProjects();
-
     return () => {
       cancelled = true;
     };
   }, []);
-
-  // Load the selected project's complete details.
+  // ==============================
+  // Load Selected Project Details
+  // ==============================
   useEffect(() => {
     if (selectedProjectId === null) {
       return;
     }
-
     const projectId = selectedProjectId;
     let cancelled = false;
-
     async function loadProjectDetails() {
       setDetailsLoading(true);
       setDetailsError("");
       setProjectDetails(null);
-
+      setFolderModalOpen(false);
       try {
         const response = await getProject(projectId);
-
         if (!cancelled) {
           setProjectDetails(response);
         }
@@ -262,8 +261,8 @@ export default function Projects() {
           setDetailsError(
             getErrorMessage(
               err,
-              "Failed to load project details.",
-            ),
+              "Failed to load project details."
+            )
           );
         }
       } finally {
@@ -272,108 +271,121 @@ export default function Projects() {
         }
       }
     }
-
     void loadProjectDetails();
-
     return () => {
       cancelled = true;
     };
   }, [selectedProjectId]);
-
-  // Refresh the project list.
+  // ==============================
+  // Refresh Project List
+  // ==============================
   async function refreshProjects() {
     setLoading(true);
     setError("");
-
     try {
       const response = await getProjects<Project[]>();
-
       if (Array.isArray(response)) {
         setProjects(response);
       } else {
         setError(
-          "The projects API returned an unexpected response.",
+          "The projects API returned an unexpected response."
         );
       }
     } catch (err: unknown) {
       setError(
-        getErrorMessage(err, "Failed to load projects."),
+        getErrorMessage(err, "Failed to load projects.")
       );
     } finally {
       setLoading(false);
     }
   }
-
-  // Refresh the selected project's details.
+  // ==============================
+  // Refresh Selected Project
+  // ==============================
   async function refreshProjectDetails() {
     if (selectedProjectId === null) return;
-
     setDetailsLoading(true);
     setDetailsError("");
-
     try {
       const response = await getProject(selectedProjectId);
       setProjectDetails(response);
     } catch (err: unknown) {
       setDetailsError(
-        getErrorMessage(err, "Failed to load project details."),
+        getErrorMessage(err, "Failed to load project details.")
       );
     } finally {
       setDetailsLoading(false);
     }
   }
-
+  // ==============================
+  // Open Project Details
+  // ==============================
   function openProject(projectId: number) {
     setSelectedProjectId(projectId);
     setProjectDetails(null);
     setDetailsError("");
+    setFolderModalOpen(false);
   }
+  // Open the existing folder-files page for the selected project folder.
+function openFolderFiles(folder: ProjectFolder) {
+  if (!projectDetails) return;
 
+  setFolderModalOpen(false);
+
+  navigate(
+    `/dashboard/projects/${projectDetails.project_id}/folders/${folder.fid}`,
+    {
+      state: {
+        project: projectDetails,
+        folder,
+        folderName: folder.fname,
+      },
+    }
+  );
+}
+  // ==============================
+  // Back To Projects
+  // ==============================
   function backToProjects() {
     setSelectedProjectId(null);
     setProjectDetails(null);
     setDetailsError("");
+    setFolderModalOpen(false);
   }
-
-  // Delete handler must remain inside Projects so it can access state.
+  // ==============================
+  // Delete Project
+  // ==============================
   async function handleDeleteProject() {
     if (selectedProjectId === null) return;
-
     const confirmed = window.confirm(
-      `Are you sure you want to delete project ${
-        projectDetails?.projectname ?? selectedProjectId
-      }? This action cannot be undone.`,
+      `Are you sure you want to delete project ${projectDetails?.projectname ?? selectedProjectId
+      }? This action cannot be undone.`
     );
-
     if (!confirmed) return;
-
     setDetailsLoading(true);
     setDetailsError("");
-
     try {
       await deleteProject(selectedProjectId);
-
       setProjects((previous) =>
         previous.filter(
-          (project) => project.project_id !== selectedProjectId,
-        ),
+          (project) => project.project_id !== selectedProjectId
+        )
       );
-
       backToProjects();
     } catch (err: unknown) {
       setDetailsError(
-        getErrorMessage(err, "Failed to delete project."),
+        getErrorMessage(err, "Failed to delete project.")
       );
     } finally {
       setDetailsLoading(false);
     }
   }
-
+  // ==============================
+  // Filter Projects
+  // ==============================
   const filteredProjects = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     if (!query) return projects;
-
     return projects.filter((project) =>
       [
         project.project_id,
@@ -383,17 +395,18 @@ export default function Projects() {
         project.cid,
         project.coordinator,
       ].some((value) =>
-        String(value ?? "").toLowerCase().includes(query),
-      ),
+        String(value ?? "").toLowerCase().includes(query)
+      )
     );
   }, [projects, search]);
-
-  // Project details view.
+  // ==============================
+  // Project Details View
+  // ==============================
   if (selectedProjectId !== null) {
     return (
       <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6 lg:p-8">
         <div className="mx-auto space-y-6">
-          {/* Details header and actions */}
+          {/* Details Header and Actions */}
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-start gap-3">
               <button
@@ -404,7 +417,6 @@ export default function Projects() {
               >
                 <ArrowLeft size={19} />
               </button>
-
               <div>
                 <div className="flex items-center gap-2">
                   <FolderKanban
@@ -415,19 +427,17 @@ export default function Projects() {
                     Project Details
                   </h1>
                 </div>
-
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Project ID: {selectedProjectId}
                 </p>
               </div>
             </div>
-
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() =>
                   navigate(
-                    `/projects/create?edit=${selectedProjectId}`,
+                    `/projects/create?edit=${selectedProjectId}`
                   )
                 }
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
@@ -435,7 +445,6 @@ export default function Projects() {
                 <Pencil size={16} />
                 Edit Project
               </button>
-
               <button
                 type="button"
                 onClick={() => void handleDeleteProject()}
@@ -445,7 +454,6 @@ export default function Projects() {
                 <Trash2 size={16} />
                 Delete Project
               </button>
-
               <button
                 type="button"
                 onClick={() => void refreshProjectDetails()}
@@ -454,19 +462,24 @@ export default function Projects() {
               >
                 <RefreshCw
                   size={16}
-                  className={detailsLoading ? "animate-spin" : ""}
+                  className={
+                    detailsLoading ? "animate-spin" : ""
+                  }
                 />
                 Refresh Details
               </button>
             </div>
           </div>
-
+          {/* Details Error */}
           {detailsError && (
             <div
               role="alert"
               className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
             >
-              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+              <AlertCircle
+                size={18}
+                className="mt-0.5 shrink-0"
+              />
               <span className="flex-1">{detailsError}</span>
               <button
                 type="button"
@@ -477,7 +490,7 @@ export default function Projects() {
               </button>
             </div>
           )}
-
+          {/* Loading */}
           {detailsLoading && !projectDetails ? (
             <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 size={22} className="animate-spin" />
@@ -485,65 +498,67 @@ export default function Projects() {
             </div>
           ) : projectDetails ? (
             <>
-              {/* Main project information */}
+              {/* Main Project Information */}
               <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="border-b border-slate-200 p-5 dark:border-slate-800">
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="rounded-xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                    <button
+                      type="button"
+                      onClick={() => setFolderModalOpen(true)}
+                      aria-label={`View folders for ${projectDetails.projectname}`}
+                      title="View project folder tree"
+                      className="shrink-0 rounded-xl bg-blue-100 p-3 text-blue-700 transition hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900"
+                    >
                       <FolderKanban size={26} />
-                    </div>
-
+                    </button>
                     <div className="min-w-0 flex-1">
-                      <h2 className="break-words text-xl font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setFolderModalOpen(true)}
+                        title="Click to view the project folder tree"
+                        className="break-words text-left text-xl font-bold text-slate-900 transition hover:text-blue-600 focus:outline-none focus-visible:underline dark:text-slate-100 dark:hover:text-blue-400"
+                      >
                         {projectDetails.projectname}
-                      </h2>
+                      </button>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Project #{projectDetails.project_id}
                       </p>
                     </div>
-
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                       Status: {projectDetails.status}
                     </span>
                   </div>
-
                   <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300">
                     {projectDetails.projectdesc ||
                       "No description provided."}
                   </p>
                 </div>
-
                 <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
                   <InfoCard
                     icon={<Hash size={17} />}
                     label="Project ID"
                     value={projectDetails.project_id}
                   />
-
                   <InfoCard
                     icon={<FileText size={17} />}
                     label="Template ID"
                     value={projectDetails.tid}
                   />
-
                   <InfoCard
                     icon={<Building2 size={17} />}
                     label="Company ID"
                     value={projectDetails.cid}
                   />
-
                   <InfoCard
                     icon={<FolderKanban size={17} />}
                     label="Project Type"
                     value={projectDetails.projecttype ?? "—"}
                   />
-
                   <InfoCard
                     icon={<UserRound size={17} />}
                     label="Coordinator ID"
                     value={projectDetails.coordinator ?? "—"}
                   />
-
                   <InfoCard
                     icon={<Users size={17} />}
                     label="Project Management"
@@ -553,25 +568,21 @@ export default function Projects() {
                         : "Disabled"
                     }
                   />
-
                   <InfoCard
                     icon={<CalendarDays size={17} />}
                     label="Start Date"
                     value={formatDate(projectDetails.start_date)}
                   />
-
                   <InfoCard
                     icon={<CalendarDays size={17} />}
                     label="End Date"
                     value={formatDate(projectDetails.end_date)}
                   />
-
                   <InfoCard
                     icon={<CalendarDays size={17} />}
                     label="Created Date"
                     value={formatDate(projectDetails.created_date)}
                   />
-
                   <InfoCard
                     icon={<CalendarDays size={17} />}
                     label="Updated Date"
@@ -579,22 +590,21 @@ export default function Projects() {
                   />
                 </div>
               </section>
-
-              {/* Project members */}
+              {/* Project Members */}
               <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
                   <div className="rounded-lg bg-violet-100 p-2 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
                     <Users size={20} />
                   </div>
-
                   <div>
-                    <h2 className="font-semibold">Project Members</h2>
+                    <h2 className="font-semibold">
+                      Project Members
+                    </h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {projectDetails.member_ids?.length ?? 0} member(s)
                     </p>
                   </div>
                 </div>
-
                 <div className="flex flex-wrap gap-2 p-5">
                   {projectDetails.member_ids?.length ? (
                     projectDetails.member_ids.map((memberId) => (
@@ -612,28 +622,6 @@ export default function Projects() {
                   )}
                 </div>
               </section>
-
-              {/* Nested folder hierarchy */}
-              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                  <div className="rounded-lg bg-amber-100 p-2 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                    <FolderOpen size={20} />
-                  </div>
-
-                  <div>
-                    <h2 className="font-semibold">Project Folders</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Folder hierarchy and subfolders
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3 sm:p-5">
-                  <FolderTree
-                    folders={projectDetails.folders ?? []}
-                  />
-                </div>
-              </section>
             </>
           ) : (
             !detailsLoading && (
@@ -648,7 +636,6 @@ export default function Projects() {
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Check the error above and try again.
                 </p>
-
                 <button
                   type="button"
                   onClick={() => void refreshProjectDetails()}
@@ -661,20 +648,108 @@ export default function Projects() {
             )
           )}
         </div>
+        {/* Folder Tree Modal - Only in Project Details */}
+        {folderModalOpen && projectDetails && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setFolderModalOpen(false)}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="project-folder-modal-title"
+              onClick={(event) => event.stopPropagation()}
+              className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="rounded-xl bg-amber-100 p-3 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                    <FolderOpen size={24} />
+                  </div>
+                  <div className="min-w-0">
+                    <h2
+                      id="project-folder-modal-title"
+                      className="text-lg font-bold text-slate-900 dark:text-slate-100"
+                    >
+                      Project Folder Tree
+                    </h2>
+                    <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+                      {projectDetails.projectname}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFolderModalOpen(false)}
+                  aria-label="Close folder tree"
+                  className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              {/* Modal Body */}
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+                {projectDetails.folders?.length ? (
+                  <>
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Folder hierarchy
+                      </p>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {projectDetails.folders.length} root folder(s)
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 p-2 dark:border-slate-800">
+                      <FolderTree
+                        folders={projectDetails.folders ?? []}
+                        onFolderClick={openFolderFiles}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex min-h-48 flex-col items-center justify-center text-center">
+                    <Folder
+                      size={38}
+                      className="mb-3 text-slate-300 dark:text-slate-600"
+                    />
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      No folders available
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      This project does not have any folders to display.
+                    </p>
+                  </div>
+                )}
+              </div>
+              {/* Modal Footer */}
+              <div className="flex justify-end border-t border-slate-200 p-4 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setFolderModalOpen(false)}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Close
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </div>
     );
   }
-
-  // Projects list view.
+  // ==============================
+  // Projects List View
+  // ==============================
   return (
     <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6 lg:p-8">
       <div className="mx-auto space-y-6">
+        {/* Page Header */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
               <FolderKanban size={26} />
             </div>
-
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
                 Projects
@@ -684,7 +759,6 @@ export default function Projects() {
               </p>
             </div>
           </div>
-
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <button
               type="button"
@@ -694,7 +768,6 @@ export default function Projects() {
               <Plus size={17} />
               Create Project
             </button>
-
             <button
               type="button"
               onClick={() => void refreshProjects()}
@@ -709,13 +782,16 @@ export default function Projects() {
             </button>
           </div>
         </div>
-
+        {/* List Error */}
         {error && (
           <div
             role="alert"
             className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
           >
-            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            <AlertCircle
+              size={18}
+              className="mt-0.5 shrink-0"
+            />
             <span className="min-w-0 flex-1">{error}</span>
             <button
               type="button"
@@ -726,24 +802,24 @@ export default function Projects() {
             </button>
           </div>
         )}
-
+        {/* Project List */}
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-800 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-lg font-semibold">Project List</h2>
+              <h2 className="text-lg font-semibold">
+                Project List
+              </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {loading
                   ? "Loading projects..."
                   : `${filteredProjects.length} of ${projects.length} projects`}
               </p>
             </div>
-
             <div className="relative w-full sm:max-w-sm">
               <Search
                 size={17}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
-
               <input
                 type="search"
                 value={search}
@@ -754,25 +830,24 @@ export default function Projects() {
               />
             </div>
           </div>
-
+          {/* Loading State */}
           {loading ? (
             <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 size={21} className="animate-spin" />
               Loading projects...
             </div>
           ) : filteredProjects.length === 0 ? (
+            /* Empty State */
             <div className="flex min-h-56 flex-col items-center justify-center px-4 text-center">
               <FolderKanban
                 size={36}
                 className="mb-3 text-slate-300 dark:text-slate-600"
               />
-
               <p className="font-medium">
                 {search.trim()
                   ? "No matching projects found"
                   : "No projects found"}
               </p>
-
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 {search.trim()
                   ? "Try a different search term."
@@ -780,31 +855,49 @@ export default function Projects() {
               </p>
             </div>
           ) : (
+            /* Projects Table */
             <div className="overflow-x-auto">
               <table className="w-full min-w-[850px] text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
                   <tr>
-                    <th scope="col" className="px-5 py-4 font-semibold">
+                    <th
+                      scope="col"
+                      className="px-5 py-4 font-semibold"
+                    >
                       Project ID
                     </th>
-                    <th scope="col" className="px-5 py-4 font-semibold">
+                    <th
+                      scope="col"
+                      className="px-5 py-4 font-semibold"
+                    >
                       Project Name
                     </th>
-                    <th scope="col" className="px-5 py-4 font-semibold">
+                    <th
+                      scope="col"
+                      className="px-5 py-4 font-semibold"
+                    >
                       Template ID
                     </th>
-                    <th scope="col" className="px-5 py-4 font-semibold">
+                    <th
+                      scope="col"
+                      className="px-5 py-4 font-semibold"
+                    >
                       Project Type
                     </th>
-                    <th scope="col" className="px-5 py-4 font-semibold">
+                    <th
+                      scope="col"
+                      className="px-5 py-4 font-semibold"
+                    >
                       Company ID
                     </th>
-                    <th scope="col" className="px-5 py-4 font-semibold">
+                    <th
+                      scope="col"
+                      className="px-5 py-4 font-semibold"
+                    >
                       Coordinator
                     </th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredProjects.map((project) => (
                     <tr
@@ -831,7 +924,6 @@ export default function Projects() {
                           {project.project_id}
                         </span>
                       </td>
-
                       <td className="max-w-sm px-5 py-4">
                         <p className="font-medium text-blue-700 dark:text-blue-400">
                           {project.projectname || "—"}
@@ -840,19 +932,15 @@ export default function Projects() {
                           {project.projectdesc || "No description"}
                         </p>
                       </td>
-
                       <td className="whitespace-nowrap px-5 py-4">
                         {project.tid ?? "—"}
                       </td>
-
                       <td className="whitespace-nowrap px-5 py-4">
                         {project.projecttype ?? "—"}
                       </td>
-
                       <td className="whitespace-nowrap px-5 py-4">
                         {project.cid ?? "—"}
                       </td>
-
                       <td className="whitespace-nowrap px-5 py-4">
                         {project.coordinator ?? "—"}
                       </td>

@@ -8,29 +8,30 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* Fixed Navbar */}
-      <div className="fixed inset-x-0 top-0 z-50 h-16">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+      {/* Navbar */}
+      <header className="relative z-50 h-16 shrink-0">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
-      </div>
+      </header>
 
-      {/* Content area: between navbar and footer */}
-      <div className="fixed inset-x-0 top-16 bottom-16 flex">
+      {/* Main Content Area */}
+      <div className="flex min-h-0 flex-1">
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 scrollbar-hide">
-          <main className="min-h-full p-4">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+          {/* Scrollable Page Content */}
+          <main className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-hide">
             <Outlet />
           </main>
-        </div>
-      </div>
 
-      {/* Fixed Footer */}
-      <div className="fixed inset-x-0 bottom-0 z-40 h-16 border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:left-20">
-        <Footer />
+          {/* Footer stays at the bottom without fixed positioning */}
+          <div className="relative z-0 mt-auto shrink-0 border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <Footer />
+          </div>
+        </div>
       </div>
     </div>
   );
