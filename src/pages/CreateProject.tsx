@@ -570,57 +570,7 @@ export default function CreateProject() {
                 <form onSubmit={handleSubmit} className="w-full space-y-4">
                     <div className="grid w-full grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
                         {/* Basic information */}
-                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                            <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                                <div className="rounded-lg bg-blue-100 p-2 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                    <FileText size={20} />
-                                </div>
-                                <div>
-                                    <h2 className="font-semibold">Basic Information</h2>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                                        Project name and description
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-5 p-5">
-                                <div>
-                                    <label htmlFor="projectname" className={labelClass}>
-                                        Project Name <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        id="projectname"
-                                        name="projectname"
-                                        value={form.projectname}
-                                        onChange={handleChange}
-                                        placeholder="Enter project name"
-                                        className={inputClass}
-                                        maxLength={200}
-                                        required
-                                        disabled={optionsDisabled}
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="projectdesc" className={labelClass}>
-                                        Project Description
-                                    </label>
-                                    <textarea
-                                        id="projectdesc"
-                                        name="projectdesc"
-                                        value={form.projectdesc}
-                                        onChange={handleChange}
-                                        placeholder="Describe the purpose of this project"
-                                        rows={4}
-                                        className={inputClass}
-                                        disabled={optionsDisabled}
-                                    />
-                                </div>
-
-                            </div>
-                        </section>
-
-                        {/* Project configuration */}
+                                                {/* Project configuration */}
                         <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
                                 <div className="rounded-lg bg-violet-100 p-2 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
@@ -796,6 +746,57 @@ export default function CreateProject() {
                                         <option value="1">Enabled</option>
                                     </select>
                                 </div>
+                            </div>
+                        </section>
+
+
+                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                                <div className="rounded-lg bg-blue-100 p-2 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                    <FileText size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="font-semibold">Basic Information</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Project name and description
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-5 p-5">
+                                <div>
+                                    <label htmlFor="projectname" className={labelClass}>
+                                        Project Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="projectname"
+                                        name="projectname"
+                                        value={form.projectname}
+                                        onChange={handleChange}
+                                        placeholder="Enter project name"
+                                        className={inputClass}
+                                        maxLength={200}
+                                        required
+                                        disabled={optionsDisabled}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="projectdesc" className={labelClass}>
+                                        Project Description
+                                    </label>
+                                    <textarea
+                                        id="projectdesc"
+                                        name="projectdesc"
+                                        value={form.projectdesc}
+                                        onChange={handleChange}
+                                        placeholder="Describe the purpose of this project"
+                                        rows={4}
+                                        className={inputClass}
+                                        disabled={optionsDisabled}
+                                    />
+                                </div>
+
                             </div>
                         </section>
 

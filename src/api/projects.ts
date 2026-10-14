@@ -1,8 +1,57 @@
+
 import { del, get, post, put } from "./http";
 
 // ==============================
 // Project Types
 // ==============================
+
+export type ProjectViewType = "coordinator" | "member" | string;
+
+export interface ProjectFolderAccess {
+  fid: number;
+  fname: string;
+}
+
+export interface ProjectRole {
+  rollid: number;
+  rolename: string;
+  folder_access: ProjectFolderAccess[];
+}
+
+export interface ProjectMember {
+  memberid: number;
+  assigned_role_ids: number[];
+}
+
+export interface ProjectFolder {
+  pfid?: number;
+  projectid?: number;
+  fid: number;
+  fname: string;
+  fdesc?: string;
+  pid?: number | null;
+  parent_fid?: number | null;
+  tid?: number;
+  userid?: number;
+  createddate?: string | null;
+  updateddate?: string | null;
+  isActive?: number;
+  startdate?: string | null;
+  enddate?: string | null;
+  days?: number | null;
+  keypersonid?: number | null;
+  predecessorsid?: number | null;
+  predecessor_status?: number | string | null;
+  can_start?: boolean;
+  remarks?: string | null;
+  status?: number | string;
+  children?: ProjectFolder[];
+}
+
+export interface AssignedProjectRole {
+  rollid: number;
+  rolename: string;
+}
 
 export interface Project {
   project_id: number;
@@ -19,31 +68,21 @@ export interface Project {
   is_project_manage: number;
   projecttype: number | null;
 
+  // Indicates this user's relationship to this project.
+  view_type?: ProjectViewType;
+
   member_ids?: number[];
   members?: ProjectMember[];
 
+  // Folders available in the project.
   folders?: ProjectFolder[];
+
+  // Folders accessible to the logged-in user, when supplied by the API.
+  folder_access?: ProjectFolderAccess[];
+
+  assigned_role_ids?: number[];
+  assigned_roles?: AssignedProjectRole[];
   available_roles?: ProjectRole[];
-}
-
-export interface ProjectMember {
-  memberid: number;
-  assigned_role_ids: number[];
-}
-
-export interface ProjectFolder {
-  pfid: number;
-  projectid: number;
-  fid: number;
-  fname: string;
-  fdesc: string;
-  pid: number | null;
-  tid: number;
-  userid: number;
-  createddate: string;
-  updateddate: string | null;
-  isActive: number;
-  children: ProjectFolder[];
 }
 
 // ==============================
@@ -66,11 +105,22 @@ export interface UpdateProjectPayload extends ProjectPayload {
   end_date?: string | null;
 }
 
-// GET /api/getprojects
+// ==============================
+// Project API Responses
+// ==============================
+
 export type ProjectsResponse = Project[];
 
-// GET /api/getproject/{project_id}
 export type ProjectDetailsResponse = Project;
+
+export interface CoordinatorProjectsData {
+  projects: Project[];
+  total?: number;
+}
+
+export type CoordinatorProjectsResponse =
+  | Project[]
+  | CoordinatorProjectsData;
 
 // ==============================
 // Get All Projects
@@ -89,7 +139,9 @@ export function getProjects<T = ProjectsResponse>(): Promise<T> {
 export function getProject<T = Project>(
   projectId: string | number,
 ): Promise<T> {
-  return get<T>(`/getproject/${encodeURIComponent(String(projectId))}`);
+  return get<T>(
+    `/getproject/${encodeURIComponent(String(projectId))}`,
+  );
 }
 
 // ==============================
@@ -126,24 +178,26 @@ export function updateProject<T = string>(
 export function deleteProject<T = string>(
   projectId: string | number,
 ): Promise<T> {
-  return del<T>(`/deleteproject/${encodeURIComponent(String(projectId))}`);
+  return del<T>(
+    `/deleteproject/${encodeURIComponent(String(projectId))}`,
+  );
 }
 
 // ==============================
-// Coordinator API
+// Coordinator / Assigned Projects
 // GET /api/coordinator/assignedprojects
 // ==============================
 
-export interface CoordinatorProjectsData {
-  projects: Project[];
-  total?: number;
-}
-
-export type CoordinatorProjectsResponse = Project[] | CoordinatorProjectsData;
-
 export function getCoordinatorProjects(): Promise<CoordinatorProjectsResponse> {
-  return get<CoordinatorProjectsResponse>("/coordinator/assignedprojects");
+  return get<CoordinatorProjectsResponse>(
+    "/coordinator/assignedprojects",
+  );
 }
+
+// ==============================
+// Coordinator Project Setup
+// PUT /api/coordinator/projects/{project_id}/setup
+// ==============================
 
 export interface ProjectAssignment {
   member_ids: number[];
@@ -158,17 +212,15 @@ export async function setupCoordinatorProject(
   projectId: number,
   payload: CoordinatorProjectSetupPayload,
 ) {
-  return put(`/coordinator/projects/${projectId}/setup`, payload);
+  return put(
+    `/coordinator/projects/${encodeURIComponent(String(projectId))}/setup`,
+    payload,
+  );
 }
 
-export interface ProjectRole {
-  rollid: number;
-  rolename: string;
-  folder_access: {
-    fid: number;
-    fname: string;
-  }[];
-}
+// ==============================
+// Folder Timeline Types
+// ==============================
 
 export interface FolderTimelineKeyPerson {
   uid: number;
@@ -180,7 +232,6 @@ export interface FolderTimelineKeyPerson {
 export interface ProjectFolderTimelineItem {
   fid: number;
   fname: string;
-
   parent_fid: number | null;
   is_parent: boolean;
 
@@ -203,6 +254,11 @@ export interface ProjectFolderTimelineResponse {
   folders: ProjectFolderTimelineItem[];
 }
 
+// ==============================
+// Get Folder Timeline
+// GET /api/coordinator/projects/{project_id}/folder-timeline
+// ==============================
+
 export function getProjectFolderTimeline(
   projectId: number | string,
 ): Promise<ProjectFolderTimelineResponse> {
@@ -210,6 +266,11 @@ export function getProjectFolderTimeline(
     `/coordinator/projects/${encodeURIComponent(String(projectId))}/folder-timeline`,
   );
 }
+
+// ==============================
+// Save Folder Timeline
+// PUT /api/coordinator/projects/{project_id}/folder-timeline
+// ==============================
 
 export interface ProjectFolderTimelineSaveItem {
   fid: number;
