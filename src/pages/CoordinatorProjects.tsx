@@ -212,8 +212,8 @@ function FolderTree({
                                     setExpanded((previous) =>
                                         isExpanded
                                             ? previous.filter(
-                                                  (id) => id !== folder.fid,
-                                              )
+                                                (id) => id !== folder.fid,
+                                            )
                                             : [...previous, folder.fid],
                                     );
                                 }}
@@ -291,8 +291,8 @@ function ProjectRow({
     const visibleMemberFolders =
         folderAccess.length > 0
             ? folders.filter((folder) =>
-                  folderAccess.some((access) => access.fid === folder.fid),
-              )
+                folderAccess.some((access) => access.fid === folder.fid),
+            )
             : folders;
 
     // Some responses provide folder_access without a populated folders array.
@@ -300,14 +300,14 @@ function ProjectRow({
         visibleMemberFolders.length > 0
             ? visibleMemberFolders
             : folders.length === 0
-              ? folderAccess.map(
+                ? folderAccess.map(
                     (folder): ProjectFolder => ({
                         fid: folder.fid,
                         fname: folder.fname,
                         children: [],
                     }),
                 )
-              : visibleMemberFolders;
+                : visibleMemberFolders;
 
     const memberCount = project.member_ids?.length ?? 0;
     const roleLabel = isCoordinator ? "Coordinator" : "Member";
@@ -319,11 +319,10 @@ function ProjectRow({
                 <td className="px-5 py-4 align-top">
                     <div className="flex min-w-[190px] items-start gap-3">
                         <div
-                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                                isCoordinator
+                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isCoordinator
                                     ? "bg-violet-50 dark:bg-violet-900/30"
                                     : "bg-blue-50 dark:bg-blue-900/30"
-                            }`}
+                                }`}
                         >
                             <Folder
                                 size={18}
@@ -349,11 +348,10 @@ function ProjectRow({
                             </p>
 
                             <span
-                                className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
-                                    isCoordinator
+                                className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${isCoordinator
                                         ? "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300"
                                         : "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-                                }`}
+                                    }`}
                             >
                                 {isCoordinator ? (
                                     <UserRoundCog size={12} />
@@ -553,11 +551,11 @@ export default function CoordinatorProjects() {
 
             setOpenedProjectId((previous) =>
                 previous !== null &&
-                projectList.some(
-                    (project) =>
-                        project.project_id === previous &&
-                        !isCoordinatorProject(project),
-                )
+                    projectList.some(
+                        (project) =>
+                            project.project_id === previous &&
+                            !isCoordinatorProject(project),
+                    )
                     ? previous
                     : null,
             );
@@ -606,18 +604,18 @@ export default function CoordinatorProjects() {
     // Project Click
     // ========================================
 
+
     const handleProjectSelect = (project: Project) => {
         if (isCoordinatorProject(project)) {
             navigate(`/dashboard/projects/${project.project_id}/setup`);
             return;
         }
 
-        setOpenedProjectId((previous) =>
-            previous === project.project_id
-                ? null
-                : project.project_id,
-        );
+        navigate(`/dashboard/projects/${project.project_id}`, {
+            state: { project },
+        });
     };
+
 
     // ========================================
     // Search

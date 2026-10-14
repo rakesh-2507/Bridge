@@ -20,6 +20,8 @@ import CoordinatorProjects from "./pages/CoordinatorProjects";
 import WelcomePage from "./pages/Home";
 import CoordinatorProjectSetup from "./pages/CoordinatorProjectSetup";
 // import CoordinatorProjectSetupDemo from "./pages/CoordinatorProjectSetupDemo";
+import ProjectDetails from "./pages/ProjectDetails";
+import ProjectFolderFiles from "./pages/ProjectFolderFiles";
 
 import {
   getCurrentUser,
@@ -107,6 +109,17 @@ export default function App() {
 
             }
           />
+
+          <Route
+            path="/dashboard/projects/:projectId"
+            element={<ProjectDetails />}
+          />
+
+          <Route
+            path="/dashboard/projects/:projectId/folders/:folderId"
+            element={<ProjectFolderFiles />}
+          />
+
           {/* <Route
             path="/dashboard/projects/:projectId/setup"
             element={<CoordinatorProjectSetupDemo />}

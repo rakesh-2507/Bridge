@@ -1,4 +1,3 @@
-
 import { del, get, post, put } from "./http";
 
 // ==============================
@@ -118,9 +117,7 @@ export interface CoordinatorProjectsData {
   total?: number;
 }
 
-export type CoordinatorProjectsResponse =
-  | Project[]
-  | CoordinatorProjectsData;
+export type CoordinatorProjectsResponse = Project[] | CoordinatorProjectsData;
 
 // ==============================
 // Get All Projects
@@ -139,9 +136,7 @@ export function getProjects<T = ProjectsResponse>(): Promise<T> {
 export function getProject<T = Project>(
   projectId: string | number,
 ): Promise<T> {
-  return get<T>(
-    `/getproject/${encodeURIComponent(String(projectId))}`,
-  );
+  return get<T>(`/getproject/${encodeURIComponent(String(projectId))}`);
 }
 
 // ==============================
@@ -178,9 +173,7 @@ export function updateProject<T = string>(
 export function deleteProject<T = string>(
   projectId: string | number,
 ): Promise<T> {
-  return del<T>(
-    `/deleteproject/${encodeURIComponent(String(projectId))}`,
-  );
+  return del<T>(`/deleteproject/${encodeURIComponent(String(projectId))}`);
 }
 
 // ==============================
@@ -189,9 +182,7 @@ export function deleteProject<T = string>(
 // ==============================
 
 export function getCoordinatorProjects(): Promise<CoordinatorProjectsResponse> {
-  return get<CoordinatorProjectsResponse>(
-    "/coordinator/assignedprojects",
-  );
+  return get<CoordinatorProjectsResponse>("/coordinator/assignedprojects");
 }
 
 // ==============================
@@ -293,4 +284,15 @@ export function saveProjectFolderTimeline<T = unknown>(
     `/coordinator/projects/${encodeURIComponent(String(projectId))}/folder-timeline`,
     payload,
   );
+}
+
+export async function startProjectFolder(projectId: number, fid: number) {
+  return post(`/myprojects/${projectId}/folders/${fid}/start`, {});
+}
+
+export async function getProjectFolderFiles(
+  projectId: number,
+  folderId: number,
+) {
+  return get(`/${projectId}/folders/${folderId}/files`);
 }
