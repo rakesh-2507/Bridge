@@ -12,6 +12,7 @@ import {
   X,
   Users,
   Plus,
+  Minus,
   Pencil,
   Trash2,
   CircleUser,
@@ -74,6 +75,7 @@ function FolderTree({
     </div>
   );
 }
+
 function folderContainsFiles(folder: ProjectFolder): boolean {
   if ((folder.fileCount ?? 0) > 0) {
     return true;
@@ -96,30 +98,33 @@ function FolderTreeItem({
   const children = folder.children ?? [];
   const hasChildren = children.length > 0;
   const hasFiles = folderContainsFiles(folder);
+
+  const [expanded, setExpanded] = useState(false);
+
   return (
     <div className="relative">
       <div
-        className="relative flex min-h-12 items-center gap-2 rounded-lg py-3 pr-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
+        className="relative flex min-h-12 items-center gap-2 rounded-lg py-2 pr-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
         style={{ paddingLeft: `${12 + level * 28}px` }}
       >
-        {/* Tree connector */}
-        {/* Tree connector */}
+        {/* Tree connectors */}
         {level > 0 && (
           <>
             <span
-              className={`absolute left-0 top-0 w-px ${hasFiles
+              className={`absolute top-0 w-px ${
+                hasFiles
                   ? "bg-orange-400 dark:bg-orange-500"
                   : "bg-slate-300 dark:bg-slate-700"
-                } ${isLast ? "h-1/2" : "h-full"
-                }`}
+              } ${isLast ? "h-1/2" : "h-full"}`}
               style={{ left: `${level * 28 - 16}px` }}
             />
 
             <span
-              className={`absolute h-px ${hasFiles
+              className={`absolute h-px ${
+                hasFiles
                   ? "bg-orange-400 dark:bg-orange-500"
                   : "bg-slate-300 dark:bg-slate-700"
-                }`}
+              }`}
               style={{
                 left: `${level * 28 - 16}px`,
                 width: "16px",
@@ -129,23 +134,49 @@ function FolderTreeItem({
           </>
         )}
 
+        {/* Expand / collapse button */}
         {hasChildren ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((previous) => !previous)}
+            aria-label={`${expanded ? "Collapse" : "Expand"} ${folder.fname}`}
+            aria-expanded={expanded}
+            title={expanded ? "Collapse subfolders" : "Expand subfolders"}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 transition hover:border-primary hover:bg-primary/10 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            {expanded ? (
+              <Minus size={8} />
+            ) : (
+              <Plus size={8} />
+            )}
+          </button>
+        ) : (
+          // Keep folder icons aligned when no expand button exists
+          <span className="w-6 shrink-0" />
+        )}
+
+        {/* Folder icon */}
+        {hasChildren && expanded ? (
           <FolderOpen
             size={19}
-            className={`shrink-0 ${hasFiles
-              ? "text-blue-700"
-              : "text-gray-400 dark:text-gray-400"
-              }`}
+            className={`shrink-0 ${
+              hasFiles
+                ? "text-blue-700 dark:text-blue-400"
+                : "text-blue-700 dark:text-gray-400"
+            }`}
           />
         ) : (
           <Folder
             size={19}
-            className={`shrink-0 ${hasFiles
-              ? "text-primary dark:text-green-500"
-              : "text-gray-400 dark:text-red-500"
-              }`}
+            className={`shrink-0 ${
+              hasFiles
+                ? "text-primary dark:text-green-500"
+                : "text-gray-400 dark:text-gray-500"
+            }`}
           />
         )}
+
+        {/* Folder name */}
         <button
           type="button"
           onClick={() => onFolderClick(folder)}
@@ -165,8 +196,8 @@ function FolderTreeItem({
         )}
       </div>
 
-      {/* Always show subfolders */}
-      {hasChildren && (
+      {/* Render child folders only when expanded */}
+      {hasChildren && expanded && (
         <FolderTree
           folders={children}
           level={level + 1}
@@ -583,7 +614,6 @@ export default function Projects() {
                     </div>
                   </div>
 
-                  {/* Right: Project Members */}
                   <aside className="min-w-0 border-t border-slate-200 dark:border-slate-800 lg:col-span-2 lg:border-l lg:border-t-0">
 
                     {/* Members Header */}
@@ -605,7 +635,7 @@ export default function Projects() {
                     {/* Members List */}
                     <div className="p-5">
                       {projectDetails.member_ids?.length ? (
-                        <div className="space-y-3">
+                        <div className="max-h-[460px] space-y-3 overflow-y-auto pr-2 scrollbar-hide">
                           {projectDetails.member_ids.map((memberId) => {
                             const user = users.find((u) => u.uid === memberId);
 
@@ -624,21 +654,19 @@ export default function Projects() {
                                   <CircleUser size={18} />
                                 </div>
 
-                                <div className="w-full flex justify-between">
-                                  <div>
-                                    <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
-                                      {fullName}
-                                    </p>
+                                <div className="flex min-w-0 flex-1 flex-col gap-1">
 
-                                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                                      {user?.email || "Project member"}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
-                                      User ID: {memberId}
-                                    </p>
-                                  </div>
+                                  <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
+                                    {fullName}
+                                  </p>
+
+                                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                    {user?.email || "Project member"}
+                                  </p>
+
+                                  <p className="break-all text-xs text-slate-500 dark:text-slate-400">
+                                    ID: {memberId}
+                                  </p>
                                 </div>
                               </div>
                             );
