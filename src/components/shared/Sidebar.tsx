@@ -1,10 +1,9 @@
+import { useState } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  FolderKanban,
-  FileText,
-  Users,
-  Building2,
+  Settings,
+  FolderOpen,
   X,
   LogOut,
   BriefcaseBusiness,
@@ -17,12 +16,15 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+interface TooltipState {
+  text: string;
+  x: number;
+  y: number;
+}
+
 const adminNavigation = [
-  { name: "Masters", path: "/masters", icon: LayoutDashboard },
-  { name: "Projects", path: "/projects", icon: FolderKanban },
-  { name: "Templates", path: "/templates", icon: FileText },
-  { name: "Users", path: "/users", icon: Users },
-  { name: "Companies", path: "/companies", icon: Building2 },
+  { name: "Masters", path: "/masters", icon: Settings },
+  { name: "Projects", path: "/projects", icon: FolderOpen },
 ];
 
 const coordinatorNavigation = [
@@ -36,19 +38,36 @@ const coordinatorNavigation = [
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const navigate = useNavigate();
 
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+
   const user = getCurrentUser();
 
   const userType = String(user?.mtype ?? user?.role ?? "")
     .trim()
     .toLowerCase();
 
-  // Match the access rules in App.tsx.
   const visibleNavigation =
     userType === "sysadmin"
       ? adminNavigation
       : coordinatorNavigation;
 
+  const showTooltip = (text: string, element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+
+    setTooltip({
+      text,
+      x: rect.right + 12,
+      y: rect.top + rect.height / 2,
+    });
+  };
+
+  const hideTooltip = () => {
+    setTooltip(null);
+  };
+
   const handleLogout = () => {
+    hideTooltip();
+
     localStorage.removeItem("login_user");
     localStorage.removeItem("token");
     localStorage.removeItem("access_token");
@@ -60,6 +79,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     navigate("/login", { replace: true });
   };
 
+  const handleNavigation = () => {
+    hideTooltip();
+    onClose();
+  };
+
   return (
     <>
       {/* Mobile sidebar overlay */}
@@ -67,23 +91,30 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <button
           type="button"
           aria-label="Close sidebar overlay"
-          onClick={onClose}
+          onClick={() => {
+            hideTooltip();
+            onClose();
+          }}
           className="fixed inset-0 z-40 bg-black/40 lg:hidden"
         />
       )}
 
+      {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-20 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white transition-transform duration-200 dark:border-slate-800 dark:bg-slate-900 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } lg:relative lg:inset-auto lg:z-30 lg:h-full lg:min-h-0 lg:translate-x-0`}
+        onMouseLeave={hideTooltip}
+        className={`fixed inset-y-0 left-0 flex h-screen w-20 shrink-0 flex-col overflow-visible border-r-2 border-slate-200 bg-white transition-transform duration-200 dark:border-slate-800 dark:bg-slate-900 ${open ? "translate-x-0" : "-translate-x-full"
+          } lg:relative lg:inset-auto lg:h-full lg:min-h-0 lg:translate-x-0`}
       >
         {/* Mobile close button */}
-        <div className="flex h-16 shrink-0 items-center justify-center border-b border-slate-100 dark:border-slate-800 lg:hidden">
+        <div className="flex h-16 shrink-0 items-center justify-center border-b-2 border-slate-100 dark:border-slate-800 lg:hidden">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              hideTooltip();
+              onClose();
+            }}
             aria-label="Close sidebar"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="rounded-lg p-2 text-slate-500 transition hover:bg-primary/10 hover:text-primary dark:text-slate-300 dark:hover:bg-primary/15 dark:hover:text-primary-light"
           >
             <X size={20} />
           </button>
@@ -100,23 +131,26 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   key={item.path}
                   to={item.path}
                   end
-                  onClick={onClose}
-                  title={item.name}
+                  onClick={handleNavigation}
+                  onMouseEnter={(event) =>
+                    showTooltip(item.name, event.currentTarget)
+                  }
+                  onFocus={(event) =>
+                    showTooltip(item.name, event.currentTarget)
+                  }
+                  onBlur={hideTooltip}
                   aria-label={item.name}
                   className={({ isActive }) =>
-                    `group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                      isActive
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400"
-                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                    `group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${isActive
+                      ? "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary-light"
+                      : "text-slate-600 hover:bg-primary/10 hover:text-primary dark:text-slate-300 dark:hover:bg-primary/15 dark:hover:text-primary-light"
                     }`
                   }
                 >
-                  <Icon size={21} />
-
-                  {/* Tooltip */}
-                  <span className="pointer-events-none absolute left-full top-1/2 z-[60] ml-3 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                    {item.name}
-                  </span>
+                  <Icon
+                    size={21}
+                    strokeWidth={3}
+                  />
                 </NavLink>
               );
             })}
@@ -128,18 +162,38 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <button
             type="button"
             onClick={handleLogout}
-            title="Logout"
+            onMouseEnter={(event) =>
+              showTooltip("Logout", event.currentTarget)
+            }
+            onFocus={(event) =>
+              showTooltip("Logout", event.currentTarget)
+            }
+            onBlur={hideTooltip}
             aria-label="Logout"
-            className="group relative flex h-12 w-12 items-center justify-center rounded-xl text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+            className="flex h-12 w-12 items-center justify-center rounded-xl text-primary transition hover:bg-primary/10 dark:text-primary-light dark:hover:bg-primary/15"
           >
             <LogOut size={21} />
-
-            <span className="pointer-events-none absolute left-full top-1/2 z-[60] ml-3 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-              Logout
-            </span>
           </button>
         </div>
       </aside>
+
+      {/* Tooltip rendered directly inside document.body */}
+      {tooltip &&
+        createPortal(
+          <div
+            role="tooltip"
+            className="pointer-events-none fixed whitespace-nowrap rounded-md bg-slate-900 px-3 py-2 text-xs font-medium text-white shadow-lg"
+            style={{
+              left: tooltip.x,
+              top: tooltip.y,
+              transform: "translateY(-50%)",
+              zIndex: 99999,
+            }}
+          >
+            {tooltip.text}
+          </div>,
+          document.body
+        )}
     </>
   );
 }

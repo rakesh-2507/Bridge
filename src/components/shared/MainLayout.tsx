@@ -10,25 +10,26 @@ export default function MainLayout() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Navbar */}
-      <header className="relative z-50 h-16 shrink-0">
+      <header className="relative z-40 h-16 shrink-0">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
       </header>
 
       {/* Main Content Area */}
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1 z-10">
+        {/* Sidebar */}
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
-          {/* Scrollable Page Content */}
-          <main className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-hide">
+        {/* Main Outlet */}
+        <div className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+          <main className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
             <Outlet />
           </main>
 
-          {/* Footer stays at the bottom without fixed positioning */}
-          <div className="relative z-0 mt-auto shrink-0 border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          {/* Footer */}
+          <div className="mt-auto shrink-0 border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <Footer />
           </div>
         </div>

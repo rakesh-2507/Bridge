@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, LoaderCircle, LockKeyhole, UserRound } from "lucide-react";
 import { login, getCurrentUser } from "../api/auth";
+import loginTeam from "../assets/login_team.jpg";
 
 export default function Login() {
     const navigate = useNavigate();
@@ -66,44 +67,34 @@ export default function Login() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8 dark:bg-slate-950">
             <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 md:grid-cols-2">
-                {/* Branding panel */}
-                <div className="relative hidden flex-col justify-between overflow-hidden bg-blue-700 p-10 text-white md:flex">
-                    <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10" />
-                    <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-blue-400/20" />
 
-                    <div className="relative">
+                <div className="relative hidden flex-col justify-between overflow-hidden text-white md:flex">
+
+                    <img
+                        src={loginTeam}
+                        alt="Bridge Team"
+                        className="absolute inset-0 h-full w-full object-cover"
+                    />
+
+                    {/* Optional dark overlay */}
+                    <div className="absolute inset-0 bg-slate-900/30" />
+
+                    <div className="relative z-10 p-10">
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15">
                             <LockKeyhole size={26} />
                         </div>
-                        <h1 className="mt-8 text-3xl font-bold tracking-tight">
-                            Bridge
-                        </h1>
-                        <p className="mt-4 max-w-sm text-sm leading-7 text-blue-100">
-                            Manage your projects, templates, users, and companies from one
-                            centralized workspace.
-                        </p>
                     </div>
 
-                    <p className="relative text-xs text-blue-100">
-                        Secure access to your workspace
-                    </p>
                 </div>
 
                 {/* Login form */}
                 <div className="p-6 sm:p-10 md:p-12">
-                    <div className="mb-8 md:hidden">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white">
-                            <LockKeyhole size={24} />
-                        </div>
-                        <h1 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">
-                            Bridge
-                        </h1>
-                    </div>
 
-                    <div className="mb-8">
-                        <p className="text-sm font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                            Welcome back
-                        </p>
+                    <div className="mb-8 flex flex-wrap justify-center">
+                        <span className="bridge-logo text-6xl text-primary">
+                            Bridge
+                        </span>
+
                         <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
                             Sign in to your account
                         </h2>

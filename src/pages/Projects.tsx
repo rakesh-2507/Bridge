@@ -1,5 +1,5 @@
+
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FolderKanban,
@@ -10,66 +10,47 @@ import {
   Loader2,
   AlertCircle,
   X,
-  ArrowLeft,
-  ChevronRight,
-  CalendarDays,
   Users,
-  Building2,
-  UserRound,
-  FileText,
-  Hash,
   Plus,
   Pencil,
   Trash2,
+  CircleUser,
 } from "lucide-react";
 import {
   getProjects,
   getProject,
+  getProjectFolderFiles,
   deleteProject,
   type Project,
   type ProjectFolder,
 } from "../api/projects";
-// ==============================
-// Helpers
-// ==============================
+import { getUsers, type User } from "../api/users";
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleDateString();
-}
-// ==============================
-// Information Card
-// ==============================
-function InfoCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <div className="mb-3 flex items-center gap-2 text-slate-500 dark:text-slate-400">
-        {icon}
-        <span className="text-sm">{label}</span>
-      </div>
-      <div className="break-words text-base font-semibold text-slate-900 dark:text-slate-100">
-        {value ?? "—"}
-      </div>
-    </div>
+
+async function addFolderFileCounts(
+  folders: ProjectFolder[],
+  projectId: number,
+): Promise<ProjectFolder[]> {
+  return Promise.all(
+    folders.map(async (folder) => {
+      const [response, children] = await Promise.all([
+        getProjectFolderFiles(projectId, folder.fid) as Promise<{
+          files?: unknown[];
+        }>,
+        addFolderFileCounts(folder.children ?? [], projectId),
+      ]);
+
+      return {
+        ...folder,
+        fileCount: response.files?.length ?? 0,
+        children,
+      };
+    }),
   );
 }
-// ==============================
-// Recursive Folder Tree
-// ==============================
+
 function FolderTree({
   folders,
   level = 0,
@@ -79,104 +60,113 @@ function FolderTree({
   level?: number;
   onFolderClick: (folder: ProjectFolder) => void;
 }) {
-  if (folders.length === 0) {
-    return (
-      <p className="px-4 py-6 text-sm text-slate-500 dark:text-slate-400">
-        No folders available for this project.
-      </p>
-    );
-  }
   return (
-    <div className="space-y-1">
-      {folders.map((folder) => (
+    <div>
+      {folders.map((folder, index) => (
         <FolderTreeItem
           key={folder.pfid}
           folder={folder}
           level={level}
+          isLast={index === folders.length - 1}
           onFolderClick={onFolderClick}
         />
       ))}
     </div>
   );
 }
+function folderContainsFiles(folder: ProjectFolder): boolean {
+  if ((folder.fileCount ?? 0) > 0) {
+    return true;
+  }
+
+  return (folder.children ?? []).some(folderContainsFiles);
+}
+
 function FolderTreeItem({
   folder,
   level,
+  isLast,
   onFolderClick,
 }: {
   folder: ProjectFolder;
   level: number;
+  isLast: boolean;
   onFolderClick: (folder: ProjectFolder) => void;
 }) {
-  const [expanded, setExpanded] = useState(true);
   const children = folder.children ?? [];
   const hasChildren = children.length > 0;
+  const hasFiles = folderContainsFiles(folder);
   return (
-    <div>
+    <div className="relative">
       <div
-        className="flex items-start gap-2 rounded-lg py-3 pr-3 hover:bg-slate-50 dark:hover:bg-slate-800/60"
-        style={{ paddingLeft: `${16 + level * 24}px` }}
+        className="relative flex min-h-12 items-center gap-2 rounded-lg py-3 pr-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
+        style={{ paddingLeft: `${12 + level * 28}px` }}
       >
-        <button
-          type="button"
-          onClick={() => setExpanded((previous) => !previous)}
-          disabled={!hasChildren}
-          aria-label={
-            hasChildren
-              ? expanded
-                ? `Collapse ${folder.fname}`
-                : `Expand ${folder.fname}`
-              : `${folder.fname} has no subfolders`
-          }
-          className="mt-0.5 shrink-0 rounded p-0.5 text-slate-500 disabled:cursor-default disabled:opacity-40"
-        >
-          {hasChildren ? (
-            <ChevronRight
-              size={16}
-              className={`transition-transform ${expanded ? "rotate-90" : ""
+        {/* Tree connector */}
+        {/* Tree connector */}
+        {level > 0 && (
+          <>
+            <span
+              className={`absolute left-0 top-0 w-px ${hasFiles
+                  ? "bg-orange-400 dark:bg-orange-500"
+                  : "bg-slate-300 dark:bg-slate-700"
+                } ${isLast ? "h-1/2" : "h-full"
                 }`}
+              style={{ left: `${level * 28 - 16}px` }}
             />
-          ) : (
-            <span className="inline-block w-4" />
-          )}
-        </button>
-        {hasChildren && expanded ? (
+
+            <span
+              className={`absolute h-px ${hasFiles
+                  ? "bg-orange-400 dark:bg-orange-500"
+                  : "bg-slate-300 dark:bg-slate-700"
+                }`}
+              style={{
+                left: `${level * 28 - 16}px`,
+                width: "16px",
+                top: "50%",
+              }}
+            />
+          </>
+        )}
+
+        {hasChildren ? (
           <FolderOpen
             size={19}
-            className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-400"
+            className={`shrink-0 ${hasFiles
+              ? "text-blue-700"
+              : "text-gray-400 dark:text-gray-400"
+              }`}
           />
         ) : (
           <Folder
             size={19}
-            className="mt-0.5 shrink-0 text-amber-500"
+            className={`shrink-0 ${hasFiles
+              ? "text-primary dark:text-green-500"
+              : "text-gray-400 dark:text-red-500"
+              }`}
           />
         )}
         <button
           type="button"
           onClick={() => onFolderClick(folder)}
-          className="min-w-0 flex-1 rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           title={`Open files in ${folder.fname}`}
+          className="min-w-0 flex-1 rounded-md text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
-          <p className="break-words text-sm font-medium text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+          <span className="break-words text-sm font-medium text-slate-700 hover:text-blue-700 dark:text-slate-200 dark:hover:text-blue-400">
             {folder.fname}
-          </p>
-          {folder.fdesc && (
-            <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">
-              {folder.fdesc}
-            </p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <span>Folder ID: {folder.fid}</span>
-            <span>•</span>
-            <span>
-              {hasChildren
-                ? `${children.length} subfolder(s)`
-                : "No subfolders"}
-            </span>
-          </div>
+          </span>
         </button>
+
+        {/* Subfolder count */}
+        {hasChildren && (
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            {children.length}
+          </span>
+        )}
       </div>
-      {hasChildren && expanded && (
+
+      {/* Always show subfolders */}
+      {hasChildren && (
         <FolderTree
           folders={children}
           level={level + 1}
@@ -186,45 +176,54 @@ function FolderTreeItem({
     </div>
   );
 }
-// ==============================
-// Projects Page
-// ==============================
+
 export default function Projects() {
   const navigate = useNavigate();
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+
   const [selectedProjectId, setSelectedProjectId] =
     useState<number | null>(null);
   const [projectDetails, setProjectDetails] =
     useState<Project | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
-  // Folder tree modal state
   const [folderModalOpen, setFolderModalOpen] = useState(false);
-  // ==============================
-  // Load Projects
-  // ==============================
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await getUsers();
+        setUsers(response.users);
+      } catch (error) {
+        console.error("Failed to load users:", error);
+      }
+    };
+
+    void loadUsers();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    async function initializeProjects() {
+
+    async function loadProjects() {
       try {
         const response = await getProjects<Project[]>();
-        if (!cancelled) {
-          if (Array.isArray(response)) {
-            setProjects(response);
-          } else {
-            setError(
-              "The projects API returned an unexpected response."
-            );
-          }
+
+        if (cancelled) return;
+
+        if (Array.isArray(response)) {
+          setProjects(response);
+        } else {
+          setError("The projects API returned an unexpected response.");
         }
       } catch (err: unknown) {
         if (!cancelled) {
-          setError(
-            getErrorMessage(err, "Failed to load projects.")
-          );
+          setError(getErrorMessage(err, "Failed to load projects."));
         }
       } finally {
         if (!cancelled) {
@@ -232,37 +231,44 @@ export default function Projects() {
         }
       }
     }
-    void initializeProjects();
+
+    void loadProjects();
+
     return () => {
       cancelled = true;
     };
   }, []);
-  // ==============================
-  // Load Selected Project Details
-  // ==============================
+
   useEffect(() => {
-    if (selectedProjectId === null) {
-      return;
-    }
-    const projectId = selectedProjectId;
+    if (selectedProjectId === null) return;
+
     let cancelled = false;
+    const projectId = selectedProjectId;
+
     async function loadProjectDetails() {
       setDetailsLoading(true);
       setDetailsError("");
       setProjectDetails(null);
       setFolderModalOpen(false);
+
       try {
         const response = await getProject(projectId);
+
+        const foldersWithCounts = await addFolderFileCounts(
+          response.folders ?? [],
+          projectId,
+        );
+
         if (!cancelled) {
-          setProjectDetails(response);
+          setProjectDetails({
+            ...response,
+            folders: foldersWithCounts,
+          });
         }
       } catch (err: unknown) {
         if (!cancelled) {
           setDetailsError(
-            getErrorMessage(
-              err,
-              "Failed to load project details."
-            )
+            getErrorMessage(err, "Failed to load project details.")
           );
         }
       } finally {
@@ -271,44 +277,51 @@ export default function Projects() {
         }
       }
     }
+
     void loadProjectDetails();
+
     return () => {
       cancelled = true;
     };
   }, [selectedProjectId]);
-  // ==============================
-  // Refresh Project List
-  // ==============================
+
   async function refreshProjects() {
     setLoading(true);
     setError("");
+
     try {
       const response = await getProjects<Project[]>();
+
       if (Array.isArray(response)) {
         setProjects(response);
       } else {
-        setError(
-          "The projects API returned an unexpected response."
-        );
+        setError("The projects API returned an unexpected response.");
       }
     } catch (err: unknown) {
-      setError(
-        getErrorMessage(err, "Failed to load projects.")
-      );
+      setError(getErrorMessage(err, "Failed to load projects."));
     } finally {
       setLoading(false);
     }
   }
-  // ==============================
-  // Refresh Selected Project
-  // ==============================
+
   async function refreshProjectDetails() {
     if (selectedProjectId === null) return;
+
     setDetailsLoading(true);
     setDetailsError("");
+
     try {
       const response = await getProject(selectedProjectId);
-      setProjectDetails(response);
+
+      const foldersWithCounts = await addFolderFileCounts(
+        response.folders ?? [],
+        selectedProjectId,
+      );
+
+      setProjectDetails({
+        ...response,
+        folders: foldersWithCounts,
+      });
     } catch (err: unknown) {
       setDetailsError(
         getErrorMessage(err, "Failed to load project details.")
@@ -317,60 +330,60 @@ export default function Projects() {
       setDetailsLoading(false);
     }
   }
-  // ==============================
-  // Open Project Details
-  // ==============================
+
   function openProject(projectId: number) {
     setSelectedProjectId(projectId);
     setProjectDetails(null);
     setDetailsError("");
     setFolderModalOpen(false);
   }
-  // Open the existing folder-files page for the selected project folder.
-function openFolderFiles(folder: ProjectFolder) {
-  if (!projectDetails) return;
 
-  setFolderModalOpen(false);
+  function openFolderFiles(folder: ProjectFolder) {
+    if (!projectDetails) return;
 
-  navigate(
-    `/dashboard/projects/${projectDetails.project_id}/folders/${folder.fid}`,
-    {
-      state: {
-        project: projectDetails,
-        folder,
-        folderName: folder.fname,
-      },
-    }
-  );
-}
-  // ==============================
-  // Back To Projects
-  // ==============================
+    setFolderModalOpen(false);
+
+    navigate(
+      `/dashboard/projects/${projectDetails.project_id}/folders/${folder.fid}`,
+      {
+        state: {
+          project: projectDetails,
+          folder,
+          folderName: folder.fname,
+        },
+      }
+    );
+  }
+
   function backToProjects() {
     setSelectedProjectId(null);
     setProjectDetails(null);
     setDetailsError("");
     setFolderModalOpen(false);
   }
-  // ==============================
-  // Delete Project
-  // ==============================
+
   async function handleDeleteProject() {
     if (selectedProjectId === null) return;
+
     const confirmed = window.confirm(
       `Are you sure you want to delete project ${projectDetails?.projectname ?? selectedProjectId
       }? This action cannot be undone.`
     );
+
     if (!confirmed) return;
+
     setDetailsLoading(true);
     setDetailsError("");
+
     try {
       await deleteProject(selectedProjectId);
+
       setProjects((previous) =>
         previous.filter(
           (project) => project.project_id !== selectedProjectId
         )
       );
+
       backToProjects();
     } catch (err: unknown) {
       setDetailsError(
@@ -380,12 +393,12 @@ function openFolderFiles(folder: ProjectFolder) {
       setDetailsLoading(false);
     }
   }
-  // ==============================
-  // Filter Projects
-  // ==============================
+
   const filteredProjects = useMemo(() => {
     const query = search.trim().toLowerCase();
+
     if (!query) return projects;
+
     return projects.filter((project) =>
       [
         project.project_id,
@@ -399,87 +412,17 @@ function openFolderFiles(folder: ProjectFolder) {
       )
     );
   }, [projects, search]);
-  // ==============================
-  // Project Details View
-  // ==============================
+
   if (selectedProjectId !== null) {
     return (
       <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6 lg:p-8">
         <div className="mx-auto space-y-6">
-          {/* Details Header and Actions */}
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div className="flex items-start gap-3">
-              <button
-                type="button"
-                onClick={backToProjects}
-                className="mt-1 rounded-lg border border-slate-300 bg-white p-2 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-                aria-label="Back to projects"
-              >
-                <ArrowLeft size={19} />
-              </button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <FolderKanban
-                    size={23}
-                    className="text-blue-600 dark:text-blue-400"
-                  />
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    Project Details
-                  </h1>
-                </div>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Project ID: {selectedProjectId}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(
-                    `/projects/create?edit=${selectedProjectId}`
-                  )
-                }
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
-              >
-                <Pencil size={16} />
-                Edit Project
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleDeleteProject()}
-                disabled={detailsLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
-              >
-                <Trash2 size={16} />
-                Delete Project
-              </button>
-              <button
-                type="button"
-                onClick={() => void refreshProjectDetails()}
-                disabled={detailsLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-              >
-                <RefreshCw
-                  size={16}
-                  className={
-                    detailsLoading ? "animate-spin" : ""
-                  }
-                />
-                Refresh Details
-              </button>
-            </div>
-          </div>
-          {/* Details Error */}
           {detailsError && (
             <div
               role="alert"
               className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
             >
-              <AlertCircle
-                size={18}
-                className="mt-0.5 shrink-0"
-              />
+              <AlertCircle size={18} className="mt-0.5 shrink-0" />
               <span className="flex-1">{detailsError}</span>
               <button
                 type="button"
@@ -490,7 +433,7 @@ function openFolderFiles(folder: ProjectFolder) {
               </button>
             </div>
           )}
-          {/* Loading */}
+
           {detailsLoading && !projectDetails ? (
             <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 size={22} className="animate-spin" />
@@ -498,128 +441,223 @@ function openFolderFiles(folder: ProjectFolder) {
             </div>
           ) : projectDetails ? (
             <>
-              {/* Main Project Information */}
               <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="border-b border-slate-200 p-5 dark:border-slate-800">
-                  <div className="flex flex-wrap items-center gap-3">
+
+                {/* Full-Width Header */}
+                <div className="flex flex-col gap-4 border-b border-slate-200 p-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+
+                  {/* Project Icon and Name */}
+                  <div className="flex min-w-0 items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setFolderModalOpen(true)}
                       aria-label={`View folders for ${projectDetails.projectname}`}
-                      title="View project folder tree"
-                      className="shrink-0 rounded-xl bg-blue-100 p-3 text-blue-700 transition hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900"
+                      className="shrink-0 rounded-xl bg-primary/50 p-3 text-white/80 transition hover:bg-primary hover:text-white dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900"
                     >
                       <FolderKanban size={26} />
                     </button>
+
                     <div className="min-w-0 flex-1">
                       <button
                         type="button"
                         onClick={() => setFolderModalOpen(true)}
-                        title="Click to view the project folder tree"
-                        className="break-words text-left text-xl font-bold text-slate-900 transition hover:text-blue-600 focus:outline-none focus-visible:underline dark:text-slate-100 dark:hover:text-blue-400"
+                        className="break-words text-left text-xl font-bold text-slate-900 hover:text-primary dark:text-white dark:hover:text-blue-400"
                       >
                         {projectDetails.projectname}
                       </button>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         Project #{projectDetails.project_id}
+
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${Number(projectDetails.status) === 0
+                            ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+                            : Number(projectDetails.status) === 1
+                              ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
+                              : Number(projectDetails.status) === 2
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                : "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                            }`}
+                        >
+                          {{
+                            0: "Pending",
+                            1: "In Progress",
+                            2: "Completed",
+                          }[Number(projectDetails.status)] ?? "Unknown"}
+                        </span>
                       </p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      Status: {projectDetails.status}
-                    </span>
                   </div>
-                  <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {projectDetails.projectdesc ||
-                      "No description provided."}
-                  </p>
-                </div>
-                <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <InfoCard
-                    icon={<Hash size={17} />}
-                    label="Project ID"
-                    value={projectDetails.project_id}
-                  />
-                  <InfoCard
-                    icon={<FileText size={17} />}
-                    label="Template ID"
-                    value={projectDetails.tid}
-                  />
-                  <InfoCard
-                    icon={<Building2 size={17} />}
-                    label="Company ID"
-                    value={projectDetails.cid}
-                  />
-                  <InfoCard
-                    icon={<FolderKanban size={17} />}
-                    label="Project Type"
-                    value={projectDetails.projecttype ?? "—"}
-                  />
-                  <InfoCard
-                    icon={<UserRound size={17} />}
-                    label="Coordinator ID"
-                    value={projectDetails.coordinator ?? "—"}
-                  />
-                  <InfoCard
-                    icon={<Users size={17} />}
-                    label="Project Management"
-                    value={
-                      projectDetails.is_project_manage === 1
-                        ? "Enabled"
-                        : "Disabled"
-                    }
-                  />
-                  <InfoCard
-                    icon={<CalendarDays size={17} />}
-                    label="Start Date"
-                    value={formatDate(projectDetails.start_date)}
-                  />
-                  <InfoCard
-                    icon={<CalendarDays size={17} />}
-                    label="End Date"
-                    value={formatDate(projectDetails.end_date)}
-                  />
-                  <InfoCard
-                    icon={<CalendarDays size={17} />}
-                    label="Created Date"
-                    value={formatDate(projectDetails.created_date)}
-                  />
-                  <InfoCard
-                    icon={<CalendarDays size={17} />}
-                    label="Updated Date"
-                    value={formatDate(projectDetails.updated_date)}
-                  />
-                </div>
-              </section>
-              {/* Project Members */}
-              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                  <div className="rounded-lg bg-violet-100 p-2 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
-                    <Users size={20} />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold">
-                      Project Members
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {projectDetails.member_ids?.length ?? 0} member(s)
-                    </p>
+
+                  {/* Header Actions */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/projects/create?edit=${selectedProjectId}`)}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary/60 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary"
+                    >
+                      <Pencil size={16} />
+
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteProject()}
+                      disabled={detailsLoading}
+                      className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                    >
+                      <Trash2 size={16} />
+
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void refreshProjectDetails()}
+                      disabled={detailsLoading}
+                      title="Refresh project details"
+                      aria-label="Refresh project details"
+                      className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2.5 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                    >
+                      <RefreshCw
+                        size={16}
+                        className={detailsLoading ? "animate-spin" : ""}
+                      />
+                    </button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 p-5">
-                  {projectDetails.member_ids?.length ? (
-                    projectDetails.member_ids.map((memberId) => (
-                      <span
-                        key={memberId}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
-                      >
-                        User ID: {memberId}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      No members assigned.
-                    </p>
-                  )}
+
+                {/* Content: 70% Left + 30% Right */}
+                <div className="grid grid-cols-1 lg:grid-cols-10">
+
+                  {/* Left: Project Description and Folders */}
+                  <div className="min-w-0 lg:col-span-8">
+
+                    {/* Description */}
+                    <div className="border-b border-slate-200 p-5 dark:border-slate-800">
+                      <h2 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
+                        Project Description
+                      </h2>
+
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        {projectDetails.projectdesc || "No description provided."}
+                      </p>
+                    </div>
+
+                    {/* Folder Cards */}
+                    <div className="p-5">
+                      {projectDetails.folders?.length ? (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                          {projectDetails.folders.map((folder) => (
+                            <button
+                              key={folder.pfid}
+                              type="button"
+                              onClick={() => openFolderFiles(folder)}
+                              className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-primary/10"
+                            >
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                                <Folder size={23} />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                  {folder.fname}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                  {folder.children?.length ?? 0} subfolders
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center">
+                          <Folder
+                            size={34}
+                            className="mx-auto mb-3 text-slate-300 dark:text-slate-600"
+                          />
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            No folders available
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Project Members */}
+                  <aside className="min-w-0 border-t border-slate-200 dark:border-slate-800 lg:col-span-2 lg:border-l lg:border-t-0">
+
+                    {/* Members Header */}
+                    <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
+                      <div className="rounded-lg bg-primary p-2 text-white dark:bg-primary dark:text-white">
+                        <CircleUser size={20} />
+                      </div>
+
+                      <div>
+                        <h2 className="font-semibold text-slate-900 dark:text-white">
+                          Project Members
+                        </h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          {projectDetails.member_ids?.length ?? 0} member(s)
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Members List */}
+                    <div className="p-5">
+                      {projectDetails.member_ids?.length ? (
+                        <div className="space-y-3">
+                          {projectDetails.member_ids.map((memberId) => {
+                            const user = users.find((u) => u.uid === memberId);
+
+                            const fullName = user
+                              ? [user.title, user.firstname, user.lastname]
+                                .filter(Boolean)
+                                .join(" ")
+                              : `User ID: ${memberId}`;
+
+                            return (
+                              <div
+                                key={memberId}
+                                className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                              >
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                                  <CircleUser size={18} />
+                                </div>
+
+                                <div className="w-full flex justify-between">
+                                  <div>
+                                    <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
+                                      {fullName}
+                                    </p>
+
+                                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                                      {user?.email || "Project member"}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
+                                      User ID: {memberId}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="py-10 text-center">
+                          <Users
+                            size={32}
+                            className="mx-auto mb-3 text-slate-300 dark:text-slate-600"
+                          />
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            No members assigned
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </aside>
+
                 </div>
               </section>
             </>
@@ -648,7 +686,7 @@ function openFolderFiles(folder: ProjectFolder) {
             )
           )}
         </div>
-        {/* Folder Tree Modal - Only in Project Details */}
+
         {folderModalOpen && projectDetails && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -661,51 +699,76 @@ function openFolderFiles(folder: ProjectFolder) {
               onClick={(event) => event.stopPropagation()}
               className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="rounded-xl bg-amber-100 p-3 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                    <FolderOpen size={24} />
-                  </div>
-                  <div className="min-w-0">
+              <div className="border-b border-slate-200 p-1 dark:border-slate-800">
+                {/* Top Row: Project Name and Close Button */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="shrink-0 rounded-xl bg-amber-100 p-1 text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                      <FolderOpen size={18} />
+                    </div>
+
                     <h2
                       id="project-folder-modal-title"
-                      className="text-lg font-bold text-slate-900 dark:text-slate-100"
+                      className="min-w-0 break-words text-lg font-bold text-slate-900 dark:text-slate-100"
                     >
-                      Project Folder Tree
-                    </h2>
-                    <p className="truncate text-sm text-slate-500 dark:text-slate-400">
                       {projectDetails.projectname}
-                    </p>
+                    </h2>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setFolderModalOpen(false)}
+                    aria-label="Close folder tree"
+                    className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setFolderModalOpen(false)}
-                  aria-label="Close folder tree"
-                  className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                >
-                  <X size={20} />
-                </button>
+
               </div>
-              {/* Modal Body */}
-              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-2">
                 {projectDetails.folders?.length ? (
                   <>
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                        Folder hierarchy
-                      </p>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {projectDetails.folders.length} root folder(s)
-                      </span>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 p-2 dark:border-slate-800">
+                    <div className="rounded-xl px-6 dark:border-slate-800">
                       <FolderTree
-                        folders={projectDetails.folders ?? []}
+                        folders={projectDetails.folders}
                         onFolderClick={openFolderFiles}
                       />
                     </div>
+                    <div className="flex justify-end">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-slate-100 px-2 dark:bg-slate-800">
+                        <div className="flex items-center gap-1.5">
+                          <FolderOpen
+                            size={16}
+                            className="shrink-0 text-blue-600 dark:text-blue-400"
+                          />
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Subfolders Exists
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Folder
+                            size={16}
+                            className="shrink-0 text-orange-500"
+                          />
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Files Exists
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Folder
+                            size={16}
+                            className="shrink-0 text-gray-400 dark:text-gray-500"
+                          />
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Empty folder
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
                   </>
                 ) : (
                   <div className="flex min-h-48 flex-col items-center justify-center text-center">
@@ -722,189 +785,160 @@ function openFolderFiles(folder: ProjectFolder) {
                   </div>
                 )}
               </div>
-              {/* Modal Footer */}
-              <div className="flex justify-end border-t border-slate-200 p-4 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setFolderModalOpen(false)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  Close
-                </button>
-              </div>
             </section>
           </div>
         )}
       </div>
     );
   }
-  // ==============================
-  // Projects List View
-  // ==============================
+
   return (
     <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6 lg:p-8">
-      <div className="mx-auto space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              <FolderKanban size={26} />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Projects
-              </h1>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                View, search, and open project details.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => navigate("/projects/create")}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
-            >
-              <Plus size={17} />
-              Create Project
-            </button>
-            <button
-              type="button"
-              onClick={() => void refreshProjects()}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-            >
-              <RefreshCw
-                size={16}
-                className={loading ? "animate-spin" : ""}
-              />
-              Refresh
-            </button>
-          </div>
-        </div>
-        {/* List Error */}
+      <div className="mx-auto max-w-[1600px] space-y-6">
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
           >
-            <AlertCircle
-              size={18}
-              className="mt-0.5 shrink-0"
-            />
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
             <span className="min-w-0 flex-1">{error}</span>
             <button
               type="button"
               onClick={() => setError("")}
               aria-label="Dismiss error"
+              className="rounded-md p-1 transition hover:bg-red-100 dark:hover:bg-red-900/50"
             >
               <X size={16} />
             </button>
           </div>
         )}
-        {/* Project List */}
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-800 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-lg font-semibold">
-                Project List
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 p-2 dark:border-slate-800">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Projects{" "}
+                <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
+                  ({loading ? "..." : filteredProjects.length})
+                </span>
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {loading
-                  ? "Loading projects..."
-                  : `${filteredProjects.length} of ${projects.length} projects`}
-              </p>
-            </div>
-            <div className="relative w-full sm:max-w-sm">
-              <Search
-                size={17}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search projects..."
-                aria-label="Search projects"
-                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
-              />
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative w-full sm:w-64 lg:w-72">
+                  <Search
+                    size={17}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search projects..."
+                    aria-label="Search projects"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-950"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void refreshProjects()}
+                  disabled={loading}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 p-2 text-sm font-medium text-slate-700 transition hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary/40 dark:hover:bg-primary/10"
+                >
+                  <RefreshCw
+                    size={16}
+                    className={loading ? "animate-spin" : ""}
+                  />
+                  Refresh
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate("/projects/create")}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary p-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-90 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                >
+                  <Plus size={17} />
+                  Create Project
+                </button>
+              </div>
             </div>
           </div>
-          {/* Loading State */}
+
           {loading ? (
-            <div className="flex min-h-56 items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-              <Loader2 size={21} className="animate-spin" />
-              Loading projects...
+            <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-4 py-12">
+              <Loader2 size={28} className="animate-spin text-primary" />
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Loading projects...
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Please wait while we fetch your projects.
+              </p>
             </div>
           ) : filteredProjects.length === 0 ? (
-            /* Empty State */
-            <div className="flex min-h-56 flex-col items-center justify-center px-4 text-center">
-              <FolderKanban
-                size={36}
-                className="mb-3 text-slate-300 dark:text-slate-600"
-              />
-              <p className="font-medium">
+            <div className="flex min-h-72 flex-col items-center justify-center px-4 py-12 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                <FolderKanban size={32} className="text-primary" />
+              </div>
+
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
                 {search.trim()
                   ? "No matching projects found"
                   : "No projects found"}
-              </p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              </h3>
+
+              <p className="mt-2 max-w-sm text-sm text-slate-500 dark:text-slate-400">
                 {search.trim()
-                  ? "Try a different search term."
+                  ? "Try a different search term or clear your search."
                   : "No projects were returned by the API."}
               </p>
+
+              {search.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="mt-4 rounded-lg px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-4 focus:ring-primary/10"
+                >
+                  Clear Search
+                </button>
+              )}
             </div>
           ) : (
-            /* Projects Table */
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[850px] text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-primary text-xs uppercase tracking-wider text-white dark:bg-slate-950/70 dark:text-slate-400">
                   <tr>
-                    <th
-                      scope="col"
-                      className="px-5 py-4 font-semibold"
-                    >
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
                       Project ID
                     </th>
-                    <th
-                      scope="col"
-                      className="px-5 py-4 font-semibold"
-                    >
+                    <th scope="col" className="px-5 py-4 font-semibold sm:px-6">
                       Project Name
                     </th>
-                    <th
-                      scope="col"
-                      className="px-5 py-4 font-semibold"
-                    >
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
                       Template ID
                     </th>
-                    <th
-                      scope="col"
-                      className="px-5 py-4 font-semibold"
-                    >
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
                       Project Type
                     </th>
-                    <th
-                      scope="col"
-                      className="px-5 py-4 font-semibold"
-                    >
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
                       Company ID
                     </th>
-                    <th
-                      scope="col"
-                      className="px-5 py-4 font-semibold"
-                    >
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
                       Coordinator
+                    </th>
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
+                      Start Date
+                    </th>
+                    <th scope="col" className="whitespace-nowrap px-5 py-4 font-semibold sm:px-6">
+                      End Date
                     </th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredProjects.map((project) => (
                     <tr
                       key={project.project_id}
-                      onClick={() =>
-                        openProject(project.project_id)
-                      }
+                      onClick={() => openProject(project.project_id)}
                       onKeyDown={(event) => {
                         if (
                           event.key === "Enter" ||
@@ -917,37 +951,62 @@ function openFolderFiles(folder: ProjectFolder) {
                       tabIndex={0}
                       role="button"
                       aria-label={`Open project ${project.projectname}`}
-                      className="cursor-pointer transition-colors hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:hover:bg-blue-950/30"
+                      className="group cursor-pointer odd:bg-white even:bg-slate-100 transition-colors hover:bg-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:odd:bg-slate-900 dark:even:bg-slate-800/50 dark:hover:bg-primary/10"
                     >
-                      <td className="whitespace-nowrap px-5 py-4">
-                        <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-medium dark:bg-slate-800">
+                      <td className="whitespace-nowrap p-4">
+                        <span className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {project.project_id}
                         </span>
                       </td>
-                      <td className="max-w-sm px-5 py-4">
-                        <p className="font-medium text-blue-700 dark:text-blue-400">
+
+                      <td className="max-w-sm px-5 py-4 sm:px-6">
+                        <p className="truncate font-semibold text-slate-800 transition-colors group-hover:text-primary dark:text-slate-100 dark:group-hover:text-primary">
                           {project.projectname || "—"}
                         </p>
-                        <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                          {project.projectdesc || "No description"}
-                        </p>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4">
+
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
                         {project.tid ?? "—"}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4">
-                        {project.projecttype ?? "—"}
+
+                      <td className="whitespace-nowrap px-5 py-4 sm:px-6">
+                        {project.projecttype ? (
+                          <span className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                            {project.projecttype}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4">
+
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
                         {project.cid ?? "—"}
                       </td>
-                      <td className="whitespace-nowrap px-5 py-4">
+
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
                         {project.coordinator ?? "—"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
+                        {project.start_date ?? "—"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
+                        {project.end_date ?? "—"}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {!loading && filteredProjects.length > 0 && (
+            <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/70 px-5 py-3.5 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <span>
+                Showing {filteredProjects.length} of {projects.length} projects
+              </span>
+              <span>Click a project row to view details</span>
             </div>
           )}
         </section>

@@ -45,6 +45,7 @@ export interface ProjectFolder {
   remarks?: string | null;
   status?: number | string;
   children?: ProjectFolder[];
+  fileCount?: number;
 }
 
 export interface AssignedProjectRole {

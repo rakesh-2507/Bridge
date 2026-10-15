@@ -1,10 +1,24 @@
-
+@import url("https://fonts.googleapis.com/css2?family=Norican&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@import url('https://fonts.googleapis.com/css2?family=Norican&display=swap');
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 
-.scrollbar-hide::-webkit-scrollbar{
-    display: none;
+.bridge-logo {
+  font-family: "Norican", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@theme {
+  --color-primary: #ff6b35;
+  --color-primary-light: #f8aa91;
+}
+
+.dark {
+  --color-primary: #1e293b;
+  --color-primary-light: #334155;
 }
