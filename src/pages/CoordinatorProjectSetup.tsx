@@ -265,7 +265,7 @@ export default function CoordinatorProjectSetup() {
         ? String(selectedProgressFolder.status) === "2"
             ? 100
             : String(selectedProgressFolder.status) === "1"
-                ? 50
+                ? 10
                 : 0
         : 0;
 
