@@ -211,6 +211,9 @@ function calculateFolderDates(
 
         startDate = new Date(`${predecessorDates.end}T00:00:00`);
         startDate.setDate(startDate.getDate() + 1);
+    } else {
+        // First folder starts one day after the project start date
+        startDate.setDate(startDate.getDate() + 1);
     }
 
     const endDate = new Date(startDate);
@@ -1227,12 +1230,12 @@ export default function CoordinatorProjectSetup() {
 
                                                     return (
                                                         <tr key={folder.fid}>
-                                                            <td className="whitespace-nowrap px-4 py-3 text-gray-500 dark:text-gray-400">
+                                                            <td className="whitespace-nowrap px-4 py-2 text-gray-500 dark:text-gray-400">
                                                                 {folder.fid}
                                                             </td>
 
                                                             {/* Hierarchical folder column */}
-                                                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                                                            <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">
                                                                 <div
                                                                     className="flex min-w-[220px] items-center gap-2"
                                                                     style={{
@@ -1258,7 +1261,7 @@ export default function CoordinatorProjectSetup() {
                                                             </td>
 
                                                             {/* Predecessor */}
-                                                            <td className="px-4 py-3">
+                                                            <td className="px-4 py-2">
                                                                 {!container && (
                                                                     <select
                                                                         value={folder.predecessorsid ?? 0}
@@ -1269,7 +1272,7 @@ export default function CoordinatorProjectSetup() {
                                                                             })
                                                                         }
                                                                         aria-label={`Predecessor for ${folder.fname}`}
-                                                                        className={`${inputClass} w-48`}
+                                                                        className={`${inputClass} w-48 !py-1`}
                                                                     >
                                                                         <option value={0}>None</option>
                                                                         {predecessorOptions.map((candidate) => (
@@ -1282,7 +1285,7 @@ export default function CoordinatorProjectSetup() {
                                                             </td>
 
                                                             {/* Duration */}
-                                                            <td className="px-4 py-3">
+                                                            <td className="px-4 py-2">
                                                                 {!container && (
                                                                     <input
                                                                         type="number"
@@ -1298,23 +1301,23 @@ export default function CoordinatorProjectSetup() {
                                                                             })
                                                                         }
                                                                         aria-label={`Duration for ${folder.fname}`}
-                                                                        className={`${inputClass} w-24`}
+                                                                        className={`${inputClass} w-24 !py-1`}
                                                                     />
                                                                 )}
                                                             </td>
 
                                                             {/* Start date */}
-                                                            <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
+                                                            <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
                                                                 {!container ? dates.start : ""}
                                                             </td>
 
                                                             {/* End date */}
-                                                            <td className="whitespace-nowrap px-4 py-3 text-gray-600 dark:text-gray-300">
+                                                            <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
                                                                 {!container ? dates.end : ""}
                                                             </td>
 
                                                             {/* Key person */}
-                                                            <td className="px-4 py-3">
+                                                            <td className="px-4 py-2">
                                                                 {!container && (
                                                                     <select
                                                                         value={folder.keypersonid ?? 0}
@@ -1325,7 +1328,7 @@ export default function CoordinatorProjectSetup() {
                                                                             })
                                                                         }
                                                                         aria-label={`Key person for ${folder.fname}`}
-                                                                        className={`${inputClass} w-48`}
+                                                                        className={`${inputClass} w-48 !py-1`}
                                                                     >
                                                                         <option value={0}>Unassigned</option>
                                                                         {folder.key_person_options.map((person) => (
@@ -1342,44 +1345,48 @@ export default function CoordinatorProjectSetup() {
                                                                 )}
                                                             </td>
 
-                                                            {/* Remarks remain visible and editable */}
-                                                            <td className="px-4 py-3">
-                                                                <input
-                                                                    type="text"
-                                                                    value={
-                                                                        folder.remarks ??
-                                                                        ""
-                                                                    }
-                                                                    onChange={(event) =>
-                                                                        updateTimelineFolder(
-                                                                            folder.fid,
-                                                                            {
-                                                                                remarks:
-                                                                                    event.target.value,
-                                                                            },
-                                                                        )
-                                                                    }
-                                                                    aria-label={`Remarks for ${folder.fname}`}
-                                                                    placeholder="Enter remarks"
-                                                                    className={`${inputClass} w-52`}
-                                                                />
+                                                            {/* Remarks */}
+                                                            <td className="px-4 py-2">
+                                                                {!container && (
+                                                                    <input
+                                                                        type="text"
+                                                                        value={folder.remarks ?? ""}
+                                                                        onChange={(event) =>
+                                                                            updateTimelineFolder(folder.fid, {
+                                                                                remarks: event.target.value,
+                                                                            })
+                                                                        }
+                                                                        aria-label={`Remarks for ${folder.fname}`}
+                                                                        placeholder="Enter remarks"
+                                                                        className={`${inputClass} w-52 !py-1`}
+                                                                    />
+                                                                )}
                                                             </td>
 
-                                                            {/* Status is retained from GET */}
-                                                            <td className="px-4 py-3">
-                                                                <span
-                                                                    className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${folder.status ===
-                                                                        "0"
-                                                                        ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                                        : "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-                                                                        }`}
-                                                                >
-                                                                    {folder.status ===
-                                                                        "0"
-                                                                        ? "Pending"
-                                                                        : folder.status}
-                                                                </span>
+                                                            {/* Status */}
+                                                            <td className="px-4 py-2">
+                                                                {!container && (
+                                                                    <span
+                                                                        className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${String(folder.status) === "0"
+                                                                            ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                                            : String(folder.status) === "1"
+                                                                                ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                                                                                : String(folder.status) === "2"
+                                                                                    ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                                                                                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                                            }`}
+                                                                    >
+                                                                        {String(folder.status) === "0"
+                                                                            ? "Pending"
+                                                                            : String(folder.status) === "1"
+                                                                                ? "In Progress"
+                                                                                : String(folder.status) === "2"
+                                                                                    ? "Completed"
+                                                                                    : "Unknown"}
+                                                                    </span>
+                                                                )}
                                                             </td>
+
                                                         </tr>
                                                     );
                                                 })}

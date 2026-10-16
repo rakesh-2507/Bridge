@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
     Folder,
-    FileText,
     Loader2,
     AlertCircle,
     RefreshCw,
@@ -10,7 +9,16 @@ import {
     X,
     ExternalLink,
     Download,
+    Upload,
+    File,
+    FileImage,
+    FileText,
+    FileSpreadsheet,
+    FileCode,
+    FileArchive,
+    FileType,
 } from "lucide-react";
+
 import {
     useLocation,
     useNavigate,
@@ -20,8 +28,11 @@ import {
 import {
     getProject,
     getProjectFolderFiles,
+    uploadProjectFolderFiles,
+    deleteProjectFolderFile,
     type Project,
 } from "../api/projects";
+
 import { getUsers, type User } from "../api/users";
 
 interface FolderFile {
@@ -54,6 +65,67 @@ interface FolderNavigationState {
     folder?: ProjectFolder;
     folderName?: string;
 }
+
+
+const getFileIcon = (fileName: string) => {
+    const extension = fileName.split(".").pop()?.toLowerCase();
+
+    switch (extension) {
+        // Images
+        case "png":
+        case "jpg":
+        case "jpeg":
+        case "gif":
+        case "svg":
+        case "webp":
+        case "bmp":
+            return <FileImage size={20} className="text-purple-500" />;
+
+        // Word documents
+        case "doc":
+        case "docx":
+            return <FileType size={20} className="text-blue-600" />;
+
+        // Excel spreadsheets
+        case "xls":
+        case "xlsx":
+        case "csv":
+            return (
+                <FileSpreadsheet size={20} className="text-green-600" />
+            );
+
+        // PDF documents
+        case "pdf":
+            return <FileText size={20} className="text-red-500" />;
+
+        // Text files
+        case "txt":
+        case "md":
+        case "rtf":
+            return <FileText size={20} className="text-gray-500" />;
+
+        // Code files
+        case "js":
+        case "jsx":
+        case "ts":
+        case "tsx":
+        case "html":
+        case "css":
+        case "json":
+        case "xml":
+            return <FileCode size={20} className="text-orange-500" />;
+
+        // Archives
+        case "zip":
+        case "rar":
+        case "7z":
+            return <FileArchive size={20} className="text-yellow-600" />;
+
+        // Default icon
+        default:
+            return <File size={20} className="text-primary" />;
+    }
+};
 
 function normalizeFiles(response: unknown): FolderFile[] {
     if (Array.isArray(response)) {
@@ -310,6 +382,63 @@ export default function ProjectFolderFiles() {
             selectedFiles.has(getFileKey(file, index)),
         );
 
+
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState("");
+    const [uploadSuccess, setUploadSuccess] = useState("");
+    const handleUploadFiles = async (
+        event: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const input = event.currentTarget;
+        const selectedFiles = Array.from(input.files ?? []);
+
+        if (selectedFiles.length === 0) {
+            return;
+        }
+
+        if (
+            !Number.isInteger(parsedProjectId) ||
+            parsedProjectId <= 0 ||
+            !Number.isInteger(parsedFolderId) ||
+            parsedFolderId <= 0
+        ) {
+            setUploadError("Invalid project or folder ID.");
+            input.value = "";
+            return;
+        }
+
+        setUploading(true);
+        setUploadError("");
+        setUploadSuccess("");
+
+        try {
+            await uploadProjectFolderFiles(
+                parsedProjectId,
+                parsedFolderId,
+                selectedFiles,
+            );
+
+            setUploadSuccess(
+                `${selectedFiles.length} file${selectedFiles.length === 1 ? "" : "s"
+                } uploaded successfully.`,
+            );
+
+            setSelectedFiles(new Set());
+
+            // Reload the folder's file list.
+            setReloadKey((key) => key + 1);
+        } catch (err: unknown) {
+            setUploadError(
+                err instanceof Error
+                    ? err.message
+                    : "Unable to upload files. Please try again.",
+            );
+        } finally {
+            setUploading(false);
+            input.value = "";
+        }
+    };
+
     function getFileExtension(file: FolderFile): string {
         const name = getFileName(file);
         return name.split(".").pop()?.toLowerCase() ?? "";
@@ -565,17 +694,57 @@ export default function ProjectFolderFiles() {
         );
     };
 
-    // Connect this handler to your actual file-delete API.
-    const handleDeleteFile = (file: FolderFile) => {
-        const fileId = file.file_id ?? file.id;
 
-        if (fileId == null) {
-            console.error("Cannot delete file: missing file ID.", file);
+    const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+    const [deleteError, setDeleteError] = useState("");
+    const [deleteSuccess, setDeleteSuccess] = useState("");
+
+    const handleDeleteFile = async (file: FolderFile) => {
+        const fileId = Number(file.file_id ?? file.id);
+
+        if (!Number.isInteger(fileId) || fileId <= 0) {
+            setDeleteError("Cannot delete file: invalid file ID.");
             return;
         }
 
-        console.log("Connect file-delete API for file ID:", fileId);
+        const fileName = getFileName(file);
+
+        if (!window.confirm(`Are you sure you want to delete "${fileName}"?`)) {
+            return;
+        }
+
+        setDeletingFileId(fileId);
+        setDeleteError("");
+        setDeleteSuccess("");
+
+        try {
+            await deleteProjectFolderFile(
+                parsedProjectId,
+                parsedFolderId,
+                fileId,
+            );
+
+            setSelectedFiles((previous) => {
+                const updated = new Set(previous);
+                updated.delete(getFileKey(file, files.indexOf(file)));
+                return updated;
+            });
+
+            setDeleteSuccess(`"${fileName}" deleted successfully.`);
+
+            // Refresh the file list from the backend.
+            setReloadKey((key) => key + 1);
+        } catch (err: unknown) {
+            setDeleteError(
+                err instanceof Error
+                    ? err.message
+                    : "Unable to delete the file. Please try again.",
+            );
+        } finally {
+            setDeletingFileId(null);
+        }
     };
+
 
     const projectStatus = getProjectStatus(project?.status);
 
@@ -728,8 +897,87 @@ export default function ProjectFolderFiles() {
                                             Clear selection
                                         </button>
                                     )}
+
+                                    {/* Upload files action */}
+                                    <label
+                                        className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading
+                                            ? "pointer-events-none cursor-not-allowed opacity-60"
+                                            : ""
+                                            }`}
+                                    >
+                                        {uploading ? (
+                                            <Loader2 size={17} className="animate-spin" />
+                                        ) : (
+                                            <Upload size={17} />
+                                        )}
+
+                                        {uploading ? "Uploading..." : "Upload Files"}
+
+                                        <input
+                                            type="file"
+                                            multiple
+                                            disabled={uploading}
+                                            onChange={handleUploadFiles}
+                                            className="hidden"
+                                            aria-label="Choose files to upload"
+                                        />
+                                    </label>
                                 </div>
                             </div>
+
+                            {/* Upload feedback */}
+                            {uploadError && (
+                                <div
+                                    role="alert"
+                                    className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                >
+                                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                                    <span>{uploadError}</span>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setUploadError("")}
+                                        className="ml-auto shrink-0"
+                                        aria-label="Dismiss upload error"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {uploadSuccess && (
+                                <div
+                                    role="status"
+                                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300"
+                                >
+                                    {uploadSuccess}
+                                </div>
+                            )}
+
+                            {deleteError && (
+                                <div
+                                    role="alert"
+                                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                >
+                                    {deleteError}
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeleteError("")}
+                                        className="ml-3 font-semibold"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            )}
+
+                            {deleteSuccess && (
+                                <div
+                                    role="status"
+                                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300"
+                                >
+                                    {deleteSuccess}
+                                </div>
+                            )}
 
                             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                                 {files.length === 0 ? (
@@ -845,12 +1093,11 @@ export default function ProjectFolderFiles() {
                                                                     className="group flex w-full min-w-0 items-center gap-3 rounded-lg text-left"
                                                                     title={`Preview ${fileName}`}
                                                                 >
-                                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 transition group-hover:bg-primary/20 dark:bg-blue-900/30 dark:group-hover:bg-primary/30">
-                                                                        <FileText
-                                                                            size={20}
-                                                                            className="text-primary/70 dark:text-blue-400"
-                                                                        />
+
+                                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 transition group-hover:bg-primary/10 dark:bg-gray-700/50 dark:group-hover:bg-primary/20">
+                                                                        {getFileIcon(fileName)}
                                                                     </div>
+
 
                                                                     <div className="min-w-0">
                                                                         <p className="break-words font-semibold text-gray-700 group-hover:underline dark:text-blue-400">
@@ -890,21 +1137,26 @@ export default function ProjectFolderFiles() {
 
                                                             {/* Delete */}
                                                             <td className="px-4 py-4 text-center">
+
                                                                 <button
                                                                     type="button"
-                                                                    title="Delete file"
-                                                                    aria-label={`Delete ${fileName}`}
-                                                                    onClick={() =>
-                                                                        handleDeleteFile(
-                                                                            file,
-                                                                        )
+                                                                    title={
+                                                                        deletingFileId === Number(file.file_id ?? file.id)
+                                                                            ? "Deleting file..."
+                                                                            : "Delete file"
                                                                     }
-                                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+                                                                    aria-label={`Delete ${fileName}`}
+                                                                    disabled={deletingFileId !== null}
+                                                                    onClick={() => void handleDeleteFile(file)}
+                                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                                 >
-                                                                    <Trash2
-                                                                        size={18}
-                                                                    />
+                                                                    {deletingFileId === Number(file.file_id ?? file.id) ? (
+                                                                        <Loader2 size={18} className="animate-spin" />
+                                                                    ) : (
+                                                                        <Trash2 size={18} />
+                                                                    )}
                                                                 </button>
+
                                                             </td>
                                                         </tr>
                                                     );

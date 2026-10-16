@@ -297,3 +297,28 @@ export async function getProjectFolderFiles(
 ) {
   return get(`/${projectId}/folders/${folderId}/files`);
 }
+
+export async function uploadProjectFolderFiles<T = unknown>(
+  projectId: number,
+  folderId: number,
+  files: File[],
+): Promise<T> {
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
+  return post<T>(
+    `/${encodeURIComponent(String(projectId))}/folders/${encodeURIComponent(String(folderId))}/files`,
+    formData,
+  );
+}
+
+export async function deleteProjectFolderFile(
+  projectId: number,
+  folderId: number,
+  fileId: number,
+): Promise<unknown> {
+  return del(`/${projectId}/folders/${folderId}/files/${fileId}`);
+}

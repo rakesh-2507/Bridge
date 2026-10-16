@@ -87,7 +87,12 @@ async function sendRequest(
 
   headers.set("Accept", "application/json");
 
-  if (options.body !== undefined) {
+  const isFormData = options.body instanceof FormData;
+
+  if (isFormData) {
+    // Let the browser set multipart/form-data with its boundary.
+    headers.delete("Content-Type");
+  } else if (options.body !== undefined && options.body !== null) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -181,9 +186,11 @@ export function get<T>(path: string): Promise<T> {
 }
 
 export function post<T>(path: string, payload: unknown): Promise<T> {
+  const isFormData = payload instanceof FormData;
+
   return request<T>(path, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: isFormData ? payload : JSON.stringify(payload),
   });
 }
 

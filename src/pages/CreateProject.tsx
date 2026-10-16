@@ -463,7 +463,7 @@ export default function CreateProject() {
     }
 
     const inputClass =
-        "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-blue-950";
+        "w-full rounded-lg border border-primary/30 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-primary/20";
 
     const labelClass =
         "mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300";
@@ -491,16 +491,16 @@ export default function CreateProject() {
                                 {isEditMode ? (
                                     <Pencil
                                         size={24}
-                                        className="text-blue-600 dark:text-blue-400"
+                                        className="text-primary"
                                     />
                                 ) : (
                                     <FolderKanban
                                         size={24}
-                                        className="text-blue-600 dark:text-blue-400"
+                                        className="text-primary"
                                     />
                                 )}
 
-                                <h1 className="text-2xl font-bold tracking-tight">
+                                <h1 className="text-2xl font-bold tracking-tight dark:text-slate-400">
                                     {isEditMode ? "Edit Project" : "Create Project"}
                                 </h1>
                             </div>
@@ -527,14 +527,14 @@ export default function CreateProject() {
                 </div>
 
                 {loadingProject && (
-                    <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
+                    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">
                         <Loader2 size={17} className="animate-spin" />
                         Loading project details...
                     </div>
                 )}
 
                 {loadingOptions && (
-                    <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
+                    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">
                         <Loader2 size={17} className="animate-spin" />
                         Loading templates, companies, project types and users...
                     </div>
@@ -570,10 +570,10 @@ export default function CreateProject() {
                 <form onSubmit={handleSubmit} className="w-full space-y-4">
                     <div className="grid w-full grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
                         {/* Basic information */}
-                                                {/* Project configuration */}
+                        {/* Project configuration */}
                         <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                                <div className="rounded-lg bg-violet-100 p-2 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                                <div className="rounded-lg bg-primary/10 p-2 text-primary dark:bg-primary/15 dark:text-primary">
                                     <Hash size={20} />
                                 </div>
                                 <div>
@@ -752,7 +752,7 @@ export default function CreateProject() {
 
                         <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                                <div className="rounded-lg bg-blue-100 p-2 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                <div className="rounded-lg bg-primary/10 p-2 text-primary dark:bg-primary/15 dark:text-primary">
                                     <FileText size={20} />
                                 </div>
                                 <div>
@@ -803,7 +803,7 @@ export default function CreateProject() {
                         {/* Project members */}
                         <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                                <div className="rounded-lg bg-emerald-100 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                <div className="rounded-lg bg-primary/10 p-2 text-primary dark:bg-primary/15 dark:text-primary">
                                     <Users size={20} />
                                 </div>
                                 <div>
@@ -846,18 +846,16 @@ export default function CreateProject() {
                                                             ? "cursor-not-allowed opacity-60"
                                                             : "cursor-pointer"
                                                             } ${selected
-                                                                ? "bg-blue-50 dark:bg-blue-950/40"
+                                                                ? "bg-primary/15 dark:bg-primary/15"
                                                                 : "hover:bg-slate-50 dark:hover:bg-slate-800"
                                                             }`}
                                                     >
                                                         <input
                                                             type="checkbox"
                                                             checked={selected}
-                                                            onChange={() =>
-                                                                handleMemberToggle(userId)
-                                                            }
+                                                            onChange={() => handleMemberToggle(userId)}
                                                             disabled={optionsDisabled}
-                                                            className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800"
+                                                            className="h-4 w-4 shrink-0 rounded border-primary/50 text-primary focus:ring-primary dark:border-primary/50 dark:bg-slate-800"
                                                         />
 
                                                         <span className="min-w-0 flex-1">
@@ -881,7 +879,7 @@ export default function CreateProject() {
                                         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                             Selected Members
                                         </h3>
-                                        <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary dark:bg-primary/15 dark:text-primary">
                                             {form.member_ids.length} selected
                                         </span>
                                     </div>
@@ -937,7 +935,7 @@ export default function CreateProject() {
                                                         key={userId}
                                                         className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                                                     >
-                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary dark:bg-primary/15 dark:text-primary">
                                                             {getUserLabel(user)
                                                                 .charAt(0)
                                                                 .toUpperCase()}
@@ -1010,7 +1008,7 @@ export default function CreateProject() {
                                 loadingProject ||
                                 Boolean(optionsError)
                             }
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {loading ? (
                                 <Loader2 size={17} className="animate-spin" />

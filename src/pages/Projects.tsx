@@ -16,6 +16,8 @@ import {
   Pencil,
   Trash2,
   CircleUser,
+  Mars,
+  Venus,
 } from "lucide-react";
 import {
   getProjects,
@@ -104,30 +106,28 @@ function FolderTreeItem({
   return (
     <div className="relative">
       <div
-        className="relative flex min-h-12 items-center gap-2 rounded-lg py-2 pr-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
+        className="relative flex min-10 items-center gap-2 rounded-lg py-0.5 pr-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60"
         style={{ paddingLeft: `${12 + level * 28}px` }}
       >
         {/* Tree connectors */}
         {level > 0 && (
           <>
             <span
-              className={`absolute top-0 w-px ${
-                hasFiles
-                  ? "bg-orange-400 dark:bg-orange-500"
-                  : "bg-slate-300 dark:bg-slate-700"
-              } ${isLast ? "h-1/2" : "h-full"}`}
-              style={{ left: `${level * 28 - 16}px` }}
+              className={`absolute top-0 w-px ${hasFiles
+                ? "bg-orange-400 dark:bg-orange-500"
+                : "bg-slate-300 dark:bg-slate-700"
+                } ${isLast ? "h-1/2" : "h-full"}`}
+              style={{ left: `${level * 28 - 8}px` }}
             />
 
             <span
-              className={`absolute h-px ${
-                hasFiles
-                  ? "bg-orange-400 dark:bg-orange-500"
-                  : "bg-slate-300 dark:bg-slate-700"
-              }`}
+              className={`absolute h-px ${hasFiles
+                ? "bg-orange-400 dark:bg-orange-500"
+                : "bg-slate-300 dark:bg-slate-700"
+                }`}
               style={{
-                left: `${level * 28 - 16}px`,
-                width: "16px",
+                left: `${level * 28 - 8}px`,
+                width: "28px",
                 top: "50%",
               }}
             />
@@ -159,20 +159,18 @@ function FolderTreeItem({
         {hasChildren && expanded ? (
           <FolderOpen
             size={19}
-            className={`shrink-0 ${
-              hasFiles
-                ? "text-blue-700 dark:text-blue-400"
-                : "text-blue-700 dark:text-gray-400"
-            }`}
+            className={`shrink-0 ${hasFiles
+              ? "text-blue-700 dark:text-blue-400"
+              : "text-blue-700 dark:text-gray-400"
+              }`}
           />
         ) : (
           <Folder
             size={19}
-            className={`shrink-0 ${
-              hasFiles
-                ? "text-primary dark:text-green-500"
-                : "text-gray-400 dark:text-gray-500"
-            }`}
+            className={`shrink-0 ${hasFiles
+              ? "text-primary dark:text-green-500"
+              : "text-gray-400 dark:text-gray-500"
+              }`}
           />
         )}
 
@@ -206,6 +204,31 @@ function FolderTreeItem({
       )}
     </div>
   );
+}
+
+function getCoordinatorName(
+  coordinatorId: number | string | null | undefined,
+  users: User[],
+): string {
+  if (coordinatorId == null || coordinatorId === "") {
+    return "—";
+  }
+
+  const user = users.find(
+    (u) => String(u.uid) === String(coordinatorId)
+  );
+
+  if (!user) {
+    return `User ID: ${coordinatorId}`;
+  }
+
+  return [
+    user.title,
+    user.firstname,
+    user.lastname,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export default function Projects() {
@@ -638,6 +661,14 @@ export default function Projects() {
                         <div className="max-h-[460px] space-y-3 overflow-y-auto pr-2 scrollbar-hide">
                           {projectDetails.member_ids.map((memberId) => {
                             const user = users.find((u) => u.uid === memberId);
+                            const title = user?.title?.trim().toLowerCase();
+
+                            const GenderIcon =
+                              title === "mr"
+                                ? Mars
+                                : title === "ms" || title === "mrs" || title === "miss"
+                                  ? Venus
+                                  : CircleUser;
 
                             const fullName = user
                               ? [user.title, user.firstname, user.lastname]
@@ -650,8 +681,15 @@ export default function Projects() {
                                 key={memberId}
                                 className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                               >
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-                                  <CircleUser size={18} />
+                                <div
+                                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${title === "mr"
+                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                    : title === "ms" || title === "mrs" || title === "miss"
+                                      ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
+                                      : "bg-primary text-white"
+                                    }`}
+                                >
+                                  <GenderIcon size={20} />
                                 </div>
 
                                 <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1012,7 +1050,7 @@ export default function Projects() {
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
-                        {project.coordinator ?? "—"}
+                        {getCoordinatorName(project.coordinator, users)}
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
