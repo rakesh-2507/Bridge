@@ -257,6 +257,29 @@ export default function CoordinatorProjectSetup() {
         ProjectFolderTimelineItem[]
     >([]);
 
+    const [selectedProgressFolder, setSelectedProgressFolder] =
+        useState<ProjectFolderTimelineItem | null>(null);
+
+
+    const progressPercentage = selectedProgressFolder
+        ? String(selectedProgressFolder.status) === "2"
+            ? 100
+            : String(selectedProgressFolder.status) === "1"
+                ? 50
+                : 0
+        : 0;
+
+    const progressKeyPerson = selectedProgressFolder?.key_person_options.find(
+        (person) => person.uid === selectedProgressFolder.keypersonid,
+    );
+
+    const progressUserName = progressKeyPerson
+        ? [
+            progressKeyPerson.firstname,
+            progressKeyPerson.lastname,
+        ].filter(Boolean).join(" ") || progressKeyPerson.loginname
+        : "Unassigned";
+
     // ========================================
     // Load project
     // ========================================
@@ -1366,13 +1389,17 @@ export default function CoordinatorProjectSetup() {
                                                             {/* Status */}
                                                             <td className="px-4 py-2">
                                                                 {!container && (
-                                                                    <span
-                                                                        className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${String(folder.status) === "0"
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={String(folder.status) !== "1"}
+                                                                        onClick={() => setSelectedProgressFolder(folder)}
+                                                                        aria-label={`View progress and notes for ${folder.fname}`}
+                                                                        className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition ${String(folder.status) === "0"
                                                                             ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                                                             : String(folder.status) === "1"
-                                                                                ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                                                                                ? "cursor-pointer bg-orange-50 text-orange-700 hover:bg-orange-100 hover:ring-2 hover:ring-primary/30 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
                                                                                 : String(folder.status) === "2"
-                                                                                    ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                                                                                    ? "cursor-default bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
                                                                                     : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                                                             }`}
                                                                     >
@@ -1383,7 +1410,11 @@ export default function CoordinatorProjectSetup() {
                                                                                 : String(folder.status) === "2"
                                                                                     ? "Completed"
                                                                                     : "Unknown"}
-                                                                    </span>
+
+                                                                        {String(folder.status) === "1" && (
+                                                                            <span className="ml-1.5">↗</span>
+                                                                        )}
+                                                                    </button>
                                                                 )}
                                                             </td>
 
@@ -1499,6 +1530,179 @@ export default function CoordinatorProjectSetup() {
                     </div>
                 </footer>
             </form>
+
+
+            {/* User Progress Modal */}
+            {selectedProgressFolder && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+                    onClick={() => setSelectedProgressFolder(null)}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="progress-modal-title"
+                        className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="flex items-start justify-between border-b border-gray-200 bg-orange-50/70 p-5 dark:border-gray-800 dark:bg-orange-950/20">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                    <Clock size={22} />
+                                </div>
+
+                                <div className="min-w-0">
+                                    <h2
+                                        id="progress-modal-title"
+                                        className="text-lg font-semibold text-gray-900 dark:text-white"
+                                    >
+                                        User Progress
+                                    </h2>
+
+                                    <p className="mt-1 break-words text-sm text-gray-500 dark:text-gray-400">
+                                        {selectedProgressFolder.fname}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setSelectedProgressFolder(null)}
+                                aria-label="Close progress modal"
+                                className="rounded-lg p-2 text-gray-500 transition hover:bg-white hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
+                            >
+                                <X size={19} />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="space-y-6 p-5">
+                            {/* User and Status */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        Assigned User
+                                    </p>
+
+                                    <p className="mt-2 break-words text-sm font-semibold text-gray-900 dark:text-white">
+                                        {progressUserName}
+                                    </p>
+
+                                    {selectedProgressFolder.keypersonid && (
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            User ID: {selectedProgressFolder.keypersonid}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        Current Status
+                                    </p>
+
+                                    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300">
+                                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                                        In Progress
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div>
+                                <div className="mb-2 flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        Completion Progress
+                                    </h3>
+
+                                    <span className="text-sm font-bold text-primary">
+                                        {progressPercentage}%
+                                    </span>
+                                </div>
+
+                                <div
+                                    className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                                    role="progressbar"
+                                    aria-label="Folder completion progress"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={progressPercentage}
+                                >
+                                    <div
+                                        className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                                        style={{
+                                            width: `${progressPercentage}%`,
+                                        }}
+                                    />
+                                </div>
+
+                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                    {progressPercentage === 100
+                                        ? "This task is completed."
+                                        : `${progressPercentage}% based on the current status. Actual completion requires progress data from the API.`}
+                                </p>
+                            </div>
+
+                            {/* User Notes */}
+                            <div>
+                                <div className="mb-2 flex items-center gap-2">
+                                    <Folder
+                                        size={17}
+                                        className="text-primary"
+                                    />
+
+                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        User Notes
+                                    </h3>
+                                </div>
+
+                                <div className="min-h-[110px] whitespace-pre-wrap break-words rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                    {selectedProgressFolder.remarks?.trim() ||
+                                        "No notes have been added for this folder yet."}
+                                </div>
+                            </div>
+
+                            {/* Duration Details */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Planned Duration
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                                        {selectedProgressFolder.days ?? "—"}
+                                        {selectedProgressFolder.days != null
+                                            ? " days"
+                                            : ""}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Folder ID
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                                        {selectedProgressFolder.fid}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex justify-end border-t border-gray-200 p-4 dark:border-gray-800">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedProgressFolder(null)}
+                                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
