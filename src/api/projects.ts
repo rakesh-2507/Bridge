@@ -322,3 +322,35 @@ export async function deleteProjectFolderFile(
 ): Promise<unknown> {
   return del(`/${projectId}/folders/${folderId}/files/${fileId}`);
 }
+
+export interface UpdateProjectFolderProgressPayload {
+  progress_percentage: number;
+  progress_notes: string;
+}
+
+export async function updateProjectFolderProgress(
+  projectId: number,
+  folderId: number,
+  payload: UpdateProjectFolderProgressPayload,
+) {
+  return put(
+    `/projects/${encodeURIComponent(String(projectId))}/folders/${encodeURIComponent(String(folderId))}/progress`,
+    payload,
+  );
+}
+
+export async function completeProjectFolder(
+  projectId: number,
+  folderId: number,
+) {
+  return post(`/myprojects/${projectId}/folders/${folderId}/complete`, {});
+}
+
+export async function getProjectFolderProgress(
+    projectId: number,
+    folderId: number,
+) {
+    return get(
+        `/projects/${projectId}/folders/${folderId}/progress`,
+    );
+}
