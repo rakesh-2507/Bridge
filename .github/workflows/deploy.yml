@@ -18,9 +18,18 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
 
           script: |
+            set -e
+
             cd /home/bridgedoc_frontend/Bridge
 
-            echo "Pulling latest code..."
-            git pull origin main
+            echo "Fetching latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "Installing dependencies..."
+            npm ci
+
+            echo "Building React frontend..."
+            npm run build
 
             echo "Deployment completed successfully."
