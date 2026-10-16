@@ -1,5 +1,4 @@
-import { del, get, post, put } from "./http";
-
+import { del, get, post, put, getBlob } from "./http";
 // ==============================
 // Project Types
 // ==============================
@@ -349,8 +348,26 @@ export async function completeProjectFolder(
 export async function getProjectFolderProgress(
     projectId: number,
     folderId: number,
-) {
-    return get(
+): Promise<FolderProgress> {
+    const response = await get(
         `/projects/${projectId}/folders/${folderId}/progress`,
     );
+
+    return response as FolderProgress;
+}
+
+export interface FolderProgress {
+  progress_percentage?: number | null;
+  progress_notes?: string | null;
+  status?: number | string | null;
+}
+
+export async function getProjectFolderFilePreview(
+  projectId: number,
+  folderId: number,
+  fileId: number,
+): Promise<Blob> {
+  return getBlob(
+    `/${encodeURIComponent(String(projectId))}/folders/${encodeURIComponent(String(folderId))}/files/${encodeURIComponent(String(fileId))}`,
+  );
 }

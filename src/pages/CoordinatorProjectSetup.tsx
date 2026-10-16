@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -20,6 +19,7 @@ import {
     setupCoordinatorProject,
     getProjectFolderTimeline,
     saveProjectFolderTimeline,
+    getProjectFolderProgress,
     type Project,
     type ProjectAssignment,
     type ProjectMember,
@@ -27,6 +27,7 @@ import {
     type CoordinatorProjectsResponse,
     type ProjectFolderTimelineItem,
     type SaveProjectFolderTimelinePayload,
+    type FolderProgress,
 } from "../api/projects";
 
 // ========================================
@@ -212,7 +213,7 @@ function calculateFolderDates(
         startDate = new Date(`${predecessorDates.end}T00:00:00`);
         startDate.setDate(startDate.getDate() + 1);
     } else {
-        // First folder starts one day after the project start date
+        // First folder starts one day after the project start date.
         startDate.setDate(startDate.getDate() + 1);
     }
 
@@ -257,17 +258,40 @@ export default function CoordinatorProjectSetup() {
         ProjectFolderTimelineItem[]
     >([]);
 
+    // User progress modal state.
     const [selectedProgressFolder, setSelectedProgressFolder] =
         useState<ProjectFolderTimelineItem | null>(null);
+    const [folderProgress, setFolderProgress] =
+        useState<FolderProgress | null>(null);
+    const [progressLoading, setProgressLoading] = useState(false);
+    const [progressError, setProgressError] = useState("");
 
+    // Progress percentage comes from the progress API, not folder status.
+    const progressPercentage = Math.min(
+        100,
+        Math.max(
+            0,
+            Number(folderProgress?.progress_percentage ?? 0) || 0,
+        ),
+    );
 
-    const progressPercentage = selectedProgressFolder
-        ? String(selectedProgressFolder.status) === "2"
-            ? 100
-            : String(selectedProgressFolder.status) === "1"
-                ? 10
-                : 0
-        : 0;
+    const progressStatus = String(
+        folderProgress?.status ??
+            selectedProgressFolder?.status ??
+            "0",
+    );
+
+    const progressStatusLabel =
+        progressStatus === "2" ||
+        progressStatus.toLowerCase() === "completed"
+            ? "Completed"
+            : progressStatus === "1" ||
+                progressStatus.toLowerCase() === "in progress"
+              ? "In Progress"
+              : progressStatus === "0" ||
+                  progressStatus.toLowerCase() === "pending"
+                ? "Pending"
+                : progressStatus;
 
     const progressKeyPerson = selectedProgressFolder?.key_person_options.find(
         (person) => person.uid === selectedProgressFolder.keypersonid,
@@ -275,9 +299,11 @@ export default function CoordinatorProjectSetup() {
 
     const progressUserName = progressKeyPerson
         ? [
-            progressKeyPerson.firstname,
-            progressKeyPerson.lastname,
-        ].filter(Boolean).join(" ") || progressKeyPerson.loginname
+              progressKeyPerson.firstname,
+              progressKeyPerson.lastname,
+          ]
+              .filter(Boolean)
+              .join(" ") || progressKeyPerson.loginname
         : "Unassigned";
 
     // ========================================
@@ -483,7 +509,7 @@ export default function CoordinatorProjectSetup() {
 
             setTimelineStartDate(
                 response.project_start_date?.slice(0, 10) ||
-                getTodayDate(),
+                    getTodayDate(),
             );
 
             const normalizedFolders = (response.folders ?? []).map(
@@ -515,6 +541,50 @@ export default function CoordinatorProjectSetup() {
         } finally {
             setTimelineLoading(false);
         }
+    };
+
+    // ========================================
+    // Load folder progress
+    // ========================================
+
+    const handleViewProgress = async (
+        folder: ProjectFolderTimelineItem,
+    ) => {
+        if (!project) {
+            setProgressError("Project details are not available.");
+            return;
+        }
+
+        setSelectedProgressFolder(folder);
+        setFolderProgress(null);
+        setProgressError("");
+        setProgressLoading(true);
+
+        try {
+            const response = await getProjectFolderProgress(
+                project.project_id,
+                folder.fid,
+            );
+
+            setFolderProgress(response);
+        } catch (err) {
+            console.error("Failed to load folder progress:", err);
+
+            setProgressError(
+                err instanceof Error
+                    ? err.message
+                    : "Failed to load folder progress. Please try again.",
+            );
+        } finally {
+            setProgressLoading(false);
+        }
+    };
+
+    const closeProgressModal = () => {
+        setSelectedProgressFolder(null);
+        setFolderProgress(null);
+        setProgressError("");
+        setProgressLoading(false);
     };
 
     // ========================================
@@ -699,7 +769,7 @@ export default function CoordinatorProjectSetup() {
             folders: timelineFolders.map((folder) => {
                 const isContainer = isContainerFolder(
                     folder,
-                    timelineFolders
+                    timelineFolders,
                 );
 
                 return {
@@ -707,9 +777,7 @@ export default function CoordinatorProjectSetup() {
                     predecessorsid: isContainer
                         ? null
                         : folder.predecessorsid || null,
-                    days: isContainer
-                        ? null
-                        : Number(folder.days),
+                    days: isContainer ? null : Number(folder.days),
                     keypersonid: isContainer
                         ? null
                         : folder.keypersonid || null,
@@ -729,7 +797,6 @@ export default function CoordinatorProjectSetup() {
             );
 
             setSuccess("Folder timeline saved successfully.");
-
         } catch (error) {
             console.error("Failed to save folder timeline:", error);
 
@@ -740,12 +807,11 @@ export default function CoordinatorProjectSetup() {
             setError(
                 error instanceof Error
                     ? error.message
-                    : "Failed to save folder timeline."
+                    : "Failed to save folder timeline.",
             );
         } finally {
             setSaving(false);
         }
-
     };
 
     // ========================================
@@ -787,7 +853,8 @@ export default function CoordinatorProjectSetup() {
                         Unable to Open Project
                     </h1>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        {error || "The requested project could not be found."}
+                        {error ||
+                            "The requested project could not be found."}
                     </p>
 
                     <div className="mt-5 flex justify-center gap-2">
@@ -892,7 +959,9 @@ export default function CoordinatorProjectSetup() {
                                                     type="search"
                                                     value={search}
                                                     onChange={(event) =>
-                                                        setSearch(event.target.value)
+                                                        setSearch(
+                                                            event.target.value,
+                                                        )
                                                     }
                                                     placeholder="Search by member ID..."
                                                     aria-label="Search members by ID"
@@ -904,151 +973,207 @@ export default function CoordinatorProjectSetup() {
                                                     className="shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                                                 >
                                                     {filteredMembers.length > 0 &&
-                                                        filteredMembers.every((member) =>
+                                                    filteredMembers.every(
+                                                        (member) =>
                                                             selectedMembers.includes(
                                                                 member.memberid,
                                                             ),
-                                                        )
+                                                    )
                                                         ? "Deselect All"
                                                         : "Select All"}
                                                 </button>
                                             </div>
 
                                             <div className="space-y-2">
-                                                {filteredMembers.map((member) => {
-                                                    const selected =
-                                                        selectedMembers.includes(
-                                                            member.memberid,
-                                                        );
-                                                    const assignedRoles =
-                                                        assignmentsByMember[
-                                                        member.memberid
-                                                        ] ?? [];
+                                                {filteredMembers.map(
+                                                    (member) => {
+                                                        const selected =
+                                                            selectedMembers.includes(
+                                                                member.memberid,
+                                                            );
+                                                        const assignedRoles =
+                                                            assignmentsByMember[
+                                                                member.memberid
+                                                            ] ?? [];
 
-                                                    return (
-                                                        <div
-                                                            key={member.memberid}
-                                                            className={`rounded-lg border p-3 ${selected
-                                                                ? "border-blue-300 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
-                                                                : "border-gray-200 dark:border-gray-800"
+                                                        return (
+                                                            <div
+                                                                key={
+                                                                    member.memberid
+                                                                }
+                                                                className={`rounded-lg border p-3 ${
+                                                                    selected
+                                                                        ? "border-blue-300 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
+                                                                        : "border-gray-200 dark:border-gray-800"
                                                                 }`}
-                                                        >
-                                                            <label className="flex cursor-pointer items-center gap-3">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selected}
-                                                                    onChange={() =>
-                                                                        toggleMember(
-                                                                            member.memberid,
-                                                                        )
-                                                                    }
-                                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                                />
-                                                                <span className="min-w-0 flex-1">
-                                                                    <span className="block text-sm font-medium text-gray-900 dark:text-white">
-                                                                        Member ID:{" "}
-                                                                        {member.memberid}
-                                                                    </span>
-                                                                    <span className="block text-xs text-gray-500 dark:text-gray-400">
-                                                                        {assignedRoles.length}{" "}
-                                                                        role(s) assigned
-                                                                    </span>
-                                                                </span>
-                                                                {selected && (
-                                                                    <Check
-                                                                        size={17}
-                                                                        className="text-blue-600 dark:text-blue-400"
+                                                            >
+                                                                <label className="flex cursor-pointer items-center gap-3">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={
+                                                                            selected
+                                                                        }
+                                                                        onChange={() =>
+                                                                            toggleMember(
+                                                                                member.memberid,
+                                                                            )
+                                                                        }
+                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                                     />
-                                                                )}
-                                                            </label>
+                                                                    <span className="min-w-0 flex-1">
+                                                                        <span className="block text-sm font-medium text-gray-900 dark:text-white">
+                                                                            Member
+                                                                            ID:{" "}
+                                                                            {
+                                                                                member.memberid
+                                                                            }
+                                                                        </span>
+                                                                        <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                                                            {
+                                                                                assignedRoles.length
+                                                                            }{" "}
+                                                                            role(s)
+                                                                            assigned
+                                                                        </span>
+                                                                    </span>
+                                                                    {selected && (
+                                                                        <Check
+                                                                            size={
+                                                                                17
+                                                                            }
+                                                                            className="text-blue-600 dark:text-blue-400"
+                                                                        />
+                                                                    )}
+                                                                </label>
 
-                                                            {selected && (
-                                                                <div className="ml-7 mt-3 border-t border-gray-200 pt-3 dark:border-gray-700">
-                                                                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                                                        Available Roles
-                                                                    </p>
-
-                                                                    {roles.length === 0 ? (
-                                                                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                                                                            No roles were
-                                                                            returned for
-                                                                            this project.
+                                                                {selected && (
+                                                                    <div className="ml-7 mt-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+                                                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                                                            Available
+                                                                            Roles
                                                                         </p>
-                                                                    ) : (
-                                                                        <div className="flex flex-wrap gap-2">
-                                                                            {roles.map((role) => {
-                                                                                const roleSelected =
-                                                                                    assignedRoles.includes(
-                                                                                        role.rollid,
-                                                                                    );
 
-                                                                                return (
-                                                                                    <label
-                                                                                        key={role.rollid}
-                                                                                        className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${roleSelected
-                                                                                            ? "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
-                                                                                            : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
-                                                                                            }`}
-                                                                                    >
-                                                                                        <input
-                                                                                            type="checkbox"
-                                                                                            checked={roleSelected}
-                                                                                            onChange={() =>
-                                                                                                toggleRole(
-                                                                                                    member.memberid,
-                                                                                                    role.rollid,
-                                                                                                )
-                                                                                            }
-                                                                                            className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
-                                                                                        />
-                                                                                        {role.rolename}
-                                                                                    </label>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    )}
+                                                                        {roles.length ===
+                                                                        0 ? (
+                                                                            <p className="text-xs text-amber-600 dark:text-amber-400">
+                                                                                No
+                                                                                roles
+                                                                                were
+                                                                                returned
+                                                                                for
+                                                                                this
+                                                                                project.
+                                                                            </p>
+                                                                        ) : (
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                {roles.map(
+                                                                                    (
+                                                                                        role,
+                                                                                    ) => {
+                                                                                        const roleSelected =
+                                                                                            assignedRoles.includes(
+                                                                                                role.rollid,
+                                                                                            );
 
-                                                                    {assignedRoles.length > 0 && (
-                                                                        <div className="mt-3 space-y-2">
-                                                                            {roles
-                                                                                .filter((role) =>
-                                                                                    assignedRoles.includes(
-                                                                                        role.rollid,
-                                                                                    ),
-                                                                                )
-                                                                                .map((role) => (
-                                                                                    <div
-                                                                                        key={role.rollid}
-                                                                                        className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"
-                                                                                    >
-                                                                                        <Folder
-                                                                                            size={14}
-                                                                                            className="mt-0.5 shrink-0"
-                                                                                        />
-                                                                                        <p>
-                                                                                            <span className="font-medium">
-                                                                                                {role.rolename}:
-                                                                                            </span>{" "}
-                                                                                            {role.folder_access?.length
-                                                                                                ? role.folder_access
-                                                                                                    .map(
-                                                                                                        (folder) =>
-                                                                                                            folder.fname,
-                                                                                                    )
-                                                                                                    .join(", ")
-                                                                                                : "No folder access details"}
-                                                                                        </p>
-                                                                                    </div>
-                                                                                ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
+                                                                                        return (
+                                                                                            <label
+                                                                                                key={
+                                                                                                    role.rollid
+                                                                                                }
+                                                                                                className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${
+                                                                                                    roleSelected
+                                                                                                        ? "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
+                                                                                                        : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
+                                                                                                }`}
+                                                                                            >
+                                                                                                <input
+                                                                                                    type="checkbox"
+                                                                                                    checked={
+                                                                                                        roleSelected
+                                                                                                    }
+                                                                                                    onChange={() =>
+                                                                                                        toggleRole(
+                                                                                                            member.memberid,
+                                                                                                            role.rollid,
+                                                                                                        )
+                                                                                                    }
+                                                                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
+                                                                                                />
+                                                                                                {
+                                                                                                    role.rolename
+                                                                                                }
+                                                                                            </label>
+                                                                                        );
+                                                                                    },
+                                                                                )}
+                                                                            </div>
+                                                                        )}
 
-                                                {filteredMembers.length === 0 && (
+                                                                        {assignedRoles.length >
+                                                                            0 && (
+                                                                            <div className="mt-3 space-y-2">
+                                                                                {roles
+                                                                                    .filter(
+                                                                                        (
+                                                                                            role,
+                                                                                        ) =>
+                                                                                            assignedRoles.includes(
+                                                                                                role.rollid,
+                                                                                            ),
+                                                                                    )
+                                                                                    .map(
+                                                                                        (
+                                                                                            role,
+                                                                                        ) => (
+                                                                                            <div
+                                                                                                key={
+                                                                                                    role.rollid
+                                                                                                }
+                                                                                                className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"
+                                                                                            >
+                                                                                                <Folder
+                                                                                                    size={
+                                                                                                        14
+                                                                                                    }
+                                                                                                    className="mt-0.5 shrink-0"
+                                                                                                />
+                                                                                                <p>
+                                                                                                    <span className="font-medium">
+                                                                                                        {
+                                                                                                            role.rolename
+                                                                                                        }
+
+                                                                                                        :
+                                                                                                    </span>{" "}
+                                                                                                    {role
+                                                                                                        .folder_access
+                                                                                                        ?.length
+                                                                                                        ? role.folder_access
+                                                                                                              .map(
+                                                                                                                  (
+                                                                                                                      folder,
+                                                                                                                  ) =>
+                                                                                                                      folder.fname,
+                                                                                                              )
+                                                                                                              .join(
+                                                                                                                  ", ",
+                                                                                                              )
+                                                                                                        : "No folder access details"}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        ),
+                                                                                    )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    },
+                                                )}
+
+                                                {filteredMembers.length ===
+                                                    0 && (
                                                     <p className="py-5 text-center text-sm text-gray-500 dark:text-gray-400">
                                                         No member IDs match your
                                                         search.
@@ -1063,72 +1188,98 @@ export default function CoordinatorProjectSetup() {
                                                     Selected Members
                                                 </h3>
                                                 <span className="rounded-full bg-white px-2 py-0.5 text-xs dark:bg-gray-800 dark:text-gray-200">
-                                                    {selectedMemberDetails.length}
+                                                    {
+                                                        selectedMemberDetails.length
+                                                    }
                                                 </span>
                                             </div>
 
-                                            {selectedMemberDetails.length === 0 ? (
+                                            {selectedMemberDetails.length ===
+                                            0 ? (
                                                 <p className="rounded-lg border border-dashed border-gray-300 p-5 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                                     Selected members will appear
                                                     here.
                                                 </p>
                                             ) : (
                                                 <div className="space-y-2">
-                                                    {selectedMemberDetails.map((member) => {
-                                                        const assignedRoles =
-                                                            assignmentsByMember[
-                                                            member.memberid
-                                                            ] ?? [];
-                                                        const roleNames = roles.filter(
-                                                            (role) =>
-                                                                assignedRoles.includes(
-                                                                    role.rollid,
-                                                                ),
-                                                        );
+                                                    {selectedMemberDetails.map(
+                                                        (member) => {
+                                                            const assignedRoles =
+                                                                assignmentsByMember[
+                                                                    member.memberid
+                                                                ] ?? [];
+                                                            const roleNames =
+                                                                roles.filter(
+                                                                    (role) =>
+                                                                        assignedRoles.includes(
+                                                                            role.rollid,
+                                                                        ),
+                                                                );
 
-                                                        return (
-                                                            <div
-                                                                key={member.memberid}
-                                                                className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-2">
-                                                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                        Member ID:{" "}
-                                                                        {member.memberid}
-                                                                    </p>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            removeMember(
-                                                                                member.memberid,
+                                                            return (
+                                                                <div
+                                                                    key={
+                                                                        member.memberid
+                                                                    }
+                                                                    className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900"
+                                                                >
+                                                                    <div className="flex items-start justify-between gap-2">
+                                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                                            Member
+                                                                            ID:{" "}
+                                                                            {
+                                                                                member.memberid
+                                                                            }
+                                                                        </p>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                removeMember(
+                                                                                    member.memberid,
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Remove member ${member.memberid}`}
+                                                                            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                                                                        >
+                                                                            <X
+                                                                                size={
+                                                                                    15
+                                                                                }
+                                                                            />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className="mt-2 flex flex-wrap gap-1">
+                                                                        {roleNames.length >
+                                                                        0 ? (
+                                                                            roleNames.map(
+                                                                                (
+                                                                                    role,
+                                                                                ) => (
+                                                                                    <span
+                                                                                        key={
+                                                                                            role.rollid
+                                                                                        }
+                                                                                        className="rounded bg-blue-50 px-2 py-1 text-[11px] text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                                                                    >
+                                                                                        {
+                                                                                            role.rolename
+                                                                                        }
+                                                                                    </span>
+                                                                                ),
                                                                             )
-                                                                        }
-                                                                        aria-label={`Remove member ${member.memberid}`}
-                                                                        className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                                                                    >
-                                                                        <X size={15} />
-                                                                    </button>
-                                                                </div>
-
-                                                                <div className="mt-2 flex flex-wrap gap-1">
-                                                                    {roleNames.length > 0 ? (
-                                                                        roleNames.map((role) => (
-                                                                            <span
-                                                                                key={role.rollid}
-                                                                                className="rounded bg-blue-50 px-2 py-1 text-[11px] text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                                                            >
-                                                                                {role.rolename}
+                                                                        ) : (
+                                                                            <span className="text-xs text-amber-600 dark:text-amber-400">
+                                                                                No
+                                                                                role
+                                                                                assigned
                                                                             </span>
-                                                                        ))
-                                                                    ) : (
-                                                                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                                                                            No role assigned
-                                                                        </span>
-                                                                    )}
+                                                                        )}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            );
+                                                        },
+                                                    )}
                                                 </div>
                                             )}
                                         </aside>
@@ -1226,210 +1377,359 @@ export default function CoordinatorProjectSetup() {
                                             </thead>
 
                                             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
-                                                {timelineFolders.map((folder) => {
-                                                    const container = isContainerFolder(folder, timelineFolders);
-                                                    const dates = container
-                                                        ? { start: "", end: "" }
-                                                        : calculateFolderDates(
-                                                            folder,
-                                                            timelineFolders,
-                                                            timelineStartDate,
-                                                        );
-                                                    const depth = getFolderDepth(
-                                                        folder,
-                                                        timelineFolders,
-                                                    );
+                                                {timelineFolders.map(
+                                                    (folder) => {
+                                                        const container =
+                                                            isContainerFolder(
+                                                                folder,
+                                                                timelineFolders,
+                                                            );
+                                                        const dates = container
+                                                            ? {
+                                                                  start: "",
+                                                                  end: "",
+                                                              }
+                                                            : calculateFolderDates(
+                                                                  folder,
+                                                                  timelineFolders,
+                                                                  timelineStartDate,
+                                                              );
+                                                        const depth =
+                                                            getFolderDepth(
+                                                                folder,
+                                                                timelineFolders,
+                                                            );
 
-                                                    const predecessorOptions =
-                                                        timelineFolders.filter(
-                                                            (candidate) =>
-                                                                candidate.fid !==
-                                                                folder.fid &&
-                                                                !isContainerFolder(
-                                                                    candidate,
-                                                                    timelineFolders,
-                                                                ),
-                                                        );
+                                                        const predecessorOptions =
+                                                            timelineFolders.filter(
+                                                                (candidate) =>
+                                                                    candidate.fid !==
+                                                                        folder.fid &&
+                                                                    !isContainerFolder(
+                                                                        candidate,
+                                                                        timelineFolders,
+                                                                    ),
+                                                            );
 
-                                                    return (
-                                                        <tr key={folder.fid}>
-                                                            <td className="whitespace-nowrap px-4 py-2 text-gray-500 dark:text-gray-400">
-                                                                {folder.fid}
-                                                            </td>
+                                                        return (
+                                                            <tr
+                                                                key={folder.fid}
+                                                            >
+                                                                <td className="whitespace-nowrap px-4 py-2 text-gray-500 dark:text-gray-400">
+                                                                    {folder.fid}
+                                                                </td>
 
-                                                            {/* Hierarchical folder column */}
-                                                            <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">
-                                                                <div
-                                                                    className="flex min-w-[220px] items-center gap-2"
-                                                                    style={{
-                                                                        paddingLeft: `${depth * 24}px`,
-                                                                    }}
-                                                                >
-                                                                    <Folder
-                                                                        size={16}
-                                                                        className={`shrink-0 ${container
-                                                                            ? "text-blue-600 dark:text-blue-400"
-                                                                            : "text-gray-400 dark:text-gray-500"
+                                                                {/* Hierarchical folder column */}
+                                                                <td className="px-4 py-2 font-medium text-gray-900 dark:text-white">
+                                                                    <div
+                                                                        className="flex min-w-[220px] items-center gap-2"
+                                                                        style={{
+                                                                            paddingLeft: `${depth * 24}px`,
+                                                                        }}
+                                                                    >
+                                                                        <Folder
+                                                                            size={
+                                                                                16
+                                                                            }
+                                                                            className={`shrink-0 ${
+                                                                                container
+                                                                                    ? "text-blue-600 dark:text-blue-400"
+                                                                                    : "text-gray-400 dark:text-gray-500"
                                                                             }`}
-                                                                    />
-                                                                    <span>
-                                                                        {folder.fname}
-                                                                    </span>
-                                                                    {container && (
-                                                                        <span className="whitespace-nowrap rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                                                            Container
+                                                                        />
+                                                                        <span>
+                                                                            {
+                                                                                folder.fname
+                                                                            }
                                                                         </span>
+                                                                        {container && (
+                                                                            <span className="whitespace-nowrap rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                                                Container
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+
+                                                                {/* Predecessor */}
+                                                                <td className="px-4 py-2">
+                                                                    {!container && (
+                                                                        <select
+                                                                            value={
+                                                                                folder.predecessorsid ??
+                                                                                0
+                                                                            }
+                                                                            onChange={(
+                                                                                event,
+                                                                            ) =>
+                                                                                updateTimelineFolder(
+                                                                                    folder.fid,
+                                                                                    {
+                                                                                        predecessorsid:
+                                                                                            Number(
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value,
+                                                                                            ) ||
+                                                                                            null,
+                                                                                    },
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Predecessor for ${folder.fname}`}
+                                                                            className={`${inputClass} w-48 !py-1`}
+                                                                        >
+                                                                            <option value={0}>
+                                                                                None
+                                                                            </option>
+                                                                            {predecessorOptions.map(
+                                                                                (
+                                                                                    candidate,
+                                                                                ) => (
+                                                                                    <option
+                                                                                        key={
+                                                                                            candidate.fid
+                                                                                        }
+                                                                                        value={
+                                                                                            candidate.fid
+                                                                                        }
+                                                                                    >
+                                                                                        {
+                                                                                            candidate.fname
+                                                                                        }{" "}
+                                                                                        (ID:{" "}
+                                                                                        {
+                                                                                            candidate.fid
+                                                                                        }
+                                                                                        )
+                                                                                    </option>
+                                                                                ),
+                                                                            )}
+                                                                        </select>
                                                                     )}
-                                                                </div>
-                                                            </td>
+                                                                </td>
 
-                                                            {/* Predecessor */}
-                                                            <td className="px-4 py-2">
-                                                                {!container && (
-                                                                    <select
-                                                                        value={folder.predecessorsid ?? 0}
-                                                                        onChange={(event) =>
-                                                                            updateTimelineFolder(folder.fid, {
-                                                                                predecessorsid:
-                                                                                    Number(event.target.value) || null,
-                                                                            })
-                                                                        }
-                                                                        aria-label={`Predecessor for ${folder.fname}`}
-                                                                        className={`${inputClass} w-48 !py-1`}
-                                                                    >
-                                                                        <option value={0}>None</option>
-                                                                        {predecessorOptions.map((candidate) => (
-                                                                            <option key={candidate.fid} value={candidate.fid}>
-                                                                                {candidate.fname} (ID: {candidate.fid})
+                                                                {/* Duration */}
+                                                                <td className="px-4 py-2">
+                                                                    {!container && (
+                                                                        <input
+                                                                            type="number"
+                                                                            min={
+                                                                                1
+                                                                            }
+                                                                            step={
+                                                                                1
+                                                                            }
+                                                                            value={
+                                                                                folder.days ??
+                                                                                ""
+                                                                            }
+                                                                            onChange={(
+                                                                                event,
+                                                                            ) =>
+                                                                                updateTimelineFolder(
+                                                                                    folder.fid,
+                                                                                    {
+                                                                                        days:
+                                                                                            event
+                                                                                                .target
+                                                                                                .value ===
+                                                                                            ""
+                                                                                                ? null
+                                                                                                : Number(
+                                                                                                      event
+                                                                                                          .target
+                                                                                                          .value,
+                                                                                                  ),
+                                                                                    },
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Duration for ${folder.fname}`}
+                                                                            className={`${inputClass} w-24 !py-1`}
+                                                                        />
+                                                                    )}
+                                                                </td>
+
+                                                                {/* Start date */}
+                                                                <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
+                                                                    {!container
+                                                                        ? dates.start
+                                                                        : ""}
+                                                                </td>
+
+                                                                {/* End date */}
+                                                                <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
+                                                                    {!container
+                                                                        ? dates.end
+                                                                        : ""}
+                                                                </td>
+
+                                                                {/* Key person */}
+                                                                <td className="px-4 py-2">
+                                                                    {!container && (
+                                                                        <select
+                                                                            value={
+                                                                                folder.keypersonid ??
+                                                                                0
+                                                                            }
+                                                                            onChange={(
+                                                                                event,
+                                                                            ) =>
+                                                                                updateTimelineFolder(
+                                                                                    folder.fid,
+                                                                                    {
+                                                                                        keypersonid:
+                                                                                            Number(
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value,
+                                                                                            ) ||
+                                                                                            null,
+                                                                                    },
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Key person for ${folder.fname}`}
+                                                                            className={`${inputClass} w-48 !py-1`}
+                                                                        >
+                                                                            <option value={0}>
+                                                                                Unassigned
                                                                             </option>
-                                                                        ))}
-                                                                    </select>
-                                                                )}
-                                                            </td>
+                                                                            {folder.key_person_options.map(
+                                                                                (
+                                                                                    person,
+                                                                                ) => (
+                                                                                    <option
+                                                                                        key={
+                                                                                            person.uid
+                                                                                        }
+                                                                                        value={
+                                                                                            person.uid
+                                                                                        }
+                                                                                    >
+                                                                                        {[
+                                                                                            person.firstname,
+                                                                                            person.lastname,
+                                                                                        ]
+                                                                                            .filter(
+                                                                                                Boolean,
+                                                                                            )
+                                                                                            .join(
+                                                                                                " ",
+                                                                                            ) ||
+                                                                                            person.loginname}
+                                                                                    </option>
+                                                                                ),
+                                                                            )}
+                                                                        </select>
+                                                                    )}
+                                                                </td>
 
-                                                            {/* Duration */}
-                                                            <td className="px-4 py-2">
-                                                                {!container && (
-                                                                    <input
-                                                                        type="number"
-                                                                        min={1}
-                                                                        step={1}
-                                                                        value={folder.days ?? ""}
-                                                                        onChange={(event) =>
-                                                                            updateTimelineFolder(folder.fid, {
-                                                                                days:
-                                                                                    event.target.value === ""
-                                                                                        ? null
-                                                                                        : Number(event.target.value),
-                                                                            })
-                                                                        }
-                                                                        aria-label={`Duration for ${folder.fname}`}
-                                                                        className={`${inputClass} w-24 !py-1`}
-                                                                    />
-                                                                )}
-                                                            </td>
+                                                                {/* Remarks */}
+                                                                <td className="px-4 py-2">
+                                                                    {!container && (
+                                                                        <input
+                                                                            type="text"
+                                                                            value={
+                                                                                folder.remarks ??
+                                                                                ""
+                                                                            }
+                                                                            onChange={(
+                                                                                event,
+                                                                            ) =>
+                                                                                updateTimelineFolder(
+                                                                                    folder.fid,
+                                                                                    {
+                                                                                        remarks:
+                                                                                            event
+                                                                                                .target
+                                                                                                .value,
+                                                                                    },
+                                                                                )
+                                                                            }
+                                                                            aria-label={`Remarks for ${folder.fname}`}
+                                                                            placeholder="Enter remarks"
+                                                                            className={`${inputClass} w-52 !py-1`}
+                                                                        />
+                                                                    )}
+                                                                </td>
 
-                                                            {/* Start date */}
-                                                            <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
-                                                                {!container ? dates.start : ""}
-                                                            </td>
-
-                                                            {/* End date */}
-                                                            <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
-                                                                {!container ? dates.end : ""}
-                                                            </td>
-
-                                                            {/* Key person */}
-                                                            <td className="px-4 py-2">
-                                                                {!container && (
-                                                                    <select
-                                                                        value={folder.keypersonid ?? 0}
-                                                                        onChange={(event) =>
-                                                                            updateTimelineFolder(folder.fid, {
-                                                                                keypersonid:
-                                                                                    Number(event.target.value) || null,
-                                                                            })
-                                                                        }
-                                                                        aria-label={`Key person for ${folder.fname}`}
-                                                                        className={`${inputClass} w-48 !py-1`}
-                                                                    >
-                                                                        <option value={0}>Unassigned</option>
-                                                                        {folder.key_person_options.map((person) => (
-                                                                            <option key={person.uid} value={person.uid}>
-                                                                                {[
-                                                                                    person.firstname,
-                                                                                    person.lastname,
-                                                                                ]
-                                                                                    .filter(Boolean)
-                                                                                    .join(" ") || person.loginname}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
-                                                                )}
-                                                            </td>
-
-                                                            {/* Remarks */}
-                                                            <td className="px-4 py-2">
-                                                                {!container && (
-                                                                    <input
-                                                                        type="text"
-                                                                        value={folder.remarks ?? ""}
-                                                                        onChange={(event) =>
-                                                                            updateTimelineFolder(folder.fid, {
-                                                                                remarks: event.target.value,
-                                                                            })
-                                                                        }
-                                                                        aria-label={`Remarks for ${folder.fname}`}
-                                                                        placeholder="Enter remarks"
-                                                                        className={`${inputClass} w-52 !py-1`}
-                                                                    />
-                                                                )}
-                                                            </td>
-
-                                                            {/* Status */}
-                                                            <td className="px-4 py-2">
-                                                                {!container && (
-                                                                    <button
-                                                                        type="button"
-                                                                        disabled={String(folder.status) !== "1"}
-                                                                        onClick={() => setSelectedProgressFolder(folder)}
-                                                                        aria-label={`View progress and notes for ${folder.fname}`}
-                                                                        className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition ${String(folder.status) === "0"
-                                                                            ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                                            : String(folder.status) === "1"
-                                                                                ? "cursor-pointer bg-orange-50 text-orange-700 hover:bg-orange-100 hover:ring-2 hover:ring-primary/30 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
-                                                                                : String(folder.status) === "2"
-                                                                                    ? "cursor-default bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-                                                                                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                                {/* Status */}
+                                                                <td className="px-4 py-2">
+                                                                    {!container && (
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={
+                                                                                String(
+                                                                                    folder.status,
+                                                                                ) !==
+                                                                                "1"
+                                                                            }
+                                                                            onClick={() =>
+                                                                                void handleViewProgress(
+                                                                                    folder,
+                                                                                )
+                                                                            }
+                                                                            aria-label={`View progress and notes for ${folder.fname}`}
+                                                                            className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                                                                                String(
+                                                                                    folder.status,
+                                                                                ) ===
+                                                                                "0"
+                                                                                    ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                                                    : String(
+                                                                                            folder.status,
+                                                                                        ) ===
+                                                                                        "1"
+                                                                                      ? "cursor-pointer bg-orange-50 text-orange-700 hover:bg-orange-100 hover:ring-2 hover:ring-primary/30 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
+                                                                                      : String(
+                                                                                            folder.status,
+                                                                                        ) ===
+                                                                                        "2"
+                                                                                        ? "cursor-default bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                                                                                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                                                                             }`}
-                                                                    >
-                                                                        {String(folder.status) === "0"
-                                                                            ? "Pending"
-                                                                            : String(folder.status) === "1"
-                                                                                ? "In Progress"
-                                                                                : String(folder.status) === "2"
+                                                                        >
+                                                                            {String(
+                                                                                folder.status,
+                                                                            ) ===
+                                                                            "0"
+                                                                                ? "Pending"
+                                                                                : String(
+                                                                                        folder.status,
+                                                                                    ) ===
+                                                                                    "1"
+                                                                                  ? "In Progress"
+                                                                                  : String(
+                                                                                        folder.status,
+                                                                                    ) ===
+                                                                                    "2"
                                                                                     ? "Completed"
                                                                                     : "Unknown"}
 
-                                                                        {String(folder.status) === "1" && (
-                                                                            <span className="ml-1.5">↗</span>
-                                                                        )}
-                                                                    </button>
-                                                                )}
-                                                            </td>
+                                                                            {String(
+                                                                                folder.status,
+                                                                            ) ===
+                                                                                "1" && (
+                                                                                <span className="ml-1.5">
+                                                                                    ↗
+                                                                                </span>
+                                                                            )}
+                                                                        </button>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    },
+                                                )}
 
-                                                        </tr>
-                                                    );
-                                                })}
-
-                                                {timelineFolders.length === 0 && (
+                                                {timelineFolders.length ===
+                                                    0 && (
                                                     <tr>
                                                         <td
                                                             colSpan={9}
                                                             className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                                                         >
-                                                            No folders were returned
-                                                            for this project.
+                                                            No folders were
+                                                            returned for this
+                                                            project.
                                                         </td>
                                                     </tr>
                                                 )}
@@ -1506,8 +1806,8 @@ export default function CoordinatorProjectSetup() {
                                 {saving || timelineLoading
                                     ? "Saving..."
                                     : setupSaved
-                                        ? "Load Timeline"
-                                        : "Save Setup & Continue"}
+                                      ? "Load Timeline"
+                                      : "Save Setup & Continue"}
                             </button>
                         ) : (
                             <button
@@ -1531,12 +1831,11 @@ export default function CoordinatorProjectSetup() {
                 </footer>
             </form>
 
-
             {/* User Progress Modal */}
             {selectedProgressFolder && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-                    onClick={() => setSelectedProgressFolder(null)}
+                    onClick={closeProgressModal}
                 >
                     <div
                         role="dialog"
@@ -1568,7 +1867,7 @@ export default function CoordinatorProjectSetup() {
 
                             <button
                                 type="button"
-                                onClick={() => setSelectedProgressFolder(null)}
+                                onClick={closeProgressModal}
                                 aria-label="Close progress modal"
                                 className="rounded-lg p-2 text-gray-500 transition hover:bg-white hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
                             >
@@ -1578,122 +1877,210 @@ export default function CoordinatorProjectSetup() {
 
                         {/* Modal Content */}
                         <div className="space-y-6 p-5">
-                            {/* User and Status */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        Assigned User
+                            {progressLoading ? (
+                                <div className="flex min-h-[240px] flex-col items-center justify-center gap-3">
+                                    <Loader2
+                                        size={32}
+                                        className="animate-spin text-primary"
+                                    />
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Loading user progress...
                                     </p>
-
-                                    <p className="mt-2 break-words text-sm font-semibold text-gray-900 dark:text-white">
-                                        {progressUserName}
-                                    </p>
-
-                                    {selectedProgressFolder.keypersonid && (
-                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                            User ID: {selectedProgressFolder.keypersonid}
-                                        </p>
-                                    )}
                                 </div>
-
-                                <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
-                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        Current Status
-                                    </p>
-
-                                    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300">
-                                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                                        In Progress
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Progress Bar */}
-                            <div>
-                                <div className="mb-2 flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                        Completion Progress
-                                    </h3>
-
-                                    <span className="text-sm font-bold text-primary">
-                                        {progressPercentage}%
-                                    </span>
-                                </div>
-
+                            ) : progressError ? (
                                 <div
-                                    className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
-                                    role="progressbar"
-                                    aria-label="Folder completion progress"
-                                    aria-valuemin={0}
-                                    aria-valuemax={100}
-                                    aria-valuenow={progressPercentage}
+                                    role="alert"
+                                    className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950"
                                 >
-                                    <div
-                                        className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                                        style={{
-                                            width: `${progressPercentage}%`,
-                                        }}
-                                    />
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle
+                                            size={20}
+                                            className="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                                                Unable to load progress
+                                            </p>
+                                            <p className="mt-1 break-words text-sm text-red-700 dark:text-red-400">
+                                                {progressError}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    void handleViewProgress(
+                                                        selectedProgressFolder,
+                                                    )
+                                                }
+                                                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                            >
+                                                <Loader2
+                                                    size={15}
+                                                    className="hidden"
+                                                />
+                                                Try Again
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
+                            ) : folderProgress ? (
+                                <>
+                                    {/* User and Status */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                Assigned User
+                                            </p>
 
-                                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                    {progressPercentage === 100
-                                        ? "This task is completed."
-                                        : `${progressPercentage}% based on the current status. Actual completion requires progress data from the API.`}
-                                </p>
-                            </div>
+                                            <p className="mt-2 break-words text-sm font-semibold text-gray-900 dark:text-white">
+                                                {progressUserName}
+                                            </p>
 
-                            {/* User Notes */}
-                            <div>
-                                <div className="mb-2 flex items-center gap-2">
+                                            {selectedProgressFolder.keypersonid && (
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    User ID:{" "}
+                                                    {
+                                                        selectedProgressFolder.keypersonid
+                                                    }
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                Current Status
+                                            </p>
+
+                                            <span
+                                                className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                                    progressStatusLabel ===
+                                                    "Completed"
+                                                        ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                                                        : progressStatusLabel ===
+                                                            "Pending"
+                                                          ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                          : "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`h-1.5 w-1.5 rounded-full ${
+                                                        progressStatusLabel ===
+                                                        "Completed"
+                                                            ? "bg-green-500"
+                                                            : progressStatusLabel ===
+                                                                "Pending"
+                                                              ? "bg-gray-400"
+                                                              : "animate-pulse bg-primary"
+                                                    }`}
+                                                />
+                                                {progressStatusLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Progress Bar */}
+                                    <div>
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                Completion Progress
+                                            </h3>
+
+                                            <span className="text-sm font-bold text-primary">
+                                                {progressPercentage}%
+                                            </span>
+                                        </div>
+
+                                        <div
+                                            className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                                            role="progressbar"
+                                            aria-label="Folder completion progress"
+                                            aria-valuemin={0}
+                                            aria-valuemax={100}
+                                            aria-valuenow={progressPercentage}
+                                        >
+                                            <div
+                                                className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                                                style={{
+                                                    width: `${progressPercentage}%`,
+                                                }}
+                                            />
+                                        </div>
+
+                                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            {progressPercentage === 100
+                                                ? "This task is completed."
+                                                : `${progressPercentage}% completion reported by the progress API.`}
+                                        </p>
+                                    </div>
+
+                                    {/* User Notes */}
+                                    <div>
+                                        <div className="mb-2 flex items-center gap-2">
+                                            <Folder
+                                                size={17}
+                                                className="text-primary"
+                                            />
+
+                                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                User Notes
+                                            </h3>
+                                        </div>
+
+                                        <div className="min-h-[110px] whitespace-pre-wrap break-words rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                            {folderProgress.progress_notes?.trim() ||
+                                                "No notes have been added for this folder yet."}
+                                        </div>
+                                    </div>
+
+                                    {/* Duration Details */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Planned Duration
+                                            </p>
+
+                                            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                                                {selectedProgressFolder.days ??
+                                                    "—"}
+                                                {selectedProgressFolder.days !=
+                                                null
+                                                    ? " days"
+                                                    : ""}
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Folder ID
+                                            </p>
+
+                                            <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                                                {selectedProgressFolder.fid}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex min-h-[180px] flex-col items-center justify-center gap-2 text-center">
                                     <Folder
-                                        size={17}
-                                        className="text-primary"
+                                        size={28}
+                                        className="text-gray-400"
                                     />
-
-                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                        User Notes
-                                    </h3>
-                                </div>
-
-                                <div className="min-h-[110px] whitespace-pre-wrap break-words rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                                    {selectedProgressFolder.remarks?.trim() ||
-                                        "No notes have been added for this folder yet."}
-                                </div>
-                            </div>
-
-                            {/* Duration Details */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        No progress data available
+                                    </p>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Planned Duration
-                                    </p>
-
-                                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-                                        {selectedProgressFolder.days ?? "—"}
-                                        {selectedProgressFolder.days != null
-                                            ? " days"
-                                            : ""}
+                                        The progress API did not return any
+                                        progress details for this folder.
                                     </p>
                                 </div>
-
-                                <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Folder ID
-                                    </p>
-
-                                    <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
-                                        {selectedProgressFolder.fid}
-                                    </p>
-                                </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Modal Footer */}
                         <div className="flex justify-end border-t border-gray-200 p-4 dark:border-gray-800">
                             <button
                                 type="button"
-                                onClick={() => setSelectedProgressFolder(null)}
+                                onClick={closeProgressModal}
                                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                             >
                                 Close
@@ -1702,7 +2089,6 @@ export default function CoordinatorProjectSetup() {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

@@ -70,18 +70,18 @@ export default function ProjectDetails() {
     const folders: ProjectFolder[] = project?.folders?.length
         ? project.folder_access?.length
             ? project.folders.filter((folder) =>
-                  project.folder_access!.some(
-                      (access) => access.fid === folder.fid,
-                  ),
-              )
+                project.folder_access!.some(
+                    (access) => access.fid === folder.fid,
+                ),
+            )
             : project.folders
         : (project?.folder_access ?? []).map((folder) => ({
-              fid: folder.fid,
-              fname: folder.fname,
-              can_start: false,
-              status: 0,
-              children: [],
-          }));
+            fid: folder.fid,
+            fname: folder.fname,
+            can_start: false,
+            status: 0,
+            children: [],
+        }));
 
     // Show folders that can start or are already in progress.
     const visibleFolders: ProjectFolder[] = folders
@@ -91,6 +91,7 @@ export default function ProjectDetails() {
             children: folder.children?.filter(isVisibleFolder),
         }));
 
+
     const handleFolderClick = async (folder: ProjectFolder) => {
         const activeProject = currentProject;
 
@@ -99,13 +100,13 @@ export default function ProjectDetails() {
             return;
         }
 
-        // Prevent duplicate start requests.
+        // Prevent duplicate requests.
         if (startingFolderId !== null) {
             return;
         }
 
-        // In-progress folders open the dedicated files page.
-        if (isInProgress(folder)) {
+        // Already started: open the folder without calling the start API.
+        if (Number(folder.status) === 1) {
             navigate(
                 `/dashboard/projects/${activeProject.project_id}/folders/${folder.fid}`,
                 {
@@ -118,8 +119,11 @@ export default function ProjectDetails() {
             return;
         }
 
-        // Only folders marked ready can be started.
-        if (!isReadyToStart(folder)) {
+        // Only pending folders explicitly marked ready can be started.
+        if (
+            Number(folder.status) !== 0 ||
+            folder.can_start !== true
+        ) {
             return;
         }
 
@@ -127,12 +131,12 @@ export default function ProjectDetails() {
         setFolderError("");
 
         try {
+            // This API is called only for pending folders.
             await startProjectFolder(
                 activeProject.project_id,
                 folder.fid,
             );
 
-            // Update the local status immediately.
             const updatedProject = markFolderInProgress(
                 activeProject,
                 folder.fid,
@@ -142,7 +146,7 @@ export default function ProjectDetails() {
 
             let latestProject = updatedProject;
 
-            // Refresh the project to retrieve the latest folder statuses.
+            // Refresh project statuses after starting the folder.
             try {
                 const refreshedProject = await getProject<Project>(
                     activeProject.project_id,
@@ -157,10 +161,9 @@ export default function ProjectDetails() {
                     setCurrentProject(latestProject);
                 }
             } catch {
-                // Continue with the locally updated project if refresh fails.
+                // Continue using the locally updated project.
             }
 
-            // Files are displayed only on the dedicated folder page.
             navigate(
                 `/dashboard/projects/${activeProject.project_id}/folders/${folder.fid}`,
                 {

@@ -32,6 +32,7 @@ import {
     completeProjectFolder,
     getProjectFolderProgress,
     type Project,
+    getProjectFolderFilePreview,
 } from "../api/projects";
 
 import { getUsers, type User } from "../api/users";
@@ -275,7 +276,7 @@ function normalizeFolderProgress(response: unknown): FolderProgress {
     return {
         progress_percentage:
             parsedPercentage !== null &&
-            Number.isFinite(parsedPercentage)
+                Number.isFinite(parsedPercentage)
                 ? parsedPercentage
                 : null,
         progress_notes:
@@ -286,43 +287,43 @@ function normalizeFolderProgress(response: unknown): FolderProgress {
     };
 }
 
-function getProjectStatus(status: unknown) {
-    const value = String(status ?? "").trim().toLowerCase();
+// function getProjectStatus(status: unknown) {
+//     const value = String(status ?? "").trim().toLowerCase();
 
-    if (value === "0" || value === "pending") {
-        return {
-            label: "Pending",
-            className:
-                "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-        };
-    }
+//     if (value === "0" || value === "pending") {
+//         return {
+//             label: "Pending",
+//             className:
+//                 "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+//         };
+//     }
 
-    if (
-        value === "1" ||
-        value === "in progress" ||
-        value === "in_progress"
-    ) {
-        return {
-            label: "In Progress",
-            className:
-                "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-        };
-    }
+//     if (
+//         value === "1" ||
+//         value === "in progress" ||
+//         value === "in_progress"
+//     ) {
+//         return {
+//             label: "In Progress",
+//             className:
+//                 "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+//         };
+//     }
 
-    if (value === "2" || value === "completed") {
-        return {
-            label: "Completed",
-            className:
-                "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-        };
-    }
+//     if (value === "2" || value === "completed") {
+//         return {
+//             label: "Completed",
+//             className:
+//                 "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+//         };
+//     }
 
-    return {
-        label: value ? String(status) : "Unknown",
-        className:
-            "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-    };
-}
+//     return {
+//         label: value ? String(status) : "Unknown",
+//         className:
+//             "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+//     };
+// }
 
 function isFolderCompleted(status: unknown): boolean {
     const value = String(status ?? "").trim().toLowerCase();
@@ -330,16 +331,6 @@ function isFolderCompleted(status: unknown): boolean {
     return value === "2" || value === "completed";
 }
 
-/**
- * Calculates the percentage displayed for a folder.
- *
- * Status mapping:
- * 0 = Pending / Not Started
- * 1 = In Progress; minimum displayed progress is 20%
- * 2 = Completed; displayed progress is 100%
- *
- * API progress takes priority over the folder tree's saved progress.
- */
 function getFolderProgressPercentage(
     folder: ProjectFolder | null | undefined,
     apiProgress?: FolderProgress | null,
@@ -484,12 +475,19 @@ export default function ProjectFolderFiles() {
     const subfolders = currentFolder?.children ?? [];
 
     // File preview state
-    const [previewFile, setPreviewFile] = useState<FolderFile | null>(
-        null,
-    );
+    const [previewFile, setPreviewFile] = useState<FolderFile | null>(null);
     const [previewText, setPreviewText] = useState("");
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState("");
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
 
     const allFilesSelected =
         files.length > 0 &&
@@ -497,13 +495,31 @@ export default function ProjectFolderFiles() {
             selectedFiles.has(getFileKey(file, index)),
         );
 
-    // Current user and folder permission
+
     const currentUser = getCurrentUser();
+
+    const isProjectCoordinator =
+        project?.coordinator != null &&
+        currentUser?.uid != null &&
+        Number(project.coordinator) === Number(currentUser.uid);
+
+    const isAdmin =
+        String(currentUser?.mtype ?? "").trim().toLowerCase() === "sysadmin";
+
+    const canViewFolderProgress =
+        isAdmin ||
+        isProjectCoordinator ||
+        (
+            currentFolder?.keypersonid != null &&
+            currentUser?.uid != null &&
+            Number(currentFolder.keypersonid) === Number(currentUser.uid)
+        );
 
     const canUpdateFolderStatus =
         currentFolder?.keypersonid != null &&
         currentUser?.uid != null &&
         Number(currentFolder.keypersonid) === Number(currentUser.uid);
+
 
     // Folder progress state
     const [folderProgress, setFolderProgress] =
@@ -531,7 +547,6 @@ export default function ProjectFolderFiles() {
     );
     const [deleteError, setDeleteError] = useState("");
     const [deleteSuccess, setDeleteSuccess] = useState("");
-
     // --------------------------------------------------
     // Load folder progress from the GET API
     // --------------------------------------------------
@@ -742,20 +757,6 @@ export default function ProjectFolderFiles() {
         );
     }
 
-    function getFilePreviewUrl(file: FolderFile): string | null {
-        const value =
-            file.file_url ??
-            file.download_url ??
-            file.url ??
-            file.path;
-
-        if (typeof value !== "string" || !value.trim()) {
-            return null;
-        }
-
-        return value;
-    }
-
     function isImageFile(file: FolderFile): boolean {
         const mime = file.mime_type?.toLowerCase() ?? "";
 
@@ -871,45 +872,66 @@ export default function ProjectFolderFiles() {
     // Preview files
     // --------------------------------------------------
 
-    const handleOpenFile = async (file: FolderFile) => {
-        setPreviewFile(file);
+    const closePreview = () => {
+        setPreviewFile(null);
         setPreviewText("");
         setPreviewError("");
         setPreviewLoading(false);
+        setPreviewUrl(null);
+    };
 
-        const url = getFilePreviewUrl(file);
+    const handleOpenFile = async (file: FolderFile) => {
+        const fileId = Number(file.file_id ?? file.id);
 
-        if (!url) {
-            setPreviewError(
-                "The file URL is unavailable. Please provide a file download or preview endpoint from your backend.",
-            );
+        setPreviewFile(file);
+        setPreviewText("");
+        setPreviewError("");
+        setPreviewUrl(null);
+
+        if (!Number.isInteger(fileId) || fileId <= 0) {
+            setPreviewError("File ID is missing or invalid.");
+            setPreviewLoading(false);
             return;
         }
 
-        if (isTextFile(file)) {
-            setPreviewLoading(true);
+        if (
+            !Number.isInteger(parsedProjectId) ||
+            parsedProjectId <= 0 ||
+            !Number.isInteger(parsedFolderId) ||
+            parsedFolderId <= 0
+        ) {
+            setPreviewError("Invalid project or folder ID.");
+            setPreviewLoading(false);
+            return;
+        }
 
-            try {
-                const response = await fetch(url, {
-                    credentials: "same-origin",
-                });
+        setPreviewLoading(true);
 
-                if (!response.ok) {
-                    throw new Error(
-                        "Unable to load the file content.",
-                    );
-                }
+        try {
+            const blob = await getProjectFolderFilePreview(
+                parsedProjectId,
+                parsedFolderId,
+                fileId,
+            );
 
-                setPreviewText(await response.text());
-            } catch (err: unknown) {
-                setPreviewError(
-                    err instanceof Error
-                        ? err.message
-                        : "Unable to preview this file.",
-                );
-            } finally {
-                setPreviewLoading(false);
+            // Create a browser URL for the downloaded file.
+            const url = URL.createObjectURL(blob);
+            setPreviewUrl(url);
+
+            // Text files must be read as text for the modal.
+            if (isTextFile(file)) {
+                setPreviewText(await blob.text());
             }
+        } catch (err: unknown) {
+            console.error("File preview failed:", err);
+
+            setPreviewError(
+                err instanceof Error
+                    ? err.message
+                    : "Unable to preview this file. Please try again.",
+            );
+        } finally {
+            setPreviewLoading(false);
         }
     };
 
@@ -992,7 +1014,7 @@ export default function ProjectFolderFiles() {
                 } else {
                     const stateFolder =
                         navigationState?.folder &&
-                        Number(navigationState.folder.fid) ===
+                            Number(navigationState.folder.fid) ===
                             parsedFolderId
                             ? navigationState.folder
                             : null;
@@ -1278,7 +1300,7 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    const projectStatus = getProjectStatus(project?.status);
+    // const projectStatus = getProjectStatus(project?.status);
 
     // --------------------------------------------------
     // Render
@@ -1299,26 +1321,26 @@ export default function ProjectFolderFiles() {
 
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="truncate text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+                                <h1 className="truncate text-xl font-bold text-gray-800 dark:text-white sm:text-2xl">
                                     {project?.projectname || "Project"}
                                 </h1>
 
-                                {project && (
+                                {/* {project && (
                                     <span
                                         className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold ${projectStatus.className}`}
                                     >
                                         {projectStatus.label}
                                     </span>
-                                )}
+                                )} */}
                             </div>
 
                             {/* Folder name, progress and completion */}
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span className="truncate text-sm text-gray-500 dark:text-gray-400">
+                                <span className="truncate text-sm text-gray-800 dark:text-gray-400">
                                     {currentFolderName}
                                 </span>
 
-                                {currentFolder && (
+                                {currentFolder && canViewFolderProgress && (
                                     <>
                                         {canUpdateFolderStatus ? (
                                             <button
@@ -1538,11 +1560,10 @@ export default function ProjectFolderFiles() {
 
                                     {/* Upload files */}
                                     <label
-                                        className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${
-                                            uploading
-                                                ? "pointer-events-none cursor-not-allowed opacity-60"
-                                                : ""
-                                        }`}
+                                        className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading
+                                            ? "pointer-events-none cursor-not-allowed opacity-60"
+                                            : ""
+                                            }`}
                                     >
                                         {uploading ? (
                                             <Loader2
@@ -1709,11 +1730,10 @@ export default function ProjectFolderFiles() {
                                                     return (
                                                         <tr
                                                             key={fileKey}
-                                                            className={`transition ${
-                                                                isSelected
-                                                                    ? "bg-primary/10 dark:bg-primary/20"
-                                                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/40"
-                                                            }`}
+                                                            className={`transition ${isSelected
+                                                                ? "bg-primary/10 dark:bg-primary/20"
+                                                                : "hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                                                                }`}
                                                         >
                                                             <td className="px-4 py-4">
                                                                 <input
@@ -1794,10 +1814,10 @@ export default function ProjectFolderFiles() {
                                                                     type="button"
                                                                     title={
                                                                         deletingFileId ===
-                                                                        Number(
-                                                                            file.file_id ??
-                                                                            file.id,
-                                                                        )
+                                                                            Number(
+                                                                                file.file_id ??
+                                                                                file.id,
+                                                                            )
                                                                             ? "Deleting file..."
                                                                             : "Delete file"
                                                                     }
@@ -1814,10 +1834,10 @@ export default function ProjectFolderFiles() {
                                                                     className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                                 >
                                                                     {deletingFileId ===
-                                                                    Number(
-                                                                        file.file_id ??
-                                                                        file.id,
-                                                                    ) ? (
+                                                                        Number(
+                                                                            file.file_id ??
+                                                                            file.id,
+                                                                        ) ? (
                                                                         <Loader2
                                                                             size={18}
                                                                             className="animate-spin"
@@ -1926,12 +1946,12 @@ export default function ProjectFolderFiles() {
                                             value === ""
                                                 ? 0
                                                 : Math.min(
-                                                      100,
-                                                      Math.max(
-                                                          0,
-                                                          Number(value),
-                                                      ),
-                                                  ),
+                                                    100,
+                                                    Math.max(
+                                                        0,
+                                                        Number(value),
+                                                    ),
+                                                ),
                                         );
                                     }}
                                     disabled={statusSaving}
@@ -2024,7 +2044,7 @@ export default function ProjectFolderFiles() {
             {previewFile && (
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6"
-                    onClick={() => setPreviewFile(null)}
+                    onClick={closePreview}
                 >
                     <div
                         role="dialog"
@@ -2057,9 +2077,9 @@ export default function ProjectFolderFiles() {
                             </div>
 
                             <div className="flex shrink-0 items-center gap-2">
-                                {getFilePreviewUrl(previewFile) && (
+                                {previewUrl && (
                                     <a
-                                        href={getFilePreviewUrl(previewFile)!}
+                                        href={previewUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
@@ -2072,7 +2092,7 @@ export default function ProjectFolderFiles() {
 
                                 <button
                                     type="button"
-                                    onClick={() => setPreviewFile(null)}
+                                    onClick={closePreview}
                                     className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                                     title="Close preview"
                                     aria-label="Close preview"
@@ -2103,24 +2123,12 @@ export default function ProjectFolderFiles() {
                                         {previewError}
                                     </p>
 
-                                    {getFilePreviewUrl(previewFile) && (
-                                        <a
-                                            href={getFilePreviewUrl(
-                                                previewFile,
-                                            )!}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                                        >
-                                            <Download size={16} />
-                                            Open or download file
-                                        </a>
-                                    )}
+
                                 </div>
                             ) : isImageFile(previewFile) ? (
                                 <div className="flex min-h-[400px] items-center justify-center p-4">
                                     <img
-                                        src={getFilePreviewUrl(previewFile)!}
+                                        src={previewUrl ?? undefined}
                                         alt={getFileName(previewFile)}
                                         className="max-h-[75vh] max-w-full rounded-lg object-contain"
                                     />
@@ -2130,21 +2138,21 @@ export default function ProjectFolderFiles() {
                                     {previewText}
                                 </pre>
                             ) : getFileExtension(previewFile) === "pdf" ||
-                              previewFile.mime_type ===
-                                  "application/pdf" ? (
+                                previewFile.mime_type ===
+                                "application/pdf" ? (
                                 <iframe
                                     title={`PDF preview: ${getFileName(previewFile)}`}
-                                    src={getFilePreviewUrl(previewFile)!}
+                                    src={previewUrl ?? undefined}
                                     className="h-[70vh] min-h-[500px] w-full border-0"
                                 />
                             ) : [
-                                  "doc",
-                                  "docx",
-                                  "xls",
-                                  "xlsx",
-                                  "ppt",
-                                  "pptx",
-                              ].includes(getFileExtension(previewFile)) ? (
+                                "doc",
+                                "docx",
+                                "xls",
+                                "xlsx",
+                                "ppt",
+                                "pptx",
+                            ].includes(getFileExtension(previewFile)) ? (
                                 <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
                                     <FileText
                                         size={48}
@@ -2162,15 +2170,16 @@ export default function ProjectFolderFiles() {
                                         the modal.
                                     </p>
 
-                                    <a
-                                        href={getFilePreviewUrl(previewFile)!}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                                    >
-                                        <ExternalLink size={16} />
-                                        Open document
-                                    </a>
+                                    {previewUrl && (
+                                        <a
+                                            href={previewUrl}
+                                            download={getFileName(previewFile)}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                                        >
+                                            <Download size={16} />
+                                            Download document
+                                        </a>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
@@ -2188,11 +2197,9 @@ export default function ProjectFolderFiles() {
                                         directly in the browser.
                                     </p>
 
-                                    {getFilePreviewUrl(previewFile) && (
+                                    {previewUrl && (
                                         <a
-                                            href={getFilePreviewUrl(
-                                                previewFile,
-                                            )!}
+                                            href={previewUrl}
                                             download={getFileName(previewFile)}
                                             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                                         >

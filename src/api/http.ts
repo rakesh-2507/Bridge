@@ -85,8 +85,10 @@ async function sendRequest(
 ): Promise<Response> {
   const headers = new Headers(options.headers);
 
-  headers.set("Accept", "application/json");
-
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+  
   const isFormData = options.body instanceof FormData;
 
   if (isFormData) {
@@ -203,4 +205,65 @@ export function put<T>(path: string, payload: unknown): Promise<T> {
 
 export function del<T>(path: string): Promise<T> {
   return request<T>(path, { method: "DELETE" });
+}
+
+async function requestBlob(
+  path: string,
+  options: RequestInit = {},
+): Promise<Blob> {
+  const accessToken = localStorage.getItem("access_token");
+
+  let response = await sendRequest(path, options, accessToken);
+
+  // Use the same refresh-token flow as normal API requests.
+  if (
+    response.status === 401 &&
+    path !== "/login" &&
+    path !== "/refresh-token"
+  ) {
+    const newAccessToken = await refreshAccessToken();
+
+    if (newAccessToken) {
+      response = await sendRequest(path, options, newAccessToken);
+    }
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = `Request failed (${response.status}): ${response.statusText}`;
+
+    if (text) {
+      try {
+        const data = JSON.parse(text) as ApiError;
+
+        if (typeof data.detail === "string") {
+          message = data.detail;
+        } else if (data.message) {
+          message = data.message;
+        } else if (Array.isArray(data.detail)) {
+          message =
+            data.detail
+              .map((item) => item.msg ?? "")
+              .filter(Boolean)
+              .join(", ") || message;
+        }
+      } catch {
+        message = `Request failed (${response.status}): ${text}`;
+      }
+    }
+
+    console.error("File request failed:", {
+      path,
+      status: response.status,
+      message,
+    });
+
+    throw new Error(message);
+  }
+
+  return response.blob();
+}
+
+export function getBlob(path: string): Promise<Blob> {
+  return requestBlob(path, { method: "GET" });
 }

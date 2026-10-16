@@ -16,8 +16,6 @@ import {
   Pencil,
   Trash2,
   CircleUser,
-  Mars,
-  Venus,
 } from "lucide-react";
 import {
   getProjects,
@@ -28,6 +26,9 @@ import {
   type ProjectFolder,
 } from "../api/projects";
 import { getUsers, type User } from "../api/users";
+import mrImage from "../assets/mr.png";
+import mrsImage from "../assets/mrs.png";
+
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
@@ -661,14 +662,20 @@ export default function Projects() {
                         <div className="max-h-[460px] space-y-3 overflow-y-auto pr-2 scrollbar-hide">
                           {projectDetails.member_ids.map((memberId) => {
                             const user = users.find((u) => u.uid === memberId);
-                            const title = user?.title?.trim().toLowerCase();
+                            const normalizedTitle = user?.title?.trim().toLowerCase();
 
-                            const GenderIcon =
-                              title === "mr"
-                                ? Mars
-                                : title === "ms" || title === "mrs" || title === "miss"
-                                  ? Venus
-                                  : CircleUser;
+                            const isMr = normalizedTitle === "mr" || normalizedTitle === "mr.";
+
+                            const isMrs =
+                              ["ms", "mrs", "miss", "ms.", "mrs.", "miss."].includes(
+                                normalizedTitle ?? ""
+                              );
+
+                            const profileImage = isMr
+                              ? mrImage
+                              : isMrs
+                                ? mrsImage
+                                : null;
 
                             const fullName = user
                               ? [user.title, user.firstname, user.lastname]
@@ -681,15 +688,20 @@ export default function Projects() {
                                 key={memberId}
                                 className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                               >
-                                <div
-                                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${title === "mr"
-                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
-                                    : title === "ms" || title === "mrs" || title === "miss"
-                                      ? "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300"
-                                      : "bg-primary text-white"
-                                    }`}
-                                >
-                                  <GenderIcon size={20} />
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+                                  {profileImage ? (
+                                    <img
+                                      src={profileImage}
+                                      alt={`${user?.title ?? "User"} avatar`}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <CircleUser
+                                      size={24}
+                                      className="text-primary"
+                                      aria-label="Default user avatar"
+                                    />
+                                  )}
                                 </div>
 
                                 <div className="flex min-w-0 flex-1 flex-col gap-1">
