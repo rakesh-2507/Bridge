@@ -426,3 +426,43 @@ export async function getNotifications() {
   return get<NotificationsResponse>("/notifications");
 }
 
+export interface FolderFile {
+    file_id?: number;
+    id?: number;
+    filename?: string;
+    file_name?: string;
+    name?: string;
+    createduid?: number | string | null;
+    createddate?: string | null;
+    filesize?: number | string | null;
+    mime_type?: string | null;
+    file_url?: string;
+    download_url?: string;
+    url?: string;
+    path?: string;
+    [key: string]: unknown;
+}
+
+export interface ProjectFolder {
+    fid: number;
+    fname: string;
+    parent_fid?: number | null;
+    keypersonid?: number | null;
+    status?: number | string;
+    progress_percentage?: number | null;
+    progress_notes?: string | null;
+    children?: ProjectFolder[];
+    fileCount?: number;
+}
+
+export interface FolderNavigationState {
+    project?: Project;
+    folder?: ProjectFolder;
+    folderName?: string;
+}
+
+export interface FolderProgress {
+    progress_percentage?: number | null;
+    progress_notes?: string | null;
+    status?: number | string | null;
+}

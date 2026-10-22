@@ -2,92 +2,23 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent, DragEvent, MouseEvent } from "react";
 import {
-    Folder,
-    Loader2,
-    AlertCircle,
-    RefreshCw,
-    ChevronRight,
-    Trash2,
-    X,
-    ExternalLink,
-    Download,
-    Upload,
-    FolderOpen,
-    File,
-    FileImage,
-    FileText,
-    FileSpreadsheet,
-    FileCode,
-    FileArchive,
-    FileType,
-    Pencil,
-    MessageSquare,
-    Send,
+    Folder, Check, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, File, FileImage, FileText, FileSpreadsheet, FileCode, FileArchive, FileType, Pencil, MessageSquare, Send,
 } from "lucide-react";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
-    getProject,
-    getProjectFolderFiles,
-    uploadProjectFolderFiles,
-    deleteProjectFolderFile,
-    updateProjectFolderProgress,
-    completeProjectFolder,
-    getProjectFolderProgress,
-    getProjectFolderFilePreview,
-    getProjectFolderCommentRecipients,
-    createProjectFolderComment,
-    getNotifications,
-    type Project,
-    type Notification,
-    type FolderCommentRecipient,
+    getProject, getProjectFolderFiles, uploadProjectFolderFiles, deleteProjectFolderFile, updateProjectFolderProgress, completeProjectFolder, getProjectFolderProgress, getProjectFolderFilePreview, getProjectFolderCommentRecipients, createProjectFolderComment, getNotifications,
 } from "../api/projects";
 
+import type {
+    FolderFile, ProjectFolder, FolderNavigationState, FolderProgress, Project, Notification, FolderCommentRecipient,
+} from "../api/projects";
+import { createPortal } from "react-dom";
 import { getUsers, type User } from "../api/users";
 import { getCurrentUser } from "../api/auth";
 import Modal from "../components/models/Modal";
 import FolderTree from "../components/models/FolderTree";
-interface FolderFile {
-    file_id?: number;
-    id?: number;
-    filename?: string;
-    file_name?: string;
-    name?: string;
-    createduid?: number | string | null;
-    createddate?: string | null;
-    filesize?: number | string | null;
-    mime_type?: string | null;
-    file_url?: string;
-    download_url?: string;
-    url?: string;
-    path?: string;
-    [key: string]: unknown;
-}
-
-interface ProjectFolder {
-    fid: number;
-    fname: string;
-    parent_fid?: number | null;
-    keypersonid?: number | null;
-    status?: number | string;
-    progress_percentage?: number | null;
-    progress_notes?: string | null;
-    children?: ProjectFolder[];
-    fileCount?: number;
-}
-
-interface FolderNavigationState {
-    project?: Project;
-    folder?: ProjectFolder;
-    folderName?: string;
-}
-
-interface FolderProgress {
-    progress_percentage?: number | null;
-    progress_notes?: string | null;
-    status?: number | string | null;
-}
 
 const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
@@ -576,15 +507,12 @@ export default function ProjectFolderFiles() {
 
     const [completingFolder, setCompletingFolder] = useState(false);
     const [completeFolderError, setCompleteFolderError] = useState("");
-    const [completeFolderSuccess, setCompleteFolderSuccess] = useState("");
 
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
     const [deleteError, setDeleteError] = useState("");
-    const [deleteSuccess, setDeleteSuccess] = useState("");
 
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState("");
-    const [uploadSuccess, setUploadSuccess] = useState("");
     const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
@@ -675,7 +603,6 @@ export default function ProjectFolderFiles() {
 
         setCompletingFolder(true);
         setCompleteFolderError("");
-        setCompleteFolderSuccess("");
 
         try {
             await completeProjectFolder(parsedProjectId, parsedFolderId);
@@ -740,7 +667,7 @@ export default function ProjectFolderFiles() {
             });
 
             setProgressPercentage(100);
-            setCompleteFolderSuccess("Folder completed successfully.");
+            setSuccessMessage("Folder completed successfully.");
         } catch (err: unknown) {
             setCompleteFolderError(
                 err instanceof Error
@@ -1146,6 +1073,7 @@ export default function ProjectFolderFiles() {
             });
 
             setShowStatusModal(false);
+            setSuccessMessage("Folder progress saved successfully.");
         } catch (err: unknown) {
             setStatusError(
                 err instanceof Error
@@ -1177,7 +1105,6 @@ export default function ProjectFolderFiles() {
 
         setDeletingFileId(fileId);
         setDeleteError("");
-        setDeleteSuccess("");
 
         try {
             await deleteProjectFolderFile(
@@ -1192,7 +1119,7 @@ export default function ProjectFolderFiles() {
                 return updated;
             });
 
-            setDeleteSuccess(`"${fileName}" deleted successfully.`);
+            setSuccessMessage(`"${fileName}" deleted successfully.`);
             setReloadKey((key) => key + 1);
         } catch (err: unknown) {
             setDeleteError(
@@ -1222,7 +1149,6 @@ export default function ProjectFolderFiles() {
 
         setUploading(true);
         setUploadError("");
-        setUploadSuccess("");
 
         try {
             await uploadProjectFolderFiles(
@@ -1231,7 +1157,7 @@ export default function ProjectFolderFiles() {
                 selected,
             );
 
-            setUploadSuccess(
+            setSuccessMessage(
                 `${selected.length} file${selected.length === 1 ? "" : "s"} uploaded successfully.`,
             );
 
@@ -1517,7 +1443,6 @@ export default function ProjectFolderFiles() {
 
     const [deletingSelected, setDeletingSelected] = useState(false);
     const [bulkDeleteError, setBulkDeleteError] = useState("");
-    const [bulkDeleteSuccess, setBulkDeleteSuccess] = useState("");
     const handleDeleteSelectedFiles = async () => {
         const selectedItems = files
             .map((file, index) => ({
@@ -1549,9 +1474,7 @@ export default function ProjectFolderFiles() {
 
         setDeletingSelected(true);
         setBulkDeleteError("");
-        setBulkDeleteSuccess("");
         setDeleteError("");
-        setDeleteSuccess("");
 
         const failedKeys = new Set(
             invalidItems.map((item) => item.key),
@@ -1582,7 +1505,7 @@ export default function ProjectFolderFiles() {
             setSelectedFiles(failedKeys);
 
             if (deletedCount > 0) {
-                setBulkDeleteSuccess(
+                setSuccessMessage(
                     `${deletedCount} file${deletedCount === 1 ? "" : "s"} deleted successfully.`,
                 );
 
@@ -1600,6 +1523,19 @@ export default function ProjectFolderFiles() {
             setDeletingSelected(false);
         }
     };
+
+    const [successMessage, setSuccessMessage] = useState("");
+
+    useEffect(() => {
+        if (!successMessage) return;
+
+        const timer = window.setTimeout(() => {
+            setSuccessMessage("");
+        }, 3000);
+
+        return () => window.clearTimeout(timer);
+    }, [successMessage]);
+
     return (
         <div
             onDragEnter={handlePageDragEnter}
@@ -1743,14 +1679,7 @@ export default function ProjectFolderFiles() {
                             </div>
                         )}
 
-                        {completeFolderSuccess && (
-                            <div
-                                role="status"
-                                className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300"
-                            >
-                                {completeFolderSuccess}
-                            </div>
-                        )}
+                       
                     </div>
 
                     {!loading && !error && (
@@ -1949,14 +1878,7 @@ export default function ProjectFolderFiles() {
                                 </div>
                             )}
 
-                            {uploadSuccess && (
-                                <div
-                                    role="status"
-                                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300"
-                                >
-                                    {uploadSuccess}
-                                </div>
-                            )}
+                            
 
                             {deleteError && (
                                 <div
@@ -1975,16 +1897,6 @@ export default function ProjectFolderFiles() {
                                 </div>
                             )}
 
-
-                            {deleteSuccess && (
-                                <div
-                                    role="status"
-                                    className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300"
-                                >
-                                    {deleteSuccess}
-                                </div>
-                            )}
-
                             {bulkDeleteError && (
                                 <div
                                     role="alert"
@@ -1998,15 +1910,6 @@ export default function ProjectFolderFiles() {
                                     >
                                         Dismiss
                                     </button>
-                                </div>
-                            )}
-
-                            {bulkDeleteSuccess && (
-                                <div
-                                    role="status"
-                                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300"
-                                >
-                                    {bulkDeleteSuccess}
                                 </div>
                             )}
 
@@ -2188,7 +2091,7 @@ export default function ProjectFolderFiles() {
                                                                             : "Delete file"
                                                                     }
                                                                     aria-label={`Delete ${fileName}`}
-                                                                   disabled={deletingFileId !== null || deletingSelected}
+                                                                    disabled={deletingFileId !== null || deletingSelected}
                                                                     onClick={() =>
                                                                         void handleDeleteFile(
                                                                             file,
@@ -2270,7 +2173,6 @@ export default function ProjectFolderFiles() {
                 )}
             </div>
 
-            {/* Folder progress modal */}
             {showStatusModal && currentFolder && (
                 <div
                     className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
@@ -2435,7 +2337,6 @@ export default function ProjectFolderFiles() {
                 </div>
             )}
 
-            {/* File preview modal */}
             {previewFile && (
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6"
@@ -2651,7 +2552,6 @@ export default function ProjectFolderFiles() {
                     </div>
                 </div>
             </Modal>
-
 
             <Modal
                 isOpen={showCommentModal}
@@ -2899,6 +2799,33 @@ export default function ProjectFolderFiles() {
                 )}
             </section>
 
+            {successMessage &&
+                createPortal(
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 p-4">
+                        <div
+                            role="alertdialog"
+                            aria-modal="true"
+                            aria-labelledby="success-modal-title"
+                            className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+                        >
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                                <Check className="h-9 w-9 text-green-600 dark:text-green-400" />
+                            </div>
+
+                            <h3
+                                id="success-modal-title"
+                                className="mb-2 text-lg font-semibold text-gray-900 dark:text-white"
+                            >
+                                Success!
+                            </h3>
+
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {successMessage}
+                            </p>
+                        </div>
+                    </div>,
+                    document.body
+                )}
         </div>
     );
 }
