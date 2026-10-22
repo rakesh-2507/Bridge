@@ -403,3 +403,26 @@ export async function createProjectFolderComment(
 ) {
   return post(`/projects/${projectId}/folders/${folderId}/comments`, payload);
 }
+
+
+export interface Notification {
+  notificationid: number;
+  from: string;
+  project_id: number;
+  project_name: string | null;
+  folder_id: number;
+  folder_name: string | null;
+  subject: string;
+  date: string | null;
+  status: number;
+}
+
+export interface NotificationsResponse {
+  count: number;
+  notifications: Notification[];
+}
+
+export async function getNotifications() {
+  return get<NotificationsResponse>("/notifications");
+}
+

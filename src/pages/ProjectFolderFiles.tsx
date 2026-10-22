@@ -38,7 +38,9 @@ import {
     getProjectFolderFilePreview,
     getProjectFolderCommentRecipients,
     createProjectFolderComment,
-    type Project, 
+    getNotifications,
+    type Project,
+    type Notification,
     type FolderCommentRecipient,
 } from "../api/projects";
 
@@ -1438,6 +1440,166 @@ export default function ProjectFolderFiles() {
         }
     };
 
+    const [folderNotifications, setFolderNotifications] = useState<
+        Notification[]
+    >([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const [notificationsError, setNotificationsError] = useState("");
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadFolderNotifications() {
+            if (
+                !Number.isInteger(parsedProjectId) ||
+                parsedProjectId <= 0 ||
+                !Number.isInteger(parsedFolderId) ||
+                parsedFolderId <= 0
+            ) {
+                setFolderNotifications([]);
+                return;
+            }
+
+            setNotificationsLoading(true);
+            setNotificationsError("");
+
+            try {
+                const response = await getNotifications();
+
+                const notifications = Array.isArray(response?.notifications)
+                    ? response.notifications
+                    : [];
+
+                const matchingNotifications = notifications
+                    .filter(
+                        (notification) =>
+                            Number(notification.project_id) === parsedProjectId &&
+                            Number(notification.folder_id) === parsedFolderId &&
+                            notification.subject
+                                ?.toLowerCase()
+                                .startsWith("new comment:")
+                    )
+                    .sort((a, b) => {
+                        const dateA = a.date
+                            ? new Date(a.date).getTime()
+                            : 0;
+                        const dateB = b.date
+                            ? new Date(b.date).getTime()
+                            : 0;
+
+                        return dateB - dateA;
+                    });
+
+                if (!cancelled) {
+                    setFolderNotifications(matchingNotifications);
+                }
+            } catch (error) {
+                console.error("Failed to load folder notifications:", error);
+
+                if (!cancelled) {
+                    setNotificationsError(
+                        "Unable to load comments for this folder."
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setNotificationsLoading(false);
+                }
+            }
+        }
+
+        void loadFolderNotifications();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [parsedProjectId, parsedFolderId, reloadKey]);
+
+    const [deletingSelected, setDeletingSelected] = useState(false);
+    const [bulkDeleteError, setBulkDeleteError] = useState("");
+    const [bulkDeleteSuccess, setBulkDeleteSuccess] = useState("");
+    const handleDeleteSelectedFiles = async () => {
+        const selectedItems = files
+            .map((file, index) => ({
+                file,
+                key: getFileKey(file, index),
+                fileId: Number(file.file_id ?? file.id),
+            }))
+            .filter((item) => selectedFiles.has(item.key));
+
+        if (selectedItems.length === 0 || deletingSelected) {
+            return;
+        }
+
+        const invalidItems = selectedItems.filter(
+            (item) => !Number.isInteger(item.fileId) || item.fileId <= 0,
+        );
+
+        const validItems = selectedItems.filter(
+            (item) => Number.isInteger(item.fileId) && item.fileId > 0,
+        );
+
+        if (
+            !window.confirm(
+                `Are you sure you want to delete ${selectedItems.length} selected file${selectedItems.length === 1 ? "" : "s"}? This action cannot be undone.`,
+            )
+        ) {
+            return;
+        }
+
+        setDeletingSelected(true);
+        setBulkDeleteError("");
+        setBulkDeleteSuccess("");
+        setDeleteError("");
+        setDeleteSuccess("");
+
+        const failedKeys = new Set(
+            invalidItems.map((item) => item.key),
+        );
+
+        let deletedCount = 0;
+
+        try {
+            for (const item of validItems) {
+                try {
+                    await deleteProjectFolderFile(
+                        parsedProjectId,
+                        parsedFolderId,
+                        item.fileId,
+                    );
+
+                    deletedCount++;
+                } catch (error) {
+                    console.error(
+                        `Failed to delete file ${getFileName(item.file)}:`,
+                        error,
+                    );
+
+                    failedKeys.add(item.key);
+                }
+            }
+
+            setSelectedFiles(failedKeys);
+
+            if (deletedCount > 0) {
+                setBulkDeleteSuccess(
+                    `${deletedCount} file${deletedCount === 1 ? "" : "s"} deleted successfully.`,
+                );
+
+                setReloadKey((key) => key + 1);
+            }
+
+            if (failedKeys.size > 0) {
+                setBulkDeleteError(
+                    `${deletedCount} deleted; ${failedKeys.size} file${failedKeys.size === 1 ? "" : "s"} could not be deleted. Failed files remain selected so you can retry.`,
+                );
+            } else if (deletedCount === 0) {
+                setBulkDeleteError("No files were deleted.");
+            }
+        } finally {
+            setDeletingSelected(false);
+        }
+    };
     return (
         <div
             onDragEnter={handlePageDragEnter}
@@ -1703,6 +1865,25 @@ export default function ProjectFolderFiles() {
                                         </button>
                                     )}
 
+                                    {selectedFiles.size > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleDeleteSelectedFiles()}
+                                            disabled={deletingSelected || deletingFileId !== null}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {deletingSelected ? (
+                                                <Loader2 size={16} className="animate-spin" />
+                                            ) : (
+                                                <Trash2 size={16} />
+                                            )}
+
+                                            {deletingSelected
+                                                ? "Deleting..."
+                                                : `Delete Selected (${selectedFiles.size})`}
+                                        </button>
+                                    )}
+
                                     {/* Browse button: dropping works across the page */}
                                     <label
                                         className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading
@@ -1794,12 +1975,38 @@ export default function ProjectFolderFiles() {
                                 </div>
                             )}
 
+
                             {deleteSuccess && (
                                 <div
                                     role="status"
                                     className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300"
                                 >
                                     {deleteSuccess}
+                                </div>
+                            )}
+
+                            {bulkDeleteError && (
+                                <div
+                                    role="alert"
+                                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                >
+                                    {bulkDeleteError}
+                                    <button
+                                        type="button"
+                                        onClick={() => setBulkDeleteError("")}
+                                        className="ml-3 font-semibold"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            )}
+
+                            {bulkDeleteSuccess && (
+                                <div
+                                    role="status"
+                                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300"
+                                >
+                                    {bulkDeleteSuccess}
                                 </div>
                             )}
 
@@ -1981,10 +2188,7 @@ export default function ProjectFolderFiles() {
                                                                             : "Delete file"
                                                                     }
                                                                     aria-label={`Delete ${fileName}`}
-                                                                    disabled={
-                                                                        deletingFileId !==
-                                                                        null
-                                                                    }
+                                                                   disabled={deletingFileId !== null || deletingSelected}
                                                                     onClick={() =>
                                                                         void handleDeleteFile(
                                                                             file,
@@ -2586,6 +2790,114 @@ export default function ProjectFolderFiles() {
                     )}
                 </div>
             </Modal>
+
+            <section className="mt-6 space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                            <MessageSquare size={20} className="text-primary" />
+                        </div>
+
+                        <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">
+                                Comments
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Comments received for {currentFolderName}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setReloadKey((key) => key + 1)}
+                        disabled={notificationsLoading}
+                        className="inline-flex items-center gap-2 rounded-lg border border-primary/30 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                    >
+                        <RefreshCw
+                            size={15}
+                            className={notificationsLoading ? "animate-spin" : ""}
+                        />
+                        Refresh
+                    </button>
+                </div>
+
+                {notificationsError && (
+                    <div
+                        role="alert"
+                        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                    >
+                        {notificationsError}
+                    </div>
+                )}
+
+                {notificationsLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-500">
+                        <Loader2 size={20} className="animate-spin text-primary" />
+                        Loading comments...
+                    </div>
+                ) : notificationsError ? null : folderNotifications.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-600">
+                        <MessageSquare
+                            size={28}
+                            className="mx-auto mb-2 text-gray-400"
+                        />
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                            No comments received
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Comments sent to your account will appear here.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {folderNotifications.map((notification) => (
+                            <article
+                                key={notification.notificationid}
+                                className="rounded-lg border border-gray-200 p-1 transition hover:border-primary/40 dark:border-gray-700"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                        <MessageSquare
+                                            size={18}
+                                            className="text-primary"
+                                        />
+                                    </div>
+
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap
+                                         justify-between gap-2 items-center">
+                                            <div>
+                                                <p className="font-semibold text-gray-900 dark:text-white">
+                                                    {notification.from || "Unknown sender"}
+                                                </p>
+
+                                                <p className="mt-1 text-sm font-medium text-primary">
+                                                    {notification.subject
+                                                        .replace(/^New comment:\s*/i, "")}
+                                                </p>
+                                            </div>
+
+                                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                                                Comment
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                            {notification.date && (
+                                                <span>
+                                                    {formatUploadedDate(notification.date)}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
+            </section>
 
         </div>
     );
