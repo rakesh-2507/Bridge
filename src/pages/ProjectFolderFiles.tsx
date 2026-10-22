@@ -21,6 +21,8 @@ import {
     FileArchive,
     FileType,
     Pencil,
+    MessageSquare,
+    Send,
 } from "lucide-react";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -34,7 +36,10 @@ import {
     completeProjectFolder,
     getProjectFolderProgress,
     getProjectFolderFilePreview,
-    type Project,
+    getProjectFolderCommentRecipients,
+    createProjectFolderComment,
+    type Project, 
+    type FolderCommentRecipient,
 } from "../api/projects";
 
 import { getUsers, type User } from "../api/users";
@@ -1311,6 +1316,128 @@ export default function ProjectFolderFiles() {
         });
     };
 
+    const [showCommentModal, setShowCommentModal] = useState(false);
+    const [commentRecipients, setCommentRecipients] = useState<
+        FolderCommentRecipient[]
+    >([]);
+    const [selectedRecipientIds, setSelectedRecipientIds] = useState<number[]>([]);
+    const [commentSubject, setCommentSubject] = useState("");
+    const [commentMessage, setCommentMessage] = useState("");
+    const [commentLoading, setCommentLoading] = useState(false);
+    const [commentSubmitting, setCommentSubmitting] = useState(false);
+    const [commentError, setCommentError] = useState("");
+    const [submittedComments, setSubmittedComments] = useState<
+        Array<{
+            subject: string;
+            message: string;
+            recipientNames: string[];
+            createdAt: string;
+        }>
+    >([]);
+
+    const openCommentModal = async () => {
+        if (!parsedProjectId || !parsedFolderId) return;
+
+        setShowCommentModal(true);
+        setCommentLoading(true);
+        setCommentError("");
+        setCommentRecipients([]);
+        setSelectedRecipientIds([]);
+
+        try {
+            const response = await getProjectFolderCommentRecipients(
+                parsedProjectId,
+                parsedFolderId
+            );
+
+            // Supports either an array or a wrapped API response.
+            const result = response as unknown;
+            const data =
+                Array.isArray(result)
+                    ? result
+                    : result &&
+                        typeof result === "object" &&
+                        "recipients" in result &&
+                        Array.isArray(result.recipients)
+                        ? result.recipients
+                        : result &&
+                            typeof result === "object" &&
+                            "users" in result &&
+                            Array.isArray(result.users)
+                            ? result.users
+                            : [];
+
+            setCommentRecipients(data as FolderCommentRecipient[]);
+        } catch (error) {
+            console.error("Failed to load comment recipients:", error);
+            setCommentError("Unable to load comment recipients. Please try again.");
+        } finally {
+            setCommentLoading(false);
+        }
+    };
+
+    const handleSubmitComment = async () => {
+        if (!parsedProjectId || !parsedFolderId) return;
+
+        if (selectedRecipientIds.length === 0) {
+            setCommentError("Please select at least one recipient.");
+            return;
+        }
+
+        if (!commentSubject.trim()) {
+            setCommentError("Please enter a subject.");
+            return;
+        }
+
+        if (!commentMessage.trim()) {
+            setCommentError("Please enter a comment.");
+            return;
+        }
+
+        setCommentSubmitting(true);
+        setCommentError("");
+
+        const recipientNames = commentRecipients
+            .filter((user) => selectedRecipientIds.includes(user.uid))
+            .map((user) =>
+                `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim() ||
+                user.loginname ||
+                `User ${user.uid}`
+            );
+
+        try {
+            await createProjectFolderComment(
+                parsedProjectId,
+                parsedFolderId,
+                {
+                    recipient_ids: selectedRecipientIds,
+                    subject: commentSubject.trim(),
+                    message: commentMessage.trim(),
+                }
+            );
+
+            setSubmittedComments((previous) => [
+                ...previous,
+                {
+                    subject: commentSubject.trim(),
+                    message: commentMessage.trim(),
+                    recipientNames,
+                    createdAt: new Date().toLocaleString("en-IN"),
+                },
+            ]);
+
+            setCommentSubject("");
+            setCommentMessage("");
+            setSelectedRecipientIds([]);
+            setShowCommentModal(false);
+        } catch (error) {
+            console.error("Failed to submit comment:", error);
+            setCommentError("Unable to send the comment. Please try again.");
+        } finally {
+            setCommentSubmitting(false);
+        }
+    };
+
     return (
         <div
             onDragEnter={handlePageDragEnter}
@@ -1605,6 +1732,15 @@ export default function ProjectFolderFiles() {
                                             aria-label="Choose files to upload"
                                         />
                                     </label>
+
+                                    <button
+                                        type="button"
+                                        onClick={openCommentModal}
+                                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                    >
+                                        <MessageSquare size={16} />
+                                        Comment
+                                    </button>
                                 </div>
                             </div>
 
@@ -1880,6 +2016,41 @@ export default function ProjectFolderFiles() {
                                     </div>
                                 )}
                             </div>
+
+
+                            {submittedComments.length > 0 && (
+                                <section className="mt-6 rounded-xl border border-gray-200 bg-white p-4">
+                                    <h3 className="mb-4 flex items-center gap-2 font-semibold">
+                                        <MessageSquare size={18} className="text-primary" />
+                                        Sent Comments
+                                    </h3>
+
+                                    <div className="space-y-3">
+                                        {submittedComments.map((comment, index) => (
+                                            <div
+                                                key={`${comment.createdAt}-${index}`}
+                                                className="rounded-lg border border-gray-100 bg-gray-50 p-4"
+                                            >
+                                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                                    <p className="font-medium">{comment.subject}</p>
+                                                    <span className="text-xs text-gray-500">
+                                                        {comment.createdAt}
+                                                    </span>
+                                                </div>
+
+                                                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+                                                    {comment.message}
+                                                </p>
+
+                                                <p className="mt-3 text-xs text-gray-500">
+                                                    Sent to: {comment.recipientNames.join(", ")}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
                         </section>
 
                         {/* Folder tree warning */}
@@ -2276,6 +2447,146 @@ export default function ProjectFolderFiles() {
                     </div>
                 </div>
             </Modal>
+
+
+            <Modal
+                isOpen={showCommentModal}
+                onClose={() => {
+                    if (!commentSubmitting) {
+                        setShowCommentModal(false);
+                        setCommentError("");
+                    }
+                }}
+                title={`Comment — ${currentFolder?.fname ?? "Folder"}`}
+                size="lg"
+            >
+                <div className="space-y-5">
+                    {commentError && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            {commentError}
+                        </div>
+                    )}
+
+                    {commentLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-8 text-gray-500">
+                            <Loader2 className="animate-spin" size={20} />
+                            Loading recipients...
+                        </div>
+                    ) : (
+                        <>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Select recipients
+                                </label>
+
+                                {commentRecipients.length === 0 ? (
+                                    <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-500">
+                                        No comment recipients are available for this folder.
+                                    </p>
+                                ) : (
+                                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3">
+                                        {commentRecipients.map((user) => {
+                                            const fullName =
+                                                `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim() ||
+                                                user.loginname ||
+                                                `User ${user.uid}`;
+
+                                            return (
+                                                <label
+                                                    key={user.uid}
+                                                    className="flex cursor-pointer items-center gap-3 rounded-md p-2 hover:bg-orange-50"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedRecipientIds.includes(user.uid)}
+                                                        onChange={(event) => {
+                                                            setSelectedRecipientIds((previous) =>
+                                                                event.target.checked
+                                                                    ? [...previous, user.uid]
+                                                                    : previous.filter(
+                                                                        (id) => id !== user.uid
+                                                                    )
+                                                            );
+                                                        }}
+                                                        className="accent-primary"
+                                                    />
+
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium">
+                                                            {fullName}
+                                                        </p>
+                                                        {user.email && (
+                                                            <p className="text-xs text-gray-500">
+                                                                {user.email}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Subject
+                                </label>
+                                <input
+                                    value={commentSubject}
+                                    onChange={(event) => setCommentSubject(event.target.value)}
+                                    placeholder="Enter comment subject"
+                                    maxLength={200}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">
+                                    Comment
+                                </label>
+                                <textarea
+                                    value={commentMessage}
+                                    onChange={(event) => setCommentMessage(event.target.value)}
+                                    placeholder="Write your comment..."
+                                    rows={4}
+                                    className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    disabled={commentSubmitting}
+                                    onClick={() => setShowCommentModal(false)}
+                                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={
+                                        commentSubmitting ||
+                                        commentLoading ||
+                                        commentRecipients.length === 0
+                                    }
+                                    onClick={handleSubmitComment}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {commentSubmitting ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        <Send size={16} />
+                                    )}
+                                    {commentSubmitting ? "Sending..." : "Send Comment"}
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Modal>
+
         </div>
     );
 }

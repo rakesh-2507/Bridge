@@ -346,14 +346,14 @@ export async function completeProjectFolder(
 }
 
 export async function getProjectFolderProgress(
-    projectId: number,
-    folderId: number,
+  projectId: number,
+  folderId: number,
 ): Promise<FolderProgress> {
-    const response = await get(
-        `/projects/${projectId}/folders/${folderId}/progress`,
-    );
+  const response = await get(
+    `/projects/${projectId}/folders/${folderId}/progress`,
+  );
 
-    return response as FolderProgress;
+  return response as FolderProgress;
 }
 
 export interface FolderProgress {
@@ -370,4 +370,36 @@ export async function getProjectFolderFilePreview(
   return getBlob(
     `/${encodeURIComponent(String(projectId))}/folders/${encodeURIComponent(String(folderId))}/files/${encodeURIComponent(String(fileId))}`,
   );
+}
+
+export interface FolderCommentRecipient {
+  uid: number;
+  firstname?: string;
+  lastname?: string;
+  loginname?: string;
+  email?: string;
+  title?: string;
+}
+
+export interface CreateFolderCommentPayload {
+  recipient_ids: number[];
+  subject: string;
+  message: string;
+}
+
+export async function getProjectFolderCommentRecipients(
+  projectId: number,
+  folderId: number,
+) {
+  return get<FolderCommentRecipient[]>(
+    `/projects/${projectId}/folders/${folderId}/comment-recipients`,
+  );
+}
+
+export async function createProjectFolderComment(
+  projectId: number,
+  folderId: number,
+  payload: CreateFolderCommentPayload,
+) {
+  return post(`/projects/${projectId}/folders/${folderId}/comments`, payload);
 }
