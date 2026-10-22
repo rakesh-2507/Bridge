@@ -19,7 +19,6 @@ import CreateProject from "./pages/CreateProject";
 import CoordinatorProjects from "./pages/CoordinatorProjects";
 import WelcomePage from "./pages/Home";
 import CoordinatorProjectSetup from "./pages/CoordinatorProjectSetup";
-// import CoordinatorProjectSetupDemo from "./pages/CoordinatorProjectSetupDemo";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProjectFolderFiles from "./pages/ProjectFolderFiles";
 
@@ -28,10 +27,6 @@ import {
   isAuthenticated,
 } from "./api/auth";
 
-// ========================================
-// User Helpers
-// ========================================
-
 function getUserType(): string {
   const user = getCurrentUser();
 
@@ -39,10 +34,6 @@ function getUserType(): string {
     .trim()
     .toLowerCase();
 }
-
-// ========================================
-// Protected Routes
-// ========================================
 
 function ProtectedRoute() {
   if (!isAuthenticated()) {
@@ -76,33 +67,24 @@ function HomeRedirect() {
   return <Navigate to="/home" replace />;
 }
 
-// ========================================
-// App Routes
-// ========================================
-
 export default function App() {
   return (
     <Routes>
-      {/* Public routes */}
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<Login />} />
       </Route>
 
-      {/* Authenticated routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomeRedirect />} />
 
           <Route path="/home" element={<WelcomePage />} />
 
-          {/* Coordinator projects list */}
-          {/* Coordinator projects list */}
           <Route
             path="/dashboard"
             element={<CoordinatorProjects />}
           />
 
-          {/* Coordinator project setup */}
           <Route
             path="/dashboard/projects/:projectId/setup"
             element={<CoordinatorProjectSetup />
@@ -120,12 +102,6 @@ export default function App() {
             element={<ProjectFolderFiles />}
           />
 
-          {/* <Route
-            path="/dashboard/projects/:projectId/setup"
-            element={<CoordinatorProjectSetupDemo />}
-          /> */}
-
-          {/* System administrator routes */}
           <Route element={<AdminRoute />}>
             <Route path="/masters" element={<Masters />} />
             <Route path="/users" element={<UsersPage />} />
@@ -139,7 +115,6 @@ export default function App() {
         </Route>
       </Route>
 
-      {/* Fallback */}
       <Route
         path="*"
         element={
