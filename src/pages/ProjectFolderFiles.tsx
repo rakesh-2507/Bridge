@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from "react";
-import type { ChangeEvent, MouseEvent } from "react";
+import type { ChangeEvent, DragEvent, MouseEvent } from "react";
 import {
     Folder,
     Loader2,
@@ -11,6 +12,7 @@ import {
     ExternalLink,
     Download,
     Upload,
+    FolderOpen,
     File,
     FileImage,
     FileText,
@@ -31,17 +33,14 @@ import {
     updateProjectFolderProgress,
     completeProjectFolder,
     getProjectFolderProgress,
-    type Project,
     getProjectFolderFilePreview,
+    type Project,
 } from "../api/projects";
 
 import { getUsers, type User } from "../api/users";
 import { getCurrentUser } from "../api/auth";
-
-// ------------------------------------------------------
-// Types
-// ------------------------------------------------------
-
+import Modal from "../components/models/Modal";
+import FolderTree from "../components/models/FolderTree";
 interface FolderFile {
     file_id?: number;
     id?: number;
@@ -62,11 +61,13 @@ interface FolderFile {
 interface ProjectFolder {
     fid: number;
     fname: string;
+    parent_fid?: number | null;
     keypersonid?: number | null;
-    status?: number | string | null;
+    status?: number | string;
     progress_percentage?: number | null;
     progress_notes?: string | null;
     children?: ProjectFolder[];
+    fileCount?: number;
 }
 
 interface FolderNavigationState {
@@ -80,10 +81,6 @@ interface FolderProgress {
     progress_notes?: string | null;
     status?: number | string | null;
 }
-
-// ------------------------------------------------------
-// File helpers
-// ------------------------------------------------------
 
 const getFileIcon = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase();
@@ -101,7 +98,7 @@ const getFileIcon = (fileName: string) => {
 
         case "doc":
         case "docx":
-            return <FileType size={20} className="text-blue-600" />;
+            return <FileType size={20} className="text-primary" />;
 
         case "xls":
         case "xlsx":
@@ -193,6 +190,96 @@ function findProjectFolder(
     return undefined;
 }
 
+
+function normalizeFolderTree(
+    folders: ProjectFolder[],
+): ProjectFolder[] {
+    if (!folders.length) return [];
+
+    const isFlatResponse = folders.some((folder) =>
+        Object.prototype.hasOwnProperty.call(folder, "parent_fid"),
+    );
+
+    // Admin response: already nested
+    if (!isFlatResponse) {
+        return folders.map((folder) => ({
+            ...folder,
+            children: normalizeFolderTree(folder.children ?? []),
+        }));
+    }
+
+    // Member response: flat list
+    const folderMap = new Map<number, ProjectFolder>();
+
+    folders.forEach((folder) => {
+        folderMap.set(Number(folder.fid), {
+            ...folder,
+            parent_fid:
+                folder.parent_fid == null
+                    ? null
+                    : Number(folder.parent_fid),
+            children: [],
+        });
+    });
+
+    const roots: ProjectFolder[] = [];
+
+    folders.forEach((folder) => {
+        const node = folderMap.get(Number(folder.fid));
+        if (!node) return;
+
+        const parentId = node.parent_fid;
+
+        const parent =
+            parentId == null
+                ? undefined
+                : folderMap.get(parentId);
+
+        if (parent && parent !== node) {
+            parent.children = [...(parent.children ?? []), node];
+        } else {
+            roots.push(node);
+        }
+    });
+
+    return roots;
+}
+async function addFolderFileCounts(
+    projectId: number,
+    folders: ProjectFolder[],
+): Promise<ProjectFolder[]> {
+    return Promise.all(
+        folders.map(async (folder) => {
+            let fileCount = 0;
+
+            try {
+                const response = await getProjectFolderFiles(
+                    projectId,
+                    Number(folder.fid),
+                );
+
+                fileCount = normalizeFiles(response).length;
+            } catch (error) {
+                console.error(
+                    `Failed to get file count for folder ${folder.fid}:`,
+                    error,
+                );
+            }
+
+            const children = await addFolderFileCounts(
+                projectId,
+                folder.children ?? [],
+            );
+
+            return {
+                ...folder,
+                fileCount,
+                children,
+            };
+        }),
+    );
+}
+
 function getProjectFolders(
     project: Project | null | undefined,
 ): ProjectFolder[] {
@@ -206,8 +293,11 @@ function getProjectFolders(
         }
     ).folders;
 
-    return Array.isArray(folders) ? folders : [];
+    return Array.isArray(folders)
+        ? normalizeFolderTree(folders)
+        : [];
 }
+
 
 function formatFileSize(
     bytes: number | string | null | undefined,
@@ -275,8 +365,7 @@ function normalizeFolderProgress(response: unknown): FolderProgress {
 
     return {
         progress_percentage:
-            parsedPercentage !== null &&
-                Number.isFinite(parsedPercentage)
+            parsedPercentage !== null && Number.isFinite(parsedPercentage)
                 ? parsedPercentage
                 : null,
         progress_notes:
@@ -287,47 +376,8 @@ function normalizeFolderProgress(response: unknown): FolderProgress {
     };
 }
 
-// function getProjectStatus(status: unknown) {
-//     const value = String(status ?? "").trim().toLowerCase();
-
-//     if (value === "0" || value === "pending") {
-//         return {
-//             label: "Pending",
-//             className:
-//                 "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-//         };
-//     }
-
-//     if (
-//         value === "1" ||
-//         value === "in progress" ||
-//         value === "in_progress"
-//     ) {
-//         return {
-//             label: "In Progress",
-//             className:
-//                 "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-//         };
-//     }
-
-//     if (value === "2" || value === "completed") {
-//         return {
-//             label: "Completed",
-//             className:
-//                 "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-//         };
-//     }
-
-//     return {
-//         label: value ? String(status) : "Unknown",
-//         className:
-//             "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-//     };
-// }
-
 function isFolderCompleted(status: unknown): boolean {
     const value = String(status ?? "").trim().toLowerCase();
-
     return value === "2" || value === "completed";
 }
 
@@ -340,8 +390,7 @@ function getFolderProgressPercentage(
     }
 
     const percentage =
-        apiProgress?.progress_percentage ??
-        folder.progress_percentage;
+        apiProgress?.progress_percentage ?? folder.progress_percentage;
 
     const parsedPercentage = Number(percentage ?? 0);
 
@@ -349,9 +398,7 @@ function getFolderProgressPercentage(
         ? Math.min(100, Math.max(0, parsedPercentage))
         : 0;
 
-    const status = String(
-        apiProgress?.status ?? folder.status ?? "",
-    )
+    const status = String(apiProgress?.status ?? folder.status ?? "")
         .trim()
         .toLowerCase();
 
@@ -427,10 +474,6 @@ function getUploaderName(file: FolderFile, users: User[]): string {
     return fullName || uploader.loginname || `User ID: ${file.createduid}`;
 }
 
-// ------------------------------------------------------
-// Main component
-// ------------------------------------------------------
-
 export default function ProjectFolderFiles() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -446,11 +489,10 @@ export default function ProjectFolderFiles() {
     const parsedProjectId = Number(projectId);
     const parsedFolderId = Number(folderId);
 
-    // Project and folder state
     const [project, setProject] = useState<Project | null>(
         navigationState?.project ?? null,
     );
-
+    const [folderTree, setFolderTree] = useState<ProjectFolder[]>([]);
     const [currentFolder, setCurrentFolder] =
         useState<ProjectFolder | null>(
             navigationState?.folder ?? null,
@@ -474,7 +516,6 @@ export default function ProjectFolderFiles() {
 
     const subfolders = currentFolder?.children ?? [];
 
-    // File preview state
     const [previewFile, setPreviewFile] = useState<FolderFile | null>(null);
     const [previewText, setPreviewText] = useState("");
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -495,7 +536,6 @@ export default function ProjectFolderFiles() {
             selectedFiles.has(getFileKey(file, index)),
         );
 
-
     const currentUser = getCurrentUser();
 
     const isProjectCoordinator =
@@ -509,19 +549,15 @@ export default function ProjectFolderFiles() {
     const canViewFolderProgress =
         isAdmin ||
         isProjectCoordinator ||
-        (
-            currentFolder?.keypersonid != null &&
+        (currentFolder?.keypersonid != null &&
             currentUser?.uid != null &&
-            Number(currentFolder.keypersonid) === Number(currentUser.uid)
-        );
+            Number(currentFolder.keypersonid) === Number(currentUser.uid));
 
     const canUpdateFolderStatus =
         currentFolder?.keypersonid != null &&
         currentUser?.uid != null &&
         Number(currentFolder.keypersonid) === Number(currentUser.uid);
 
-
-    // Folder progress state
     const [folderProgress, setFolderProgress] =
         useState<FolderProgress | null>(null);
 
@@ -531,25 +567,18 @@ export default function ProjectFolderFiles() {
     const [statusSaving, setStatusSaving] = useState(false);
     const [statusError, setStatusError] = useState("");
 
-    // Complete folder state
     const [completingFolder, setCompletingFolder] = useState(false);
     const [completeFolderError, setCompleteFolderError] = useState("");
     const [completeFolderSuccess, setCompleteFolderSuccess] = useState("");
 
-    // Upload state
+    const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+    const [deleteError, setDeleteError] = useState("");
+    const [deleteSuccess, setDeleteSuccess] = useState("");
+
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState("");
     const [uploadSuccess, setUploadSuccess] = useState("");
-
-    // Delete state
-    const [deletingFileId, setDeletingFileId] = useState<number | null>(
-        null,
-    );
-    const [deleteError, setDeleteError] = useState("");
-    const [deleteSuccess, setDeleteSuccess] = useState("");
-    // --------------------------------------------------
-    // Load folder progress from the GET API
-    // --------------------------------------------------
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -574,17 +603,11 @@ export default function ProjectFolderFiles() {
                 );
 
                 if (!cancelled) {
-                    setFolderProgress(
-                        normalizeFolderProgress(response),
-                    );
+                    setFolderProgress(normalizeFolderProgress(response));
                 }
             } catch (err) {
                 if (!cancelled) {
-                    console.error(
-                        "Failed to load folder progress:",
-                        err,
-                    );
-
+                    console.error("Failed to load folder progress:", err);
                     setFolderProgress(null);
                 }
             }
@@ -597,7 +620,6 @@ export default function ProjectFolderFiles() {
         };
     }, [parsedProjectId, parsedFolderId, reloadKey]);
 
-    // API progress takes priority for the current folder.
     const displayedFolderProgress = getFolderProgressPercentage(
         currentFolder,
         folderProgress,
@@ -612,13 +634,7 @@ export default function ProjectFolderFiles() {
     const effectiveFolderStatus =
         folderProgress?.status ?? currentFolder?.status;
 
-    const folderIsCompleted = isFolderCompleted(
-        effectiveFolderStatus,
-    );
-
-    // --------------------------------------------------
-    // Complete folder
-    // --------------------------------------------------
+    const folderIsCompleted = isFolderCompleted(effectiveFolderStatus);
 
     const handleCompleteFolder = async () => {
         if (!currentFolder) {
@@ -632,17 +648,13 @@ export default function ProjectFolderFiles() {
             return;
         }
 
-        // Use the API-loaded percentage when available.
         const savedProgress = Number(
             folderProgress?.progress_percentage ??
             currentFolder.progress_percentage ??
             0,
         );
 
-        if (
-            !Number.isFinite(savedProgress) ||
-            savedProgress < 100
-        ) {
+        if (!Number.isFinite(savedProgress) || savedProgress < 100) {
             setCompleteFolderError(
                 "Save folder progress at 100% before completing this folder.",
             );
@@ -650,9 +662,7 @@ export default function ProjectFolderFiles() {
         }
 
         if (folderIsCompleted) {
-            setCompleteFolderError(
-                "This folder is already completed.",
-            );
+            setCompleteFolderError("This folder is already completed.");
             return;
         }
 
@@ -661,12 +671,8 @@ export default function ProjectFolderFiles() {
         setCompleteFolderSuccess("");
 
         try {
-            await completeProjectFolder(
-                parsedProjectId,
-                parsedFolderId,
-            );
+            await completeProjectFolder(parsedProjectId, parsedFolderId);
 
-            // Update the current folder.
             setCurrentFolder((previous) =>
                 previous
                     ? {
@@ -677,7 +683,6 @@ export default function ProjectFolderFiles() {
                     : previous,
             );
 
-            // Update API-backed progress immediately.
             setFolderProgress((previous) => ({
                 ...previous,
                 progress_percentage: 100,
@@ -688,7 +693,6 @@ export default function ProjectFolderFiles() {
                 status: 2,
             }));
 
-            // Keep the project folder tree synchronized.
             setProject((previous) => {
                 if (!previous) {
                     return previous;
@@ -717,25 +721,19 @@ export default function ProjectFolderFiles() {
                         return folder.children?.length
                             ? {
                                 ...folder,
-                                children: updateFolders(
-                                    folder.children,
-                                ),
+                                children: updateFolders(folder.children),
                             }
                             : folder;
                     });
 
                 return {
                     ...previous,
-                    folders: updateFolders(
-                        projectWithFolders.folders,
-                    ),
+                    folders: updateFolders(projectWithFolders.folders),
                 } as Project;
             });
 
             setProgressPercentage(100);
-            setCompleteFolderSuccess(
-                "Folder completed successfully.",
-            );
+            setCompleteFolderSuccess("Folder completed successfully.");
         } catch (err: unknown) {
             setCompleteFolderError(
                 err instanceof Error
@@ -747,14 +745,8 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    // --------------------------------------------------
-    // File utilities
-    // --------------------------------------------------
-
     function getFileExtension(file: FolderFile): string {
-        return (
-            getFileName(file).split(".").pop()?.toLowerCase() ?? ""
-        );
+        return getFileName(file).split(".").pop()?.toLowerCase() ?? "";
     }
 
     function isImageFile(file: FolderFile): boolean {
@@ -814,64 +806,6 @@ export default function ProjectFolderFiles() {
         );
     }
 
-    // --------------------------------------------------
-    // Upload files
-    // --------------------------------------------------
-
-    const handleUploadFiles = async (
-        event: ChangeEvent<HTMLInputElement>,
-    ) => {
-        const input = event.currentTarget;
-        const selected = Array.from(input.files ?? []);
-
-        if (selected.length === 0) {
-            return;
-        }
-
-        if (
-            !Number.isInteger(parsedProjectId) ||
-            parsedProjectId <= 0 ||
-            !Number.isInteger(parsedFolderId) ||
-            parsedFolderId <= 0
-        ) {
-            setUploadError("Invalid project or folder ID.");
-            input.value = "";
-            return;
-        }
-
-        setUploading(true);
-        setUploadError("");
-        setUploadSuccess("");
-
-        try {
-            await uploadProjectFolderFiles(
-                parsedProjectId,
-                parsedFolderId,
-                selected,
-            );
-
-            setUploadSuccess(
-                `${selected.length} file${selected.length === 1 ? "" : "s"} uploaded successfully.`,
-            );
-
-            setSelectedFiles(new Set());
-            setReloadKey((key) => key + 1);
-        } catch (err: unknown) {
-            setUploadError(
-                err instanceof Error
-                    ? err.message
-                    : "Unable to upload files. Please try again.",
-            );
-        } finally {
-            setUploading(false);
-            input.value = "";
-        }
-    };
-
-    // --------------------------------------------------
-    // Preview files
-    // --------------------------------------------------
-
     const closePreview = () => {
         setPreviewFile(null);
         setPreviewText("");
@@ -914,11 +848,9 @@ export default function ProjectFolderFiles() {
                 fileId,
             );
 
-            // Create a browser URL for the downloaded file.
             const url = URL.createObjectURL(blob);
             setPreviewUrl(url);
 
-            // Text files must be read as text for the modal.
             if (isTextFile(file)) {
                 setPreviewText(await blob.text());
             }
@@ -934,10 +866,6 @@ export default function ProjectFolderFiles() {
             setPreviewLoading(false);
         }
     };
-
-    // --------------------------------------------------
-    // Load users
-    // --------------------------------------------------
 
     useEffect(() => {
         let cancelled = false;
@@ -962,10 +890,6 @@ export default function ProjectFolderFiles() {
             cancelled = true;
         };
     }, []);
-
-    // --------------------------------------------------
-    // Load project, folder and files
-    // --------------------------------------------------
 
     useEffect(() => {
         let cancelled = false;
@@ -1000,8 +924,22 @@ export default function ProjectFolderFiles() {
 
                 setProject(activeProject);
 
+                // Normalize the folder hierarchy and fetch file counts.
+                const normalizedFolders = getProjectFolders(activeProject);
+
+                const foldersWithCounts = await addFolderFileCounts(
+                    parsedProjectId,
+                    normalizedFolders,
+                );
+
+                if (cancelled) {
+                    return;
+                }
+
+                setFolderTree(foldersWithCounts);
+
                 const folder = findProjectFolder(
-                    getProjectFolders(activeProject),
+                    foldersWithCounts,
                     parsedFolderId,
                 );
 
@@ -1014,8 +952,7 @@ export default function ProjectFolderFiles() {
                 } else {
                     const stateFolder =
                         navigationState?.folder &&
-                            Number(navigationState.folder.fid) ===
-                            parsedFolderId
+                            Number(navigationState.folder.fid) === parsedFolderId
                             ? navigationState.folder
                             : null;
 
@@ -1068,10 +1005,6 @@ export default function ProjectFolderFiles() {
         reloadKey,
     ]);
 
-    // --------------------------------------------------
-    // Select files
-    // --------------------------------------------------
-
     const toggleFileSelection = (fileKey: string) => {
         setSelectedFiles((previous) => {
             const updated = new Set(previous);
@@ -1093,36 +1026,21 @@ export default function ProjectFolderFiles() {
         }
 
         setSelectedFiles(
-            new Set(
-                files.map((file, index) =>
-                    getFileKey(file, index),
-                ),
-            ),
+            new Set(files.map((file, index) => getFileKey(file, index))),
         );
     };
-
-    // --------------------------------------------------
-    // Navigate to subfolder
-    // --------------------------------------------------
 
     const handleOpenSubfolder = (folder: ProjectFolder) => {
         setSelectedFiles(new Set());
 
-        navigate(
-            `/dashboard/projects/${projectId}/folders/${folder.fid}`,
-            {
-                state: {
-                    project: project ?? undefined,
-                    folder,
-                    folderName: folder.fname,
-                } satisfies FolderNavigationState,
-            },
-        );
+        navigate(`/dashboard/projects/${projectId}/folders/${folder.fid}`, {
+            state: {
+                project: project ?? undefined,
+                folder,
+                folderName: folder.fname,
+            } satisfies FolderNavigationState,
+        });
     };
-
-    // --------------------------------------------------
-    // Save folder progress
-    // --------------------------------------------------
 
     const handleSaveFolderProgress = async () => {
         if (!currentFolder) {
@@ -1143,9 +1061,7 @@ export default function ProjectFolderFiles() {
             percentage < 0 ||
             percentage > 100
         ) {
-            setStatusError(
-                "Progress percentage must be between 0 and 100.",
-            );
+            setStatusError("Progress percentage must be between 0 and 100.");
             return;
         }
 
@@ -1164,7 +1080,6 @@ export default function ProjectFolderFiles() {
 
             const savedNotes = progressNotes.trim();
 
-            // Update the current folder.
             setCurrentFolder((previous) =>
                 previous
                     ? {
@@ -1175,7 +1090,6 @@ export default function ProjectFolderFiles() {
                     : previous,
             );
 
-            // Update API-backed progress immediately.
             setFolderProgress((previous) => ({
                 ...previous,
                 progress_percentage: percentage,
@@ -1183,7 +1097,6 @@ export default function ProjectFolderFiles() {
                 status: previous?.status ?? currentFolder.status,
             }));
 
-            // Keep the project folder tree in sync.
             setProject((previous) => {
                 if (!previous) {
                     return previous;
@@ -1212,9 +1125,7 @@ export default function ProjectFolderFiles() {
                         if (folder.children?.length) {
                             return {
                                 ...folder,
-                                children: updateFolderTree(
-                                    folder.children,
-                                ),
+                                children: updateFolderTree(folder.children),
                             };
                         }
 
@@ -1223,9 +1134,7 @@ export default function ProjectFolderFiles() {
 
                 return {
                     ...previous,
-                    folders: updateFolderTree(
-                        projectWithFolders.folders,
-                    ),
+                    folders: updateFolderTree(projectWithFolders.folders),
                 } as Project;
             });
 
@@ -1241,17 +1150,11 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    // --------------------------------------------------
-    // Delete file
-    // --------------------------------------------------
-
     const handleDeleteFile = async (file: FolderFile) => {
         const fileId = Number(file.file_id ?? file.id);
 
         if (!Number.isInteger(fileId) || fileId <= 0) {
-            setDeleteError(
-                "Cannot delete file: invalid file ID.",
-            );
+            setDeleteError("Cannot delete file: invalid file ID.");
             return;
         }
 
@@ -1278,16 +1181,11 @@ export default function ProjectFolderFiles() {
 
             setSelectedFiles((previous) => {
                 const updated = new Set(previous);
-                updated.delete(
-                    getFileKey(file, files.indexOf(file)),
-                );
+                updated.delete(getFileKey(file, files.indexOf(file)));
                 return updated;
             });
 
-            setDeleteSuccess(
-                `"${fileName}" deleted successfully.`,
-            );
-
+            setDeleteSuccess(`"${fileName}" deleted successfully.`);
             setReloadKey((key) => key + 1);
         } catch (err: unknown) {
             setDeleteError(
@@ -1300,41 +1198,167 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    // const projectStatus = getProjectStatus(project?.status);
+    const uploadFiles = async (selected: File[]) => {
+        if (selected.length === 0 || uploading) {
+            return;
+        }
 
-    // --------------------------------------------------
-    // Render
-    // --------------------------------------------------
+        if (
+            !Number.isInteger(parsedProjectId) ||
+            parsedProjectId <= 0 ||
+            !Number.isInteger(parsedFolderId) ||
+            parsedFolderId <= 0
+        ) {
+            setUploadError("Invalid project or folder ID.");
+            return;
+        }
+
+        setUploading(true);
+        setUploadError("");
+        setUploadSuccess("");
+
+        try {
+            await uploadProjectFolderFiles(
+                parsedProjectId,
+                parsedFolderId,
+                selected,
+            );
+
+            setUploadSuccess(
+                `${selected.length} file${selected.length === 1 ? "" : "s"} uploaded successfully.`,
+            );
+
+            setSelectedFiles(new Set());
+            setReloadKey((key) => key + 1);
+        } catch (err: unknown) {
+            setUploadError(
+                err instanceof Error
+                    ? err.message
+                    : "Unable to upload files. Please try again.",
+            );
+        } finally {
+            setUploading(false);
+            setIsDragging(false);
+        }
+    };
+
+    const handleUploadFiles = async (
+        event: ChangeEvent<HTMLInputElement>,
+    ) => {
+        const input = event.currentTarget;
+        const selected = Array.from(input.files ?? []);
+
+        await uploadFiles(selected);
+
+        input.value = "";
+    };
+
+    const handlePageDragEnter = (event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+
+        if (!uploading && event.dataTransfer.types.includes("Files")) {
+            setIsDragging(true);
+        }
+    };
+
+    const handlePageDragOver = (event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+
+        if (!uploading && event.dataTransfer.types.includes("Files")) {
+            event.dataTransfer.dropEffect = "copy";
+            setIsDragging(true);
+        }
+    };
+
+    const handlePageDragLeave = (event: DragEvent<HTMLDivElement>) => {
+        if (
+            !event.currentTarget.contains(
+                event.relatedTarget as Node | null,
+            )
+        ) {
+            setIsDragging(false);
+        }
+    };
+
+    const handlePageDrop = async (event: DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        setIsDragging(false);
+
+        if (uploading) {
+            return;
+        }
+
+        const droppedFiles = Array.from(event.dataTransfer.files);
+
+        if (droppedFiles.length > 0) {
+            await uploadFiles(droppedFiles);
+        }
+    };
+
+    const [showFolderTreeModal, setShowFolderTreeModal] = useState(false);
+    const handleOpenTreeFolder = (folder: ProjectFolder) => {
+        setShowFolderTreeModal(false);
+        setSelectedFiles(new Set());
+
+        navigate(`/dashboard/projects/${parsedProjectId}/folders/${folder.fid}`, {
+            state: {
+                project: project ?? undefined,
+                folder,
+                folderName: folder.fname,
+            } satisfies FolderNavigationState,
+        });
+    };
 
     return (
-        <div className="min-h-full w-full bg-gray-50 p-4 text-gray-800 dark:bg-gray-900 dark:text-gray-100 sm:p-6">
+        <div
+            onDragEnter={handlePageDragEnter}
+            onDragOver={handlePageDragOver}
+            onDragLeave={handlePageDragLeave}
+            onDrop={(event) => void handlePageDrop(event)}
+            className={`relative min-h-full w-full bg-gray-50 p-4 text-gray-800 transition-colors dark:bg-gray-900 dark:text-gray-100 sm:p-6 ${isDragging ? "ring-4 ring-inset ring-primary/50" : ""
+                }`}
+        >
+            {isDragging && (
+                <div className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center border-4 border-dashed border-primary bg-primary/10">
+                    <div className="mx-4 rounded-2xl border border-primary/30 bg-white px-8 py-7 text-center shadow-2xl dark:bg-gray-800">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                            <Upload size={32} className="text-primary" />
+                        </div>
+
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                            Drop files to upload
+                        </h2>
+
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            Files will be uploaded to{" "}
+                            <span className="font-semibold text-primary">
+                                {currentFolderName}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="mx-auto w-full space-y-6">
-                {/* Project header */}
                 <div className="flex w-full flex-col justify-between gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:p-6">
                     <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary">
-                            <Folder
-                                size={26}
-                                className="text-white"
-                            />
+                            <Folder size={26} className="text-white" />
                         </div>
 
                         <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <h1 className="truncate text-xl font-bold text-gray-800 dark:text-white sm:text-2xl">
-                                    {project?.projectname || "Project"}
-                                </h1>
+                            <button
+                                type="button"
+                                onClick={() => setShowFolderTreeModal(true)}
+                                disabled={!project}
+                                title="Click to view project folder structure"
+                                className="block max-w-full truncate text-left text-xl font-bold text-gray-800 transition hover:text-primary disabled:cursor-default dark:text-white dark:hover:text-primary sm:text-2xl"
+                            >
+                                {project?.projectname || "Project"}
+                            </button>
 
-                                {/* {project && (
-                                    <span
-                                        className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold ${projectStatus.className}`}
-                                    >
-                                        {projectStatus.label}
-                                    </span>
-                                )} */}
-                            </div>
-
-                            {/* Folder name, progress and completion */}
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                                 <span className="truncate text-sm text-gray-800 dark:text-gray-400">
                                     {currentFolderName}
@@ -1367,7 +1391,6 @@ export default function ProjectFolderFiles() {
                                                 {getFolderProgressLabel(
                                                     displayedFolderProgress,
                                                 )}
-
                                                 <Pencil size={12} />
                                             </button>
                                         ) : (
@@ -1413,40 +1436,40 @@ export default function ProjectFolderFiles() {
                         </div>
                     </div>
 
-                    {completeFolderError && (
-                        <div
-                            role="alert"
-                            className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
-                        >
-                            <span>{completeFolderError}</span>
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setCompleteFolderError("")
-                                }
-                                aria-label="Dismiss completion error"
+                    <div className="flex flex-col gap-2">
+                        {completeFolderError && (
+                            <div
+                                role="alert"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
                             >
-                                <X size={16} />
-                            </button>
-                        </div>
-                    )}
+                                <span>{completeFolderError}</span>
 
-                    {completeFolderSuccess && (
-                        <div
-                            role="status"
-                            className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300"
-                        >
-                            {completeFolderSuccess}
-                        </div>
-                    )}
+                                <button
+                                    type="button"
+                                    onClick={() => setCompleteFolderError("")}
+                                    aria-label="Dismiss completion error"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
+
+                        {completeFolderSuccess && (
+                            <div
+                                role="status"
+                                className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/20 dark:text-emerald-300"
+                            >
+                                {completeFolderSuccess}
+                            </div>
+                        )}
+                    </div>
 
                     {!loading && !error && (
                         <div className="flex shrink-0 items-center gap-3 rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
                                 <FileText
                                     size={21}
-                                    className="text-primary"
+                                    className="text-primary dark:text-gray-100"
                                 />
                             </div>
 
@@ -1474,10 +1497,7 @@ export default function ProjectFolderFiles() {
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-12 text-center dark:border-gray-700 dark:bg-gray-800">
-                        <AlertCircle
-                            size={32}
-                            className="text-red-500"
-                        />
+                        <AlertCircle size={32} className="text-red-500" />
 
                         <p className="text-sm text-red-600 dark:text-red-400">
                             {error}
@@ -1485,9 +1505,7 @@ export default function ProjectFolderFiles() {
 
                         <button
                             type="button"
-                            onClick={() =>
-                                setReloadKey((key) => key + 1)
-                            }
+                            onClick={() => setReloadKey((key) => key + 1)}
                             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                         >
                             <RefreshCw size={16} />
@@ -1534,14 +1552,14 @@ export default function ProjectFolderFiles() {
                             </section>
                         )}
 
-                        {/* Files table */}
+                        {/* Files section */}
                         <section className="space-y-3">
                             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                                     Files ({files.length})
                                 </h2>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-wrap items-center gap-3">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">
                                         {selectedFiles.size} selected
                                     </span>
@@ -1558,25 +1576,25 @@ export default function ProjectFolderFiles() {
                                         </button>
                                     )}
 
-                                    {/* Upload files */}
+                                    {/* Browse button: dropping works across the page */}
                                     <label
-                                        className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading
-                                            ? "pointer-events-none cursor-not-allowed opacity-60"
+                                        className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading
+                                            ? "pointer-events-none opacity-60"
                                             : ""
                                             }`}
                                     >
                                         {uploading ? (
                                             <Loader2
-                                                size={17}
+                                                size={16}
                                                 className="animate-spin"
                                             />
                                         ) : (
-                                            <Upload size={17} />
+                                            <Upload size={16} />
                                         )}
 
                                         {uploading
                                             ? "Uploading..."
-                                            : "Upload Files"}
+                                            : "Browse Files"}
 
                                         <input
                                             type="file"
@@ -1649,6 +1667,7 @@ export default function ProjectFolderFiles() {
                                 </div>
                             )}
 
+                            {/* Files table */}
                             <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                                 {files.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
@@ -1665,6 +1684,8 @@ export default function ProjectFolderFiles() {
 
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
                                             There are no files in this folder.
+                                            Drag files anywhere on this page to
+                                            upload them.
                                         </p>
                                     </div>
                                 ) : (
@@ -1716,7 +1737,9 @@ export default function ProjectFolderFiles() {
                                                     );
 
                                                     const isSelected =
-                                                        selectedFiles.has(fileKey);
+                                                        selectedFiles.has(
+                                                            fileKey,
+                                                        );
 
                                                     const fileName =
                                                         getFileName(file);
@@ -1773,7 +1796,7 @@ export default function ProjectFolderFiles() {
                                                                     </div>
 
                                                                     <div className="min-w-0">
-                                                                        <p className="break-words font-semibold text-gray-700 group-hover:underline dark:text-blue-400">
+                                                                        <p className="break-words font-semibold text-gray-700 group-hover:underline dark:text-gray-300">
                                                                             {fileName}
                                                                         </p>
 
@@ -1862,10 +1885,10 @@ export default function ProjectFolderFiles() {
                         {/* Folder tree warning */}
                         {folderError && (
                             <p className="text-sm text-amber-600 dark:text-amber-400">
-                                {folderError} Files are still displayed if
-                                the files API returns them. To show
-                                subfolders after a refresh, make sure
-                                getProject() returns the nested folders.
+                                {folderError} Files are still displayed if the
+                                files API returns them. To show subfolders
+                                after a refresh, make sure getProject()
+                                returns the nested folders.
                             </p>
                         )}
                     </>
@@ -1917,7 +1940,6 @@ export default function ProjectFolderFiles() {
                         </div>
 
                         <div className="space-y-5">
-                            {/* Percentage */}
                             <div>
                                 <div className="mb-2 flex items-center justify-between">
                                     <label
@@ -1966,7 +1988,8 @@ export default function ProjectFolderFiles() {
                                                 100,
                                                 Math.max(
                                                     0,
-                                                    Number(progressPercentage) || 0,
+                                                    Number(progressPercentage) ||
+                                                    0,
                                                 ),
                                             )}%`,
                                         }}
@@ -1974,7 +1997,6 @@ export default function ProjectFolderFiles() {
                                 </div>
                             </div>
 
-                            {/* Notes */}
                             <div>
                                 <label
                                     htmlFor="progress-notes"
@@ -2031,9 +2053,7 @@ export default function ProjectFolderFiles() {
                                     />
                                 )}
 
-                                {statusSaving
-                                    ? "Saving..."
-                                    : "Save Progress"}
+                                {statusSaving ? "Saving..." : "Save Progress"}
                             </button>
                         </div>
                     </div>
@@ -2055,7 +2075,6 @@ export default function ProjectFolderFiles() {
                             event.stopPropagation()
                         }
                     >
-                        {/* Preview header */}
                         <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-4 dark:border-gray-700 sm:px-6">
                             <div className="flex min-w-0 items-center gap-3">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -2102,7 +2121,6 @@ export default function ProjectFolderFiles() {
                             </div>
                         </div>
 
-                        {/* Preview content */}
                         <div className="min-h-[300px] flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 sm:min-h-[500px]">
                             {previewLoading ? (
                                 <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
@@ -2122,8 +2140,6 @@ export default function ProjectFolderFiles() {
                                     <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
                                         {previewError}
                                     </p>
-
-
                                 </div>
                             ) : isImageFile(previewFile) ? (
                                 <div className="flex min-h-[400px] items-center justify-center p-4">
@@ -2138,8 +2154,7 @@ export default function ProjectFolderFiles() {
                                     {previewText}
                                 </pre>
                             ) : getFileExtension(previewFile) === "pdf" ||
-                                previewFile.mime_type ===
-                                "application/pdf" ? (
+                                previewFile.mime_type === "application/pdf" ? (
                                 <iframe
                                     title={`PDF preview: ${getFileName(previewFile)}`}
                                     src={previewUrl ?? undefined}
@@ -2213,6 +2228,54 @@ export default function ProjectFolderFiles() {
                     </div>
                 </div>
             )}
+
+            <Modal
+                isOpen={showFolderTreeModal && !!project}
+                onClose={() => setShowFolderTreeModal(false)}
+                title={`${project?.projectname ?? "Project"} — Folder Structure`}
+                size="2xl"
+            >
+                <div className="max-h-[65vh] overflow-y-auto px-2 py-1">
+                    <FolderTree
+                        folders={folderTree}
+                        onFolderClick={handleOpenTreeFolder}
+                    />
+                </div>
+                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-800">
+                    <div className="flex items-center gap-1.5">
+                        <FolderOpen
+                            size={16}
+                            className="shrink-0 text-primary"
+                        />
+
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Subfolders Exist
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                        <Folder
+                            size={16}
+                            className="shrink-0 text-primary"
+                        />
+
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Files Exist
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                        <Folder
+                            size={16}
+                            className="shrink-0 text-slate-400"
+                        />
+
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Empty Folder
+                        </span>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -86,7 +86,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile sidebar overlay */}
       {open && (
         <button
           type="button"
@@ -95,15 +94,19 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             hideTooltip();
             onClose();
           }}
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-[60] bg-black/40 lg:hidden"
         />
       )}
-
-      {/* Sidebar */}
       <aside
         onMouseLeave={hideTooltip}
-        className={`fixed inset-y-0 left-0 flex h-screen w-20 shrink-0 flex-col overflow-visible border-r-2 border-slate-200 bg-white transition-transform duration-200 dark:border-slate-800 dark:bg-slate-900 ${open ? "translate-x-0" : "-translate-x-full"
-          } lg:relative lg:inset-auto lg:h-full lg:min-h-0 lg:translate-x-0`}
+        className={`fixed inset-y-0 left-0 z-[70]
+    flex h-dvh w-20 shrink-0 flex-col
+    overflow-visible border-r-2 border-slate-200
+    bg-white shadow-xl transition-transform duration-300
+    dark:border-slate-800 dark:bg-slate-900
+    ${open ? "translate-x-0" : "-translate-x-full"}
+    lg:relative lg:inset-auto lg:z-auto
+    lg:h-full lg:min-h-0 lg:translate-x-0 lg:shadow-none`}
       >
         {/* Mobile close button */}
         <div className="flex h-16 shrink-0 items-center justify-center border-b-2 border-slate-100 dark:border-slate-800 lg:hidden">
@@ -142,7 +145,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   aria-label={item.name}
                   className={({ isActive }) =>
                     `group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${isActive
-                      ? "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary-light"
+                      ? "bg-primary/10 text-primary dark:bg-primary/15 dark:text-gray-400"
                       : "text-slate-600 hover:bg-primary/10 hover:text-primary dark:text-slate-300 dark:hover:bg-primary/15 dark:hover:text-primary-light"
                     }`
                   }

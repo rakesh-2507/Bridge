@@ -198,11 +198,11 @@ export default function ProjectDetails() {
                         onClick={() => void handleFolderClick(folder)}
                         disabled={startingFolderId !== null}
                         style={{ marginLeft: `${level * 24}px` }}
-                        className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-wait disabled:opacity-70 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-300 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-70 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
                     >
                         <Folder
                             size={23}
-                            className="shrink-0 text-blue-600 dark:text-blue-400"
+                            className="shrink-0 text-primary dark:text-gray-400"
                         />
 
                         <span className="flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-100">
@@ -218,7 +218,7 @@ export default function ProjectDetails() {
                         {isStarting && (
                             <Loader2
                                 size={18}
-                                className="shrink-0 animate-spin text-blue-600"
+                                className="shrink-0 animate-spin text-primary"
                             />
                         )}
                     </button>
@@ -238,7 +238,7 @@ export default function ProjectDetails() {
                 <button
                     type="button"
                     onClick={() => navigate("/dashboard/projects")}
-                    className="ml-3 text-blue-600 hover:underline"
+                    className="ml-3 text-primary hover:underline"
                 >
                     Back to projects
                 </button>
@@ -252,7 +252,7 @@ export default function ProjectDetails() {
                 <button
                     type="button"
                     onClick={() => navigate("/dashboard/projects")}
-                    className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                    className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-primary dark:text-gray-400 dark:hover:text-blue-400"
                 >
                     <ArrowLeft size={17} />
                     Back
@@ -262,7 +262,7 @@ export default function ProjectDetails() {
                 <div className="flex items-center gap-3">
                     <BriefcaseBusiness
                         size={30}
-                        className="shrink-0 text-blue-600 dark:text-blue-400"
+                        className="shrink-0 text-primary dark:text-gray-400"
                     />
 
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

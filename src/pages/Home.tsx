@@ -109,7 +109,7 @@ export default function WelcomePage() {
   if (loading || (!error && hasProjects)) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+        <Loader2 className="animate-spin text-primary" size={32} />
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {loading ? "Checking your projects..." : "Opening your projects..."}
         </p>
@@ -120,10 +120,10 @@ export default function WelcomePage() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-5 py-10">
       <div className="w-full max-w-xl text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/5 dark:bg-slate-900/50">
           <BriefcaseBusiness
             size={38}
-            className="text-blue-600 dark:text-blue-400"
+            className="text-primary dark:text-gray-400"
           />
         </div>
 

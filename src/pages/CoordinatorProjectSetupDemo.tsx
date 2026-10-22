@@ -502,13 +502,13 @@ export default function CoordinatorProjectSetupDemo() {
     // ========================================
 
     const inputClass =
-        "w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900";
+        "w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-blue-400 dark:focus:ring-blue-900";
 
     const buttonSecondary =
         "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800";
 
     const buttonPrimary =
-        "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
+        "inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
 
     // ========================================
     // Render
@@ -519,7 +519,7 @@ export default function CoordinatorProjectSetupDemo() {
             {/* Header */}
             <header className="shrink-0 border-b border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-900 sm:px-6 lg:px-8">
                 <div className="mx-auto flex w-full max-w-[1800px] items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary dark:bg-primary/10 dark:text-blue-300">
                         <BriefcaseBusiness size={22} />
                     </div>
 
@@ -539,7 +539,7 @@ export default function CoordinatorProjectSetupDemo() {
                         <span
                             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                                 step === 1
-                                    ? "bg-blue-600 text-white"
+                                    ? "bg-primary text-white"
                                     : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
                             }`}
                         >
@@ -551,7 +551,7 @@ export default function CoordinatorProjectSetupDemo() {
                         <span
                             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
                                 step === 2
-                                    ? "bg-blue-600 text-white"
+                                    ? "bg-primary text-white"
                                     : "bg-gray-100 text-gray-500 dark:bg-gray-800"
                             }`}
                         >
@@ -573,7 +573,7 @@ export default function CoordinatorProjectSetupDemo() {
                                         Assign Roles
                                     </h2>
 
-                                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                    <span className="rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary dark:bg-primary/10 dark:text-blue-300">
                                         {roles.length} roles · {members.length} members
                                     </span>
                                 </div>
@@ -621,7 +621,7 @@ export default function CoordinatorProjectSetupDemo() {
                                                                     (folderName) => (
                                                                         <span
                                                                             key={folderName}
-                                                                            className="rounded-md bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                                                            className="rounded-md bg-primary/5 px-2 py-1 text-xs text-primary dark:bg-primary/10 dark:text-blue-300"
                                                                         >
                                                                             {folderName}
                                                                         </span>
@@ -669,7 +669,7 @@ export default function CoordinatorProjectSetupDemo() {
                                                                             role.rollid,
                                                                         )
                                                                     }
-                                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                                 />
 
                                                                 <span className="text-sm text-gray-700 dark:text-gray-300">

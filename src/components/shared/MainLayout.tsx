@@ -8,14 +8,14 @@ export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
       {/* Navbar */}
-      <header className="relative z-40 h-16 shrink-0">
+      <div className="relative z-40 h-16 shrink-0">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
-      </header>
+      </div>
 
       {/* Main Content Area */}
-      <div className="relative flex min-h-0 flex-1 z-10">
+      <div className="relative flex min-h-0 flex-1">
         {/* Sidebar */}
         <Sidebar
           open={sidebarOpen}

@@ -93,16 +93,16 @@ const WIZARD_STEPS = [
 ];
 
 const inputClass =
-    "w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-900 dark:disabled:bg-gray-800";
+    "w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary dark:focus:ring-primary/20 dark:disabled:bg-slate-800";
 
 const labelClass =
-    "mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300";
+    "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 const primaryButtonClass =
-    "inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-950";
 
 const secondaryButtonClass =
-    "inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800";
+    "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus:ring-offset-slate-950";
 
 
 function uniqueName(name: string): string {
@@ -125,22 +125,6 @@ function getFileFormat(fileName: string): FileFormat | null {
     }
 }
 
-/**
- * Parse text with indentation, Markdown headings, or explicit Parent fields.
- *
- * Examples:
- *
- * Folder1
- *   Subfolder1
- *     NestedFolder
- *
- * Folder: Documents
- * Description: Main documents
- *
- * Folder: Drafts
- * Parent: Documents
- * Description: Draft files
- */
 function parseFolderText(text: string): ParsedFolder[] {
     const roots: ParsedFolder[] = [];
     const stack: { indent: number; folder: ParsedFolder }[] = [];
@@ -685,24 +669,35 @@ function FolderEditor({
     remove,
 }: FolderEditorProps) {
     return (
-        <section className={`rounded-xl border border-gray-200 dark:border-gray-700 ${depth ? "ml-4 sm:ml-7" : ""}`}>
-            <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/70 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/40">
+        <section
+            className={`min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${depth ? "ml-3 sm:ml-6" : ""
+                }`}
+        >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/70">
                 <div className="flex min-w-0 items-center gap-2">
-                    <Folder size={17} className="shrink-0 text-blue-600 dark:text-blue-400" />
+                    <Folder
+                        size={18}
+                        className="shrink-0 text-primary"
+                    />
+
                     <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {depth ? `Level ${depth + 1} · Folder ${index + 1}` : `Folder ${index + 1}`}
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {depth
+                                ? `Level ${depth + 1} · Folder ${index + 1}`
+                                : `Folder ${index + 1}`}
                         </h3>
-                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                             {folder.fname.trim() || "Unnamed folder"}
                         </p>
                     </div>
                 </div>
+
                 <button
                     type="button"
                     onClick={() => remove(folder.id)}
                     disabled={disabled}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
                 >
                     <Trash2 size={14} />
                     <span className="hidden sm:inline">Remove</span>
@@ -711,11 +706,19 @@ function FolderEditor({
 
             <div className="space-y-4 p-4">
                 <div>
-                    <label htmlFor={`folder-name-${folder.id}`} className={labelClass}>Folder Name *</label>
+                    <label
+                        htmlFor={`folder-name-${folder.id}`}
+                        className={labelClass}
+                    >
+                        Folder Name *
+                    </label>
+
                     <input
                         id={`folder-name-${folder.id}`}
                         value={folder.fname}
-                        onChange={(event) => update(folder.id, "fname", event.target.value)}
+                        onChange={(event) =>
+                            update(folder.id, "fname", event.target.value)
+                        }
                         placeholder="Enter folder name"
                         className={inputClass}
                         disabled={disabled}
@@ -723,11 +726,19 @@ function FolderEditor({
                 </div>
 
                 <div>
-                    <label htmlFor={`folder-description-${folder.id}`} className={labelClass}>Folder Description *</label>
+                    <label
+                        htmlFor={`folder-description-${folder.id}`}
+                        className={labelClass}
+                    >
+                        Folder Description *
+                    </label>
+
                     <textarea
                         id={`folder-description-${folder.id}`}
                         value={folder.fnamedesc}
-                        onChange={(event) => update(folder.id, "fnamedesc", event.target.value)}
+                        onChange={(event) =>
+                            update(folder.id, "fnamedesc", event.target.value)
+                        }
                         placeholder="Describe this folder"
                         rows={2}
                         className={inputClass}
@@ -735,13 +746,25 @@ function FolderEditor({
                     />
                 </div>
 
-                <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
-                    <label htmlFor={`subfolder-${folder.id}`} className={labelClass}>Add Subfolder</label>
+                <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <label
+                        htmlFor={`subfolder-${folder.id}`}
+                        className={labelClass}
+                    >
+                        Add Subfolder
+                    </label>
+
                     <div className="flex flex-col gap-2 sm:flex-row">
                         <input
                             id={`subfolder-${folder.id}`}
                             value={folder.childDraft}
-                            onChange={(event) => update(folder.id, "childDraft", event.target.value)}
+                            onChange={(event) =>
+                                update(
+                                    folder.id,
+                                    "childDraft",
+                                    event.target.value,
+                                )
+                            }
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
                                     event.preventDefault();
@@ -752,19 +775,21 @@ function FolderEditor({
                             className={inputClass}
                             disabled={disabled}
                         />
+
                         <button
                             type="button"
                             onClick={() => addChild(folder.id)}
                             disabled={disabled}
                             className={`${secondaryButtonClass} shrink-0`}
                         >
-                            <CirclePlus size={16} /> Add
+                            <CirclePlus size={16} className="text-primary" />
+                            Add
                         </button>
                     </div>
                 </div>
 
                 {folder.children.length > 0 && (
-                    <div className="space-y-3 border-l-2 border-blue-100 pl-2 dark:border-blue-950">
+                    <div className="space-y-3 border-l-2 border-primary/25 pl-2 dark:border-primary/40">
                         {folder.children.map((child, childIndex) => (
                             <FolderEditor
                                 key={child.id}
@@ -784,26 +809,45 @@ function FolderEditor({
     );
 }
 
-function PreviewFolder({ folder, depth = 0 }: { folder: ParsedFolder; depth?: number }) {
+function PreviewFolder({
+    folder,
+    depth = 0,
+}: {
+    folder: ParsedFolder;
+    depth?: number;
+}) {
     return (
         <div className="min-w-0">
             <div className="flex items-start gap-2">
-                <Folder size={15} className="mt-0.5 shrink-0 text-blue-600" />
+                <Folder
+                    size={16}
+                    className="mt-0.5 shrink-0 text-primary"
+                />
+
                 <div className="min-w-0">
-                    <p className="break-words text-sm font-medium text-gray-900 dark:text-white">
+                    <p className="break-words text-sm font-medium text-slate-900 dark:text-white">
                         {folder.fname}
                     </p>
+
                     {folder.fnamedesc && (
-                        <p className="mt-0.5 break-words text-xs text-gray-500 dark:text-gray-400">
+                        <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-slate-400">
                             {folder.fnamedesc}
                         </p>
                     )}
                 </div>
             </div>
+
             {folder.children.length > 0 && (
-                <div className={`mt-2 space-y-2 border-l border-gray-200 pl-3 dark:border-gray-700 ${depth ? "ml-2" : "ml-3"}`}>
+                <div
+                    className={`mt-2 space-y-2 border-l border-primary/25 pl-3 dark:border-primary/40 ${depth ? "ml-2" : "ml-3"
+                        }`}
+                >
                     {folder.children.map((child, index) => (
-                        <PreviewFolder key={`${child.fname}-${index}`} folder={child} depth={depth + 1} />
+                        <PreviewFolder
+                            key={`${child.fname}-${index}`}
+                            folder={child}
+                            depth={depth + 1}
+                        />
                     ))}
                 </div>
             )}
@@ -834,7 +878,7 @@ function RoleFolderCheckbox({
                 return (
                     <div key={folder.id} className="min-w-0">
                         <label
-                            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-primary/5 dark:hover:bg-primary/10"
                             style={{ marginLeft: `${depth * 20}px` }}
                         >
                             <input
@@ -842,20 +886,28 @@ function RoleFolderCheckbox({
                                 checked={checked}
                                 disabled={disabled}
                                 onChange={() => onToggle(folder.id)}
-                                className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                                className="h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 accent-primary focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed dark:border-slate-600"
                             />
 
                             <Folder
                                 size={17}
-                                className="shrink-0 text-blue-600 dark:text-blue-400"
+                                className={`shrink-0 ${checked
+                                        ? "text-primary"
+                                        : "text-slate-500 dark:text-slate-400"
+                                    }`}
                             />
 
-                            <span className="min-w-0 flex-1 break-words text-sm text-gray-800 dark:text-gray-200">
+                            <span
+                                className={`min-w-0 flex-1 break-words text-sm ${checked
+                                        ? "font-medium text-primary"
+                                        : "text-slate-700 dark:text-slate-200"
+                                    }`}
+                            >
                                 {folder.fname.trim() || "Untitled folder"}
                             </span>
 
                             {folder.children.length > 0 && (
-                                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                     {folder.children.length}
                                 </span>
                             )}
@@ -1234,37 +1286,50 @@ export default function CreateTemplate() {
         const totalFolders = countAllFolders(folders);
         const subfolders = countDescendants(folders);
 
+        const statClass =
+            "rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70";
+
         return (
-            <aside className="h-fit min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900 lg:sticky lg:top-4">
-                <div className="border-b border-gray-200 px-4 py-4 dark:border-gray-700">
+            <aside className="h-fit min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-4">
+                <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                     <div className="flex items-center gap-2">
-                        <Folder size={19} className="text-blue-600 dark:text-blue-400" />
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                        <Folder size={19} className="text-primary" />
+
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
                             Folder Structure
                         </h3>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         Live preview of your folders and subfolders
                     </p>
 
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                        <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-950/40">
-                            <p className="text-lg font-semibold text-blue-700 dark:text-blue-300">
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                        <div className={`${statClass} border-primary/20 bg-primary/5 dark:border-primary/30 dark:bg-primary/10`}>
+                            <p className="text-xl font-bold text-primary">
                                 {folders.length}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Root</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Root
+                            </p>
                         </div>
-                        <div className="rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+
+                        <div className={statClass}>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white">
                                 {subfolders}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Nested</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Nested
+                            </p>
                         </div>
-                        <div className="rounded-lg bg-gray-50 p-2 dark:bg-gray-800">
-                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+
+                        <div className={statClass}>
+                            <p className="text-xl font-bold text-slate-900 dark:text-white">
                                 {totalFolders}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Total
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1273,16 +1338,26 @@ export default function CreateTemplate() {
                     {folders.length > 0 ? (
                         <div className="space-y-3">
                             {folders.map((folder) => (
-                                <FolderTreeNode key={folder.id} folder={folder} />
+                                <FolderTreeNode
+                                    key={folder.id}
+                                    folder={folder}
+                                />
                             ))}
                         </div>
                     ) : (
                         <div className="py-8 text-center">
-                            <Folder size={30} className="mx-auto text-gray-400" />
-                            <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                                <Folder
+                                    size={25}
+                                    className="text-primary"
+                                />
+                            </div>
+
+                            <p className="mt-3 text-sm font-medium text-slate-700 dark:text-slate-200">
                                 No folders yet
                             </p>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 Add a folder or import a file to see the structure here.
                             </p>
                         </div>
@@ -1294,7 +1369,6 @@ export default function CreateTemplate() {
 
     function FolderTreeNode({
         folder,
-        depth = 0,
     }: {
         folder: FolderForm;
         depth?: number;
@@ -1304,27 +1378,34 @@ export default function CreateTemplate() {
                 <div className="flex min-w-0 items-start gap-2">
                     <Folder
                         size={16}
-                        className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-400"
+                        className="mt-0.5 shrink-0 text-primary"
                     />
+
                     <div className="min-w-0 flex-1">
-                        <p className="break-words text-sm font-medium text-gray-900 dark:text-white">
+                        <p className="break-words text-sm font-medium text-slate-800 dark:text-slate-100">
                             {folder.fname.trim() || "Untitled folder"}
                         </p>
+
+                        {folder.fnamedesc.trim() && (
+                            <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-slate-400">
+                                {folder.fnamedesc}
+                            </p>
+                        )}
                     </div>
+
                     {folder.children.length > 0 && (
-                        <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                             {folder.children.length}
                         </span>
                     )}
                 </div>
 
                 {folder.children.length > 0 && (
-                    <div className="ml-2 mt-2 space-y-3 border-l border-gray-200 pl-3 dark:border-gray-700">
+                    <div className="ml-2 mt-2 space-y-3 border-l border-primary/25 pl-3 dark:border-primary/40">
                         {folder.children.map((child) => (
                             <FolderTreeNode
                                 key={child.id}
                                 folder={child}
-                                depth={depth + 1}
                             />
                         ))}
                     </div>
@@ -1332,7 +1413,6 @@ export default function CreateTemplate() {
             </div>
         );
     }
-
 
     function applyImportedFolders() {
         if (!parsedPreview.length) {
@@ -1563,7 +1643,7 @@ export default function CreateTemplate() {
         <div className="min-h-[calc(100vh-90px)] bg-gray-50 px-4 py-5 dark:bg-gray-950 sm:px-6 lg:px-8">
             <div className="mx-auto">
                 <div className="mb-7">
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Masters / Templates</p>
+                    <p className="text-sm font-medium text-primary dark:text-primary">Masters / Templates</p>
                     <h1 className="mt-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
                         {isEditMode ? "Edit Template" : "Create Template"}
                     </h1>
@@ -1573,7 +1653,7 @@ export default function CreateTemplate() {
                 </div>
 
                 {loadingTemplate && (
-                    <div className="mb-5 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300">
+                    <div className="mb-5 flex items-center gap-3 rounded-lg border border-blue-200 bg-primary/5 p-4 text-sm text-primary dark:border-primary/30 dark:bg-primary/10/40 dark:text-blue-300">
                         <Loader2 className="h-5 w-5 animate-spin" /> Loading template details...
                     </div>
                 )}
@@ -1596,13 +1676,13 @@ export default function CreateTemplate() {
                             <h2 className="text-base font-semibold text-gray-900 dark:text-white">Template Setup</h2>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Step {currentStep} of 3</p>
                         </div>
-                        <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                        <span className="rounded-full bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/10 dark:text-blue-300">
                             {Math.round(progress)}% complete
                         </span>
                     </div>
 
                     <div className="mb-5 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={currentStep}>
-                        <div className="h-full rounded-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+                        <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -1617,9 +1697,9 @@ export default function CreateTemplate() {
                                     type="button"
                                     onClick={() => goToStep(step.number)}
                                     disabled={step.number >= currentStep || disabled}
-                                    className={`flex min-w-0 items-start gap-2 rounded-xl border p-3 text-left transition sm:gap-3 sm:p-4 ${active ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40" : completed ? "border-blue-200 bg-white dark:border-blue-900 dark:bg-gray-900" : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"}`}
+                                    className={`flex min-w-0 items-start gap-2 rounded-xl border p-3 text-left transition sm:gap-3 sm:p-4 ${active ? "border-primary bg-primary/5 dark:bg-primary/10/40" : completed ? "border-blue-200 bg-white dark:border-primary/30 dark:bg-gray-900" : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"}`}
                                 >
-                                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${active || completed ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
+                                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${active || completed ? "bg-primary text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
                                         {completed ? <Check size={17} /> : <StepIcon size={17} />}
                                     </span>
                                     <span className="min-w-0">
@@ -1636,7 +1716,7 @@ export default function CreateTemplate() {
                     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
                         <div className="border-b border-gray-200 px-5 py-5 dark:border-gray-800 sm:px-7">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary dark:bg-primary/10 dark:text-primary">
                                     {currentStep === 1 ? <FileText size={22} /> : currentStep === 2 ? <Folder size={22} /> : <Users size={22} />}
                                 </div>
                                 <div>
@@ -1670,9 +1750,9 @@ export default function CreateTemplate() {
                                         {loadingTypes ? <Loader2 size={17} className="absolute right-3 top-3 animate-spin text-gray-400" /> : <ChevronDown size={17} className="pointer-events-none absolute right-3 top-3 text-gray-400" />}
                                     </div>
                                 </div>
-                                <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+                                <div className="rounded-xl border border-primary/20 bg-primary/5/70 p-4 dark:border-primary/30 dark:bg-primary/10/30">
                                     <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Next: Configure your folders</p>
-                                    <p className="mt-1 text-sm text-blue-700 dark:text-blue-300">Your details will be retained as you move through the wizard.</p>
+                                    <p className="mt-1 text-sm text-primary dark:text-blue-300">Your details will be retained as you move through the wizard.</p>
                                 </div>
                             </div>
                         )}
@@ -1686,16 +1766,16 @@ export default function CreateTemplate() {
                                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Create nested folders or import them from a file.</p>
                                         </div>
                                         <div className="flex gap-2 text-xs">
-                                            <span className="rounded-lg bg-blue-50 px-3 py-2 font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">{folders.length} Root Folders</span>
+                                            <span className="rounded-lg bg-primary/5 px-3 py-2 font-medium text-primary dark:bg-primary/10 dark:text-blue-300">{folders.length} Root Folders</span>
                                             <span className="rounded-lg bg-gray-100 px-3 py-2 font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">{subfolderCount} Subfolders</span>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
-                                        <button type="button" onClick={() => { setFolderMode("manual"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium ${folderMode === "manual" ? "bg-white text-blue-700 shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
+                                        <button type="button" onClick={() => { setFolderMode("manual"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium ${folderMode === "manual" ? "bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
                                             <Folder size={17} /> Manual Creation
                                         </button>
-                                        <button type="button" onClick={() => { setFolderMode("upload"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium ${folderMode === "upload" ? "bg-white text-blue-700 shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
+                                        <button type="button" onClick={() => { setFolderMode("upload"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium ${folderMode === "upload" ? "bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
                                             <Upload size={17} /> Upload File
                                         </button>
                                     </div>
@@ -1709,15 +1789,15 @@ export default function CreateTemplate() {
 
                                             <input ref={fileInputRef} type="file" accept=".md,.txt,.pdf,.docx,.xlsx,.csv" onChange={(event) => void handleFileSelection(event)} disabled={disabled || parsingFile} className="hidden" />
 
-                                            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled || parsingFile} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center transition hover:border-blue-400 hover:bg-blue-50/40 disabled:opacity-50 dark:border-gray-700 dark:hover:border-blue-700">
-                                                {parsingFile ? <Loader2 size={30} className="animate-spin text-blue-600" /> : <FileUp size={30} className="text-blue-600 dark:text-blue-400" />}
+                                            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled || parsingFile} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center transition hover:border-blue-400 hover:bg-primary/5/40 disabled:opacity-50 dark:border-gray-700 dark:hover:border-blue-700">
+                                                {parsingFile ? <Loader2 size={30} className="animate-spin text-primary" /> : <FileUp size={30} className="text-primary dark:text-primary" />}
                                                 <span className="mt-3 text-sm font-semibold text-gray-900 dark:text-white">{parsingFile ? "Reading and parsing file..." : "Choose a file to upload"}</span>
                                                 <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">.md · .txt · .pdf · .docx · .xlsx · .csv</span>
                                             </button>
 
                                             {selectedFile && (
                                                 <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-                                                    {["xlsx", "csv"].includes(getFileFormat(selectedFile.name) ?? "") ? <FileSpreadsheet size={22} className="shrink-0 text-green-600" /> : ["docx", "pdf"].includes(getFileFormat(selectedFile.name) ?? "") ? <FileType size={22} className="shrink-0 text-blue-600" /> : <FileText size={22} className="shrink-0 text-blue-600" />}
+                                                    {["xlsx", "csv"].includes(getFileFormat(selectedFile.name) ?? "") ? <FileSpreadsheet size={22} className="shrink-0 text-green-600" /> : ["docx", "pdf"].includes(getFileFormat(selectedFile.name) ?? "") ? <FileType size={22} className="shrink-0 text-primary" /> : <FileText size={22} className="shrink-0 text-primary" />}
                                                     <div className="min-w-0 flex-1">
                                                         <p className="break-all text-sm font-medium text-gray-900 dark:text-white">{selectedFile.name}</p>
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">{(selectedFile.size / 1024).toFixed(1)} KB</p>
@@ -1727,9 +1807,9 @@ export default function CreateTemplate() {
                                             )}
 
                                             {parsedPreview.length > 0 && (
-                                                <div className="space-y-4 rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900 dark:bg-blue-950/20">
+                                                <div className="space-y-4 rounded-xl border border-blue-200 bg-primary/5/50 p-4 dark:border-primary/30 dark:bg-primary/10/20">
                                                     <div className="flex items-center gap-2">
-                                                        <Eye size={18} className="text-blue-600 dark:text-blue-400" />
+                                                        <Eye size={18} className="text-primary dark:text-primary" />
                                                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Import Preview</h4>
                                                         <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">{parsedPreview.length} root folder(s)</span>
                                                     </div>
@@ -1764,7 +1844,7 @@ export default function CreateTemplate() {
                                     {folderMode === "manual" && (
                                         <div className="space-y-5">
                                             {importedFileName && (
-                                                <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+                                                <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-primary/5 px-3 py-2 text-xs text-blue-800 dark:border-primary/30 dark:bg-primary/10/30 dark:text-blue-200">
                                                     <Check size={15} /> Imported from {importedFileName}. You can edit the structure below.
                                                 </div>
                                             )}
@@ -1782,7 +1862,7 @@ export default function CreateTemplate() {
                                                 />
                                             ))}
 
-                                            <button type="button" onClick={addFolder} disabled={disabled} className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-5 text-sm font-medium text-gray-600 transition hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-600 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-700">
+                                            <button type="button" onClick={addFolder} disabled={disabled} className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-5 text-sm font-medium text-gray-600 transition hover:border-blue-400 hover:bg-primary/5/50 hover:text-primary disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-700">
                                                 <CirclePlus size={19} /> Add Another Root Folder
                                             </button>
 
@@ -1809,7 +1889,7 @@ export default function CreateTemplate() {
                                         <div className="flex items-center gap-2">
                                             <Users
                                                 size={19}
-                                                className="text-blue-600 dark:text-blue-400"
+                                                className="text-primary dark:text-primary"
                                             />
                                             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                                                 Roles
@@ -1864,7 +1944,7 @@ export default function CreateTemplate() {
                                                 <div
                                                     key={role.name}
                                                     className={`flex items-center gap-2 rounded-xl border p-3 transition ${active
-                                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40"
+                                                        ? "border-primary bg-primary/5 dark:bg-primary/10/40"
                                                         : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
                                                         }`}
                                                 >
@@ -1876,7 +1956,7 @@ export default function CreateTemplate() {
                                                     >
                                                         <span
                                                             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${active
-                                                                ? "bg-blue-600 text-white"
+                                                                ? "bg-primary text-white"
                                                                 : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300"
                                                                 }`}
                                                         >
@@ -1932,7 +2012,7 @@ export default function CreateTemplate() {
                                                 <div className="flex items-center gap-2">
                                                     <Folder
                                                         size={19}
-                                                        className="text-blue-600 dark:text-blue-400"
+                                                        className="text-primary dark:text-primary"
                                                     />
                                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                                                         Folder Structure
@@ -1947,7 +2027,7 @@ export default function CreateTemplate() {
                                             </div>
 
                                             {selectedRole && (
-                                                <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                <span className="rounded-full bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary dark:bg-primary/10 dark:text-blue-300">
                                                     {selectedRole.folderIds.length} selected
                                                 </span>
                                             )}
@@ -1996,7 +2076,7 @@ export default function CreateTemplate() {
                                                                 )
                                                             );
                                                         }}
-                                                        className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-400"
+                                                        className="text-xs font-medium text-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:text-primary"
                                                     >
                                                         Clear selection
                                                     </button>
@@ -2071,7 +2151,7 @@ export default function CreateTemplate() {
                                         </div>
                                     </dl>
 
-                                    <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/40">
+                                    <div className="mt-5 rounded-lg border border-primary/20 bg-primary/5 p-3 dark:border-primary/30 dark:bg-primary/10/40">
                                         <p className="text-xs leading-5 text-blue-800 dark:text-blue-200">
                                             Each role has its own folder selection. Selecting another role
                                             preserves the current role's selections.

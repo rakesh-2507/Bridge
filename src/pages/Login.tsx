@@ -91,11 +91,11 @@ export default function Login() {
                 <div className="p-6 sm:p-10 md:p-12">
 
                     <div className="mb-8 flex flex-wrap justify-center">
-                        <span className="bridge-logo text-6xl text-primary">
+                        <span className="bridge-logo text-6xl text-primary dark:text-white">
                             Bridge
                         </span>
 
-                        <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+                        <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-gray-400">
                             Sign in to your account
                         </h2>
                         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -126,7 +126,7 @@ export default function Login() {
                                     placeholder="Enter your username"
                                     required
                                     disabled={loading}
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                    className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                                 />
                             </div>
                         </div>
@@ -153,7 +153,7 @@ export default function Login() {
                                     placeholder="Enter your password"
                                     required
                                     disabled={loading}
-                                    className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                                    className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                                 />
                                 <button
                                     type="button"
@@ -178,7 +178,7 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-offset-slate-900"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 dark:focus:ring-offset-slate-900"
                         >
                             {loading && <LoaderCircle size={18} className="animate-spin" />}
                             {loading ? "Signing in..." : "Sign in"}

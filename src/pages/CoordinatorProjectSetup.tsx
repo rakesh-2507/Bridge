@@ -831,7 +831,7 @@ export default function CoordinatorProjectSetup() {
                 <div className="flex flex-col items-center gap-3">
                     <Loader2
                         size={30}
-                        className="animate-spin text-blue-600"
+                        className="animate-spin text-primary"
                     />
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                         Loading project details...
@@ -868,7 +868,7 @@ export default function CoordinatorProjectSetup() {
                         <button
                             type="button"
                             onClick={handleBack}
-                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                         >
                             Back to Projects
                         </button>
@@ -906,7 +906,7 @@ export default function CoordinatorProjectSetup() {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                    <span className="rounded-full bg-primary/5 px-3 py-1 text-xs font-medium text-primary dark:bg-primary/10 dark:text-blue-300">
                         Step {step} of 2
                     </span>
                     <span className="hidden rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300 sm:inline-flex">
@@ -927,7 +927,7 @@ export default function CoordinatorProjectSetup() {
                                 <div className="mb-4 flex items-center gap-2">
                                     <Users
                                         size={19}
-                                        className="text-blue-600 dark:text-blue-400"
+                                        className="text-primary dark:text-primary"
                                     />
                                     <div>
                                         <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -1003,7 +1003,7 @@ export default function CoordinatorProjectSetup() {
                                                                 }
                                                                 className={`rounded-lg border p-3 ${
                                                                     selected
-                                                                        ? "border-blue-300 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
+                                                                        ? "border-blue-300 bg-primary/5/50 dark:border-blue-800 dark:bg-primary/10/20"
                                                                         : "border-gray-200 dark:border-gray-800"
                                                                 }`}
                                                             >
@@ -1018,7 +1018,7 @@ export default function CoordinatorProjectSetup() {
                                                                                 member.memberid,
                                                                             )
                                                                         }
-                                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                                                     />
                                                                     <span className="min-w-0 flex-1">
                                                                         <span className="block text-sm font-medium text-gray-900 dark:text-white">
@@ -1041,7 +1041,7 @@ export default function CoordinatorProjectSetup() {
                                                                             size={
                                                                                 17
                                                                             }
-                                                                            className="text-blue-600 dark:text-blue-400"
+                                                                            className="text-primary dark:text-primary"
                                                                         />
                                                                     )}
                                                                 </label>
@@ -1082,7 +1082,7 @@ export default function CoordinatorProjectSetup() {
                                                                                                 }
                                                                                                 className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${
                                                                                                     roleSelected
-                                                                                                        ? "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
+                                                                                                        ? "border-blue-300 bg-primary/10 text-blue-800 dark:border-blue-800 dark:bg-primary/10 dark:text-blue-200"
                                                                                                         : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
                                                                                                 }`}
                                                                                             >
@@ -1097,7 +1097,7 @@ export default function CoordinatorProjectSetup() {
                                                                                                             role.rollid,
                                                                                                         )
                                                                                                     }
-                                                                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600"
+                                                                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-primary"
                                                                                                 />
                                                                                                 {
                                                                                                     role.rolename
@@ -1260,7 +1260,7 @@ export default function CoordinatorProjectSetup() {
                                                                                         key={
                                                                                             role.rollid
                                                                                         }
-                                                                                        className="rounded bg-blue-50 px-2 py-1 text-[11px] text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                                                                                        className="rounded bg-primary/5 px-2 py-1 text-[11px] text-primary dark:bg-primary/10 dark:text-blue-300"
                                                                                     >
                                                                                         {
                                                                                             role.rolename
@@ -1295,7 +1295,7 @@ export default function CoordinatorProjectSetup() {
                                     <div className="flex items-start gap-2">
                                         <Clock
                                             size={20}
-                                            className="mt-0.5 text-blue-600 dark:text-blue-400"
+                                            className="mt-0.5 text-primary dark:text-primary"
                                         />
                                         <div>
                                             <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -1346,7 +1346,7 @@ export default function CoordinatorProjectSetup() {
                                     <div className="flex items-center justify-center gap-3 py-12 text-sm text-gray-500 dark:text-gray-400">
                                         <Loader2
                                             size={22}
-                                            className="animate-spin text-blue-600"
+                                            className="animate-spin text-primary"
                                         />
                                         Loading folder timeline...
                                     </div>
@@ -1433,7 +1433,7 @@ export default function CoordinatorProjectSetup() {
                                                                             }
                                                                             className={`shrink-0 ${
                                                                                 container
-                                                                                    ? "text-blue-600 dark:text-blue-400"
+                                                                                    ? "text-primary dark:text-primary"
                                                                                     : "text-gray-400 dark:text-gray-500"
                                                                             }`}
                                                                         />
@@ -1443,7 +1443,7 @@ export default function CoordinatorProjectSetup() {
                                                                             }
                                                                         </span>
                                                                         {container && (
-                                                                            <span className="whitespace-nowrap rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                                            <span className="whitespace-nowrap rounded bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary dark:bg-primary/10 dark:text-blue-300">
                                                                                 Container
                                                                             </span>
                                                                         )}
@@ -1793,7 +1793,7 @@ export default function CoordinatorProjectSetup() {
                                     timelineLoading ||
                                     members.length === 0
                                 }
-                                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving || timelineLoading ? (
                                     <Loader2
@@ -1814,7 +1814,7 @@ export default function CoordinatorProjectSetup() {
                                 type="button"
                                 onClick={() => void handleSaveTimeline()}
                                 disabled={saving || timelineLoading}
-                                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving ? (
                                     <Loader2

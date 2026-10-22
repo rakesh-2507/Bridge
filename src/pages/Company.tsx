@@ -269,7 +269,7 @@ export default function Company() {
         {/* Header */}
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+            <div className="rounded-xl bg-primary/10 p-3 text-primary dark:bg-primary/10 dark:text-blue-300">
               <Building2 size={26} />
             </div>
 
@@ -300,7 +300,7 @@ export default function Company() {
             <button
               type="button"
               onClick={openCreateModal}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
             >
               <Plus size={18} />
               Add Company
@@ -346,7 +346,7 @@ export default function Company() {
         {/* Lookup by ID */}
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-4 flex items-center gap-2">
-            <Hash size={19} className="text-blue-600 dark:text-blue-400" />
+            <Hash size={19} className="text-primary dark:text-primary" />
             <h2 className="font-semibold">Find Company by ID</h2>
           </div>
 
@@ -360,7 +360,7 @@ export default function Company() {
               value={lookupId}
               onChange={(event) => setLookupId(event.target.value)}
               placeholder="Enter company ID"
-              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
             />
 
             <button
@@ -378,7 +378,7 @@ export default function Company() {
           </form>
 
           {lookupResult && (
-            <div className="mt-4 flex flex-col justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30 sm:flex-row sm:items-center">
+            <div className="mt-4 flex flex-col justify-between gap-3 rounded-lg border border-blue-200 bg-primary/5 p-4 dark:border-primary/30 dark:bg-primary/10/30 sm:flex-row sm:items-center">
               <div>
                 <p className="font-semibold">
                   {lookupResult.company_name}
@@ -431,7 +431,7 @@ export default function Company() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search name or ID..."
-                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
               />
             </div>
           </div>
@@ -460,7 +460,7 @@ export default function Company() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 >
                   <Plus size={16} />
                   Add Company
@@ -494,7 +494,7 @@ export default function Company() {
 
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                          <div className="rounded-lg bg-primary/5 p-2 text-primary dark:bg-primary/10 dark:text-blue-300">
                             <Building2 size={18} />
                           </div>
                           <span className="font-medium">
@@ -513,7 +513,7 @@ export default function Company() {
                               setLookupResult(company);
                               setError("");
                             }}
-                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800"
+                            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-primary dark:hover:bg-slate-800"
                           >
                             <Eye size={17} />
                           </button>
@@ -522,7 +522,7 @@ export default function Company() {
                             type="button"
                             title="Edit company"
                             onClick={() => void openEditModal(company.cid)}
-                            className="rounded-lg p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
+                            className="rounded-lg p-2 text-slate-500 hover:bg-primary/5 hover:text-primary dark:hover:bg-blue-950"
                           >
                             <Pencil size={17} />
                           </button>
@@ -610,7 +610,7 @@ export default function Company() {
                       })
                     }
                     placeholder="Enter company name"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
                   />
                 </div>
               </div>
@@ -628,7 +628,7 @@ export default function Company() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving && (
                     <Loader2 size={16} className="animate-spin" />

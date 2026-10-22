@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
     Folder,
@@ -43,18 +42,15 @@ export default function TemplatesPage() {
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [error, setError] = useState("");
     const [detailsError, setDetailsError] = useState("");
-
     const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
         new Set(),
     );
-
     const [deleting, setDeleting] = useState(false);
 
-    // Prevent stale API requests from overwriting newer selections.
     const detailsRequestId = useRef(0);
     const templatesRequestId = useRef(0);
 
-    // Load all templates.
+    // Load templates and prevent stale requests from updating state.
     const loadTemplates = useCallback(async () => {
         const requestId = ++templatesRequestId.current;
 
@@ -81,7 +77,6 @@ export default function TemplatesPage() {
             }
         }
     }, []);
-
 
     useEffect(() => {
         let cancelled = false;
@@ -130,7 +125,6 @@ export default function TemplatesPage() {
 
         const templateId = selectedTemplate.tid;
 
-        // Invalidate any pending template-details request.
         detailsRequestId.current += 1;
 
         setDeleting(true);
@@ -188,7 +182,7 @@ export default function TemplatesPage() {
         }
     };
 
-    // Navigate to the existing CreateTemplate page in edit mode.
+    // Navigate to CreateTemplate in edit mode.
     const handleEditTemplate = () => {
         if (!selectedTemplate) return;
 
@@ -199,7 +193,6 @@ export default function TemplatesPage() {
         });
     };
 
-    // Use IDs where available, otherwise use a path-based key.
     const getFolderKey = (
         folder: FolderNode,
         path: string,
@@ -211,7 +204,6 @@ export default function TemplatesPage() {
         return path;
     };
 
-    // Expand or collapse a folder.
     const toggleFolder = (folderKey: FolderKey) => {
         setExpandedFolders((previous) => {
             const next = new Set(previous);
@@ -235,7 +227,7 @@ export default function TemplatesPage() {
     ): ReactNode => {
         const folderKey = getFolderKey(folder, path);
 
-        // Avoid infinite recursion if the API contains a cycle.
+        // Prevent infinite recursion if the API contains a cycle.
         if (ancestors.has(folderKey)) {
             return null;
         }
@@ -244,7 +236,6 @@ export default function TemplatesPage() {
             ? folder.children
             : [];
 
-        // Keep folder objects and convert string children to displayable nodes.
         const children: FolderNode[] = rawChildren.flatMap(
             (child): FolderNode[] => {
                 if (typeof child === "string") {
@@ -289,22 +280,22 @@ export default function TemplatesPage() {
                         paddingLeft: `${16 + depth * 24}px`,
                     }}
                     aria-expanded={hasChildren ? isExpanded : undefined}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left transition hover:bg-slate-100 disabled:cursor-default dark:hover:bg-slate-800 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left transition-colors hover:bg-primary/5 dark:hover:bg-primary/10 disabled:cursor-default disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
                 >
                     {hasChildren ? (
                         isExpanded ? (
-                            <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
+                            <ChevronDown className="h-4 w-4 shrink-0 text-primary dark:text-gray-400" />
                         ) : (
-                            <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
+                            <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-400" />
                         )
                     ) : (
                         <span className="w-4 shrink-0" />
                     )}
 
                     {isExpanded ? (
-                        <FolderOpen className="h-5 w-5 shrink-0 text-amber-500" />
+                        <FolderOpen className="h-5 w-5 shrink-0 text-primary dark:text-gray-400" />
                     ) : (
-                        <Folder className="h-5 w-5 shrink-0 text-amber-500" />
+                        <Folder className="h-5 w-5 shrink-0 text-primary dark:text-gray-400" />
                     )}
 
                     <span className="min-w-0 flex-1">
@@ -320,14 +311,14 @@ export default function TemplatesPage() {
                     </span>
 
                     {hasChildren && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary dark:text-gray-400">
                             {children.length}
                         </span>
                     )}
                 </button>
 
                 {isExpanded && hasChildren && (
-                    <div>
+                    <div className="border-l border-primary/20 dark:border-primary/30">
                         {children.map((child, index) =>
                             renderFolder(
                                 child,
@@ -345,20 +336,21 @@ export default function TemplatesPage() {
     const folders = (selectedTemplate?.folders ?? []) as FolderNode[];
     const roles = selectedTemplate?.roles ?? [];
 
-    // Nested API responses may contain children directly.
-    // If the API returns a flat list, use pid to identify root folders.
+    // Support nested folder responses and flat responses with parent IDs.
     const getRootFolders = (items: FolderNode[]): FolderNode[] => {
         const hasNestedObjects = items.some(
             (folder) =>
                 Array.isArray(folder.children) &&
                 folder.children.some(
-                    (child) => child !== null && typeof child === "object",
+                    (child) =>
+                        child !== null && typeof child === "object",
                 ),
         );
 
         if (hasNestedObjects) {
             return items.filter(
-                (folder) => folder.pid === null || folder.pid === undefined,
+                (folder) =>
+                    folder.pid === null || folder.pid === undefined,
             );
         }
 
@@ -368,7 +360,6 @@ export default function TemplatesPage() {
                 .filter((id): id is number => typeof id === "number"),
         );
 
-        // A flat response has parent IDs; nested roots normally have null pid.
         return items.filter(
             (folder) =>
                 folder.pid === null ||
@@ -378,13 +369,13 @@ export default function TemplatesPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-90px)] bg-slate-50 p-4 dark:bg-slate-950 sm:p-6">
+        <div className="min-h-[calc(100vh-90px)] bg-slate-50 p-4 transition-colors duration-200 dark:bg-slate-950 sm:p-6">
             <div className="mx-auto">
                 {/* Page header */}
                 <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <div className="mb-2 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                            <Layers className="h-4 w-4" />
+                            <Layers className="h-4 w-4 text-primary dark:text-gray-400" />
                             <span>Masters</span>
                             <ChevronRight className="h-4 w-4" />
                             <span>Templates</span>
@@ -403,7 +394,7 @@ export default function TemplatesPage() {
                         <button
                             type="button"
                             onClick={() => navigate("/templates/create")}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950"
                         >
                             <Plus className="h-4 w-4" />
                             Create Template
@@ -423,11 +414,11 @@ export default function TemplatesPage() {
                     </div>
                 </div>
 
-                {/* Template list error */}
+                {/* General error */}
                 {error && (
                     <div
                         role="alert"
-                        className="mb-5 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                        className="mb-5 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
                     >
                         <AlertCircle className="h-5 w-5 shrink-0" />
                         <span>{error}</span>
@@ -437,7 +428,7 @@ export default function TemplatesPage() {
                 {/* Main content */}
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
                     {/* Template list */}
-                    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                             <div>
                                 <h2 className="font-semibold text-slate-900 dark:text-white">
@@ -448,19 +439,19 @@ export default function TemplatesPage() {
                                 </p>
                             </div>
 
-                            <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                            <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary dark:text-gray-400">
                                 {templates.length}
                             </span>
                         </div>
 
                         {loading ? (
                             <div className="flex items-center justify-center gap-2 p-10 text-sm text-slate-500 dark:text-slate-400">
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <Loader2 className="h-5 w-5 animate-spin text-primary dark:text-gray-400" />
                                 Loading templates...
                             </div>
                         ) : templates.length === 0 ? (
                             <div className="px-5 py-12 text-center">
-                                <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+                                <FileText className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
                                 <p className="font-medium text-slate-700 dark:text-slate-200">
                                     No templates found
                                 </p>
@@ -470,8 +461,9 @@ export default function TemplatesPage() {
                                 <button
                                     type="button"
                                     onClick={() => navigate("/templates/create")}
-                                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                                 >
+                                    <Plus className="h-4 w-4" />
                                     Create Template
                                 </button>
                             </div>
@@ -489,16 +481,18 @@ export default function TemplatesPage() {
                                                 void handleTemplateClick(template)
                                             }
                                             aria-pressed={isSelected}
-                                            className={`mb-1 flex w-full items-start gap-3 rounded-lg p-4 text-left transition ${isSelected
-                                                ? "bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:ring-blue-900"
-                                                : "hover:bg-slate-50 dark:hover:bg-slate-800"
-                                                }`}
+                                            className={`mb-1 flex w-full items-start gap-3 rounded-lg p-4 text-left transition-colors ${
+                                                isSelected
+                                                    ? "bg-primary/10 ring-1 ring-primary/30 dark:bg-primary/15 dark:ring-primary/40"
+                                                    : "hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                                            }`}
                                         >
                                             <div
-                                                className={`rounded-lg p-2 ${isSelected
-                                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                                                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                                                    }`}
+                                                className={`rounded-lg p-2 ${
+                                                    isSelected
+                                                        ? "bg-primary/10 text-primary dark:bg-slate-800 dark:text-slate-300"
+                                                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 "
+                                                }`}
                                             >
                                                 <FileText className="h-5 w-5" />
                                             </div>
@@ -511,12 +505,12 @@ export default function TemplatesPage() {
                                                     {template.name_desc ||
                                                         "No description available"}
                                                 </p>
-                                                <p className="mt-2 text-xs text-slate-400">
+                                                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
                                                     Template ID: {template.tid}
                                                 </p>
                                             </div>
 
-                                            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+                                            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
                                         </button>
                                     );
                                 })}
@@ -529,7 +523,7 @@ export default function TemplatesPage() {
                         {detailsLoading ? (
                             <div className="flex min-h-72 items-center justify-center rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                                 <div className="text-center">
-                                    <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-blue-600" />
+                                    <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary dark:text-gray-300" />
                                     <p className="text-sm text-slate-500 dark:text-slate-400">
                                         Loading template details...
                                     </p>
@@ -538,7 +532,7 @@ export default function TemplatesPage() {
                         ) : detailsError ? (
                             <div
                                 role="alert"
-                                className="rounded-xl border border-red-200 bg-white p-6 dark:border-red-900 dark:bg-slate-900"
+                                className="rounded-xl border border-red-200 bg-white p-6 dark:border-red-900/70 dark:bg-slate-900"
                             >
                                 <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                                     <AlertCircle className="h-5 w-5" />
@@ -549,11 +543,27 @@ export default function TemplatesPage() {
                                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                                     {detailsError}
                                 </p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const template = templates.find(
+                                            (item) =>
+                                                item.tid ===
+                                                selectedTemplate?.tid,
+                                        );
+                                        if (template) {
+                                            void handleTemplateClick(template);
+                                        }
+                                    }}
+                                    className="mt-4 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    Try again
+                                </button>
                             </div>
                         ) : !selectedTemplate ? (
                             <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-6 text-center dark:border-slate-700 dark:bg-slate-900">
-                                <div className="mb-4 rounded-2xl bg-blue-50 p-4 dark:bg-blue-950">
-                                    <FolderOpen className="h-9 w-9 text-blue-600 dark:text-blue-400" />
+                                <div className="mb-4 rounded-2xl bg-primary/10 p-4">
+                                    <FolderOpen className="h-9 w-9 text-primary dark:text-gray-300" />
                                 </div>
                                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
                                     Select a Template
@@ -565,11 +575,11 @@ export default function TemplatesPage() {
                         ) : (
                             <div className="space-y-6">
                                 {/* Template overview */}
-                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900 sm:p-6">
                                     <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                                         <div className="flex min-w-0 flex-1 items-start gap-4">
-                                            <div className="shrink-0 rounded-xl bg-blue-50 p-3 dark:bg-blue-950">
-                                                <FileText className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+                                            <div className="shrink-0 rounded-xl bg-primary/10 p-3">
+                                                <FileText className="h-7 w-7 text-primary dark:text-gray-300" />
                                             </div>
 
                                             <div className="min-w-0 flex-1">
@@ -584,9 +594,8 @@ export default function TemplatesPage() {
                                                     <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                                                         ID: {selectedTemplate.tid}
                                                     </span>
-                                                    <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                                                        Project Type:{" "}
-                                                        {selectedTemplate.projecttype}
+                                                    <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary dark:text-gray-300">
+                                                        Project Type: {selectedTemplate.projecttype}
                                                     </span>
                                                 </div>
                                             </div>
@@ -597,7 +606,7 @@ export default function TemplatesPage() {
                                                 type="button"
                                                 onClick={handleEditTemplate}
                                                 disabled={deleting}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                                             >
                                                 <Pencil className="h-4 w-4" />
                                                 Edit Template
@@ -609,7 +618,7 @@ export default function TemplatesPage() {
                                                     void handleDeleteTemplate()
                                                 }
                                                 disabled={deleting}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950 dark:focus:ring-offset-slate-900"
+                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/50 dark:focus:ring-offset-slate-900"
                                             >
                                                 {deleting ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -625,11 +634,11 @@ export default function TemplatesPage() {
                                 </div>
 
                                 {/* Folder structure */}
-                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
                                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                                         <div className="flex items-center gap-3">
-                                            <div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-950">
-                                                <Folder className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                            <div className="rounded-lg bg-primary/10 p-2">
+                                                <Folder className="h-5 w-5 text-primary dark:text-gray-300" />
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-slate-900 dark:text-white">
@@ -641,8 +650,8 @@ export default function TemplatesPage() {
                                             </div>
                                         </div>
 
-                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                                            {folders.length} root folders
+                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:text-gray-300">
+                                            {getRootFolders(folders).length} root folders
                                         </span>
                                     </div>
 
@@ -658,7 +667,7 @@ export default function TemplatesPage() {
                                         </div>
                                     ) : (
                                         <div className="p-8 text-center">
-                                            <Folder className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                                            <Folder className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 No folders configured for this template.
                                             </p>
@@ -667,11 +676,11 @@ export default function TemplatesPage() {
                                 </div>
 
                                 {/* Template roles */}
-                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
                                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                                         <div className="flex items-center gap-3">
-                                            <div className="rounded-lg bg-purple-50 p-2 dark:bg-purple-950">
-                                                <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                            <div className="rounded-lg bg-primary/10 p-2">
+                                                <Users className="h-5 w-5 text-primary dark:text-gray-300" />
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-slate-900 dark:text-white">
@@ -683,7 +692,7 @@ export default function TemplatesPage() {
                                             </div>
                                         </div>
 
-                                        <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:text-gray-300">
                                             {roles.length} roles
                                         </span>
                                     </div>
@@ -696,9 +705,9 @@ export default function TemplatesPage() {
                                                         role.roleid ??
                                                         `${role.rolename}-${index}`
                                                     }
-                                                    className="flex items-center gap-2 rounded-lg border border-purple-100 bg-purple-50/70 px-4 py-3 dark:border-purple-900 dark:bg-purple-950/40"
+                                                    className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 dark:border-primary/30 dark:bg-primary/10"
                                                 >
-                                                    <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                                    <Users className="h-4 w-4 text-primary dark:text-gray-300" />
                                                     <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
                                                         {role.rolename}
                                                     </span>
@@ -707,7 +716,7 @@ export default function TemplatesPage() {
                                         </div>
                                     ) : (
                                         <div className="p-8 text-center">
-                                            <Users className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                                            <Users className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
                                             <p className="text-sm text-slate-500 dark:text-slate-400">
                                                 No roles configured for this template.
                                             </p>

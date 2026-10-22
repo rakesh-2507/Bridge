@@ -273,7 +273,7 @@ export default function UsersPage() {
     }
 
     const inputClass =
-        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-900";
+        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-900";
 
     const buttonClass =
         "rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
@@ -292,7 +292,7 @@ export default function UsersPage() {
                     type="button"
                     onClick={() => void loadUsers()}
                     disabled={loading}
-                    className={`${buttonClass} bg-blue-600 text-white hover:bg-blue-700`}
+                    className={`${buttonClass} bg-primary text-white hover:opacity-90`}
                 >
                     {loading ? "Loading..." : "Refresh Users"}
                 </button>
@@ -433,7 +433,7 @@ export default function UsersPage() {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className={`${buttonClass} bg-blue-600 text-white hover:bg-blue-700`}
+                                className={`${buttonClass} bg-primary text-white hover:opacity-90`}
                             >
                                 {saving
                                     ? "Saving..."
@@ -494,7 +494,7 @@ export default function UsersPage() {
                             <button
                                 type="button"
                                 onClick={() => startEdit(selectedUser)}
-                                className="mt-3 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                className="mt-3 text-sm font-medium text-primary hover:underline dark:text-primary"
                             >
                                 Edit this user
                             </button>
@@ -568,7 +568,7 @@ export default function UsersPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => startEdit(user)}
-                                                className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                                className="font-medium text-primary hover:underline dark:text-primary"
                                             >
                                                 Edit
                                             </button>

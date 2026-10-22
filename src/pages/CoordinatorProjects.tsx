@@ -101,7 +101,7 @@ function getStatusClasses(
     }
 
     if (["2", "completed", "complete"].includes(normalized)) {
-        return "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/20";
+        return "bg-primary/5 text-primary ring-1 ring-inset ring-blue-600/20 dark:bg-primary/50/10 dark:text-primary dark:ring-blue-500/20";
     }
 
     if (["3", "inactive", "cancelled"].includes(normalized)) {
@@ -121,7 +121,7 @@ function ProjectsLoading() {
             <div className="flex flex-col items-center gap-3">
                 <RefreshCw
                     size={30}
-                    className="animate-spin text-blue-600"
+                    className="animate-spin text-primary"
                 />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                     Loading your projects...
@@ -142,16 +142,16 @@ function NoProjects({
 }) {
     return (
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-900/30">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 dark:bg-slate-900/50">
                 {searching ? (
                     <Search
                         size={25}
-                        className="text-blue-600 dark:text-blue-400"
+                        className="text-primary dark:text-gray-400"
                     />
                 ) : (
                     <BriefcaseBusiness
                         size={25}
-                        className="text-blue-600 dark:text-blue-400"
+                        className="text-primary dark:text-gray-400"
                     />
                 )}
             </div>
@@ -203,7 +203,7 @@ function FolderTree({
                             style={{
                                 paddingLeft: `${12 + level * 22}px`,
                             }}
-                            className="flex items-center gap-2 rounded-lg pr-3 transition hover:bg-blue-50 dark:hover:bg-gray-700/70"
+                            className="flex items-center gap-2 rounded-lg pr-3 transition hover:bg-primary/5 dark:hover:bg-gray-700/70"
                         >
                             <button
                                 type="button"
@@ -270,14 +270,14 @@ function ProjectRow({
     project,
     openedProjectId,
     onSelect,
-    onToggleFolders,
+    // onToggleFolders,
 }: {
     project: Project;
     openedProjectId: number | null;
     onSelect: (project: Project) => void;
     onToggleFolders: (project: Project) => void;
 }) {
-    const [foldersExpanded, setFoldersExpanded] = useState(false);
+    // const [foldersExpanded, setFoldersExpanded] = useState(false);
 
     const isCoordinator = isCoordinatorProject(project);
     const isMemberOpen = openedProjectId === project.project_id;
@@ -314,58 +314,66 @@ function ProjectRow({
 
     return (
         <>
-            <tr className="transition-colors hover:bg-blue-50/50 dark:hover:bg-gray-700/40">
-                {/* Project */}
-                <td className="px-5 py-4 align-top">
+
+            <tr
+                onClick={() => onSelect(project)}
+                className="cursor-pointer transition-colors hover:bg-primary/5 dark:hover:bg-gray-700/40"
+            >
+
+                <td className="px-5 py-2 align-top">
                     <div className="flex min-w-[190px] items-start gap-3">
                         <div
                             className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isCoordinator
-                                    ? "bg-violet-50 dark:bg-violet-900/30"
-                                    : "bg-blue-50 dark:bg-blue-900/30"
+                                ? "bg-green-50 dark:bg-green-900/30"
+                                : "bg-primary/5 dark:bg-slate-900/50"
                                 }`}
                         >
                             <Folder
                                 size={18}
                                 className={
                                     isCoordinator
-                                        ? "text-violet-600 dark:text-violet-400"
-                                        : "text-blue-600 dark:text-blue-400"
+                                        ? "text-green-600 dark:text-green-400"
+                                        : "text-primary dark:text-gray-400"
                                 }
                             />
                         </div>
 
                         <div className="min-w-0">
-                            <button
-                                type="button"
-                                onClick={() => onSelect(project)}
-                                className="text-left font-semibold text-gray-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
-                            >
-                                {project.projectname || "Untitled Project"}
-                            </button>
+                            <div className="mb-1 flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onSelect(project);
+                                    }}
+                                    className="text-left font-semibold text-gray-900 transition-colors hover:text-primary dark:text-white"
+                                >
+                                    {project.projectname || "Untitled Project"}
+                                </button>
+
+                                <span
+                                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-medium ${isCoordinator
+                                        ? "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300"
+                                        : "bg-primary/10 text-primary dark:bg-primary/20 dark:text-orange-300"
+                                        }`}
+                                >
+                                    {isCoordinator ? (
+                                        <UserRoundCog size={10} />
+                                    ) : (
+                                        <Eye size={10} />
+                                    )}
+                                    {roleLabel}
+                                </span>
+                            </div>
 
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                 ID: {project.project_id}
                             </p>
-
-                            <span
-                                className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${isCoordinator
-                                        ? "bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300"
-                                        : "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
-                                    }`}
-                            >
-                                {isCoordinator ? (
-                                    <UserRoundCog size={12} />
-                                ) : (
-                                    <Eye size={12} />
-                                )}
-                                {roleLabel}
-                            </span>
                         </div>
                     </div>
                 </td>
 
-                {/* Description */}
-                <td className="max-w-[280px] px-5 py-4 align-top">
+                <td className="max-w-[280px] px-5 py-2 align-top">
                     <p
                         title={project.projectdesc || ""}
                         className="line-clamp-2 min-w-[160px] text-sm leading-5 text-gray-600 dark:text-gray-300"
@@ -374,8 +382,7 @@ function ProjectRow({
                     </p>
                 </td>
 
-                {/* Status */}
-                <td className="whitespace-nowrap px-5 py-4 align-top">
+                <td className="whitespace-nowrap px-5 py-2 align-top">
                     <span
                         className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClasses(
                             project.status,
@@ -386,8 +393,7 @@ function ProjectRow({
                     </span>
                 </td>
 
-                {/* Start Date */}
-                <td className="whitespace-nowrap px-5 py-4 align-top">
+                <td className="whitespace-nowrap px-5 py-2 align-top">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                         <CalendarDays
                             size={15}
@@ -397,8 +403,7 @@ function ProjectRow({
                     </div>
                 </td>
 
-                {/* End Date */}
-                <td className="whitespace-nowrap px-5 py-4 align-top">
+                <td className="whitespace-nowrap px-5 py-2 align-top">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                         <CalendarDays
                             size={15}
@@ -408,8 +413,7 @@ function ProjectRow({
                     </div>
                 </td>
 
-                {/* Members */}
-                <td className="whitespace-nowrap px-5 py-4 align-top">
+                <td className="whitespace-nowrap px-5 py-2 align-top">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                         <Users size={16} className="text-gray-400" />
                         <span>
@@ -419,14 +423,13 @@ function ProjectRow({
                     </div>
                 </td>
 
-                {/* Actions */}
-                <td className="px-5 py-4 align-top">
+                {/* <td className="px-5 py-2 align-top">
                     {isCoordinator ? (
                         <div className="flex flex-col items-start gap-2">
                             <button
                                 type="button"
                                 onClick={() => onSelect(project)}
-                                className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-700"
+                                className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white transition hover:opacity-90"
                             >
                                 <BriefcaseBusiness size={14} />
                                 Manage project
@@ -457,10 +460,10 @@ function ProjectRow({
                             type="button"
                             onClick={() => onToggleFolders(project)}
                             aria-expanded={isMemberOpen}
-                            className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-blue-200 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/20"
+                            className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-blue-200 px-3 py-2 text-xs font-medium text-primary transition hover:bg-primary/5 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/20"
                         >
                             <Folder size={14} />
-                            {isMemberOpen ? "Hide folders" : "Open folders"}
+                            {isMemberOpen ? "Hide folders" : "View Project"}
                             {isMemberOpen ? (
                                 <ChevronDown size={14} />
                             ) : (
@@ -468,13 +471,12 @@ function ProjectRow({
                             )}
                         </button>
                     )}
-                </td>
+                </td> */}
             </tr>
 
-            {/* Coordinator Folder Preview */}
-            {isCoordinator && foldersExpanded && (
+            {/* {isCoordinator && foldersExpanded && (
                 <tr className="bg-gray-50/80 dark:bg-gray-900/40">
-                    <td colSpan={7} className="px-5 py-4">
+                    <td colSpan={7} className="px-5 py-2">
                         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                             Project folders
                         </p>
@@ -484,12 +486,12 @@ function ProjectRow({
                         </div>
                     </td>
                 </tr>
-            )}
+            )} */}
 
             {/* Member Folder Browser */}
             {!isCoordinator && isMemberOpen && (
                 <tr className="bg-gray-50/80 dark:bg-gray-900/40">
-                    <td colSpan={7} className="px-5 py-4">
+                    <td colSpan={7} className="px-5 py-2">
                         <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
                             <div>
                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -638,8 +640,8 @@ export default function CoordinatorProjects() {
         return searchableText.includes(normalizedSearch);
     });
 
-    const coordinatorCount = projects.filter(isCoordinatorProject).length;
-    const memberCount = projects.length - coordinatorCount;
+    // const coordinatorCount = projects.filter(isCoordinatorProject).length;
+    // const memberCount = projects.length - coordinatorCount;
 
     // ========================================
     // Loading UI
@@ -659,10 +661,10 @@ export default function CoordinatorProjects() {
                 {/* Header */}
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 dark:bg-slate-900/50">
                             <BriefcaseBusiness
                                 size={23}
-                                className="text-blue-600 dark:text-blue-400"
+                                className="text-primary dark:text-gray-400"
                             />
                         </div>
 
@@ -726,8 +728,7 @@ export default function CoordinatorProjects() {
 
                 {!error && (
                     <>
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        {/* <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Total Projects
@@ -741,7 +742,7 @@ export default function CoordinatorProjects() {
                                 <p className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                     <UserRoundCog
                                         size={16}
-                                        className="text-violet-500"
+                                        className="text-green-500"
                                     />
                                     Coordinator Projects
                                 </p>
@@ -762,10 +763,9 @@ export default function CoordinatorProjects() {
                                     {memberCount}
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
 
-                        {/* Search and Result Count */}
-                        <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:justify-between">
                             <div className="relative w-full sm:max-w-md">
                                 <Search
                                     size={18}
@@ -780,7 +780,7 @@ export default function CoordinatorProjects() {
                                     }
                                     placeholder="Search projects by name, ID, status or role..."
                                     aria-label="Search projects"
-                                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                 />
                             </div>
 
@@ -820,7 +820,7 @@ export default function CoordinatorProjects() {
                                                         "Start Date",
                                                         "End Date",
                                                         "Members",
-                                                        "Actions",
+                                                        // "Actions",
                                                     ].map((heading) => (
                                                         <th
                                                             key={heading}
