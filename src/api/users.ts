@@ -1,4 +1,3 @@
-
 import { del, get, post, put } from "./http";
 
 export interface User {
@@ -11,6 +10,9 @@ export interface User {
   mobile: string;
   status: string;
   mtype: string;
+  photo?: string | null;
+  photo_url?: string | null;
+  gender?: string | null;
   createddt: string;
   updatedt: string;
 }
@@ -24,6 +26,9 @@ export interface UserPayload {
   email: string;
   mobile: string;
   mtype: string;
+  photo?: string | null;
+  photo_url?: string | null;
+  gender?: string | null;
 }
 
 export interface CreateUserPayload extends UserPayload {
@@ -51,7 +56,7 @@ export function createUser(
 
 export function updateUser(
   uid: number,
-  payload: UserPayload,
+  payload: FormData,
 ): Promise<User> {
   return put<User>(`/updateuser/${uid}`, payload);
 }

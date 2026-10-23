@@ -5,7 +5,9 @@ import {
   UserCircle,
   Sun,
   Moon,
+
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ThemeContext } from "./ThemeContext";
 import { getCurrentUser } from "../../api/auth";
 
@@ -15,7 +17,7 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const themeContext = useContext(ThemeContext);
-
+  const navigate = useNavigate();
   if (!themeContext) {
     throw new Error("Navbar must be used inside ThemeProvider");
   }
@@ -82,16 +84,22 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           <Bell size={21} />
         </button>
 
-        <div className="flex items-center gap-2 border-l border-primary-light pl-3">
-          <UserCircle size={28} className="text-white" />
+        <button
+          type="button"
+          onClick={() => navigate("/profile")}
+          aria-label="View my profile"
+          title="My Profile"
+          className="flex min-w-0 items-center gap-2 border-l border-primary-light pl-3 text-white transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-r-lg"
+        >
+          <UserCircle size={28} className="shrink-0" />
 
           <span
-            className="max-w-40 truncate text-sm font-medium text-white"
+            className="max-w-40 truncate text-sm font-medium"
             title={displayName}
           >
             {displayName}
           </span>
-        </div>
+        </button>
       </div>
     </header>
   );

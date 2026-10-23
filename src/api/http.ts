@@ -88,7 +88,7 @@ async function sendRequest(
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }
-  
+
   const isFormData = options.body instanceof FormData;
 
   if (isFormData) {
@@ -197,9 +197,11 @@ export function post<T>(path: string, payload: unknown): Promise<T> {
 }
 
 export function put<T>(path: string, payload: unknown): Promise<T> {
+  const isFormData = payload instanceof FormData;
+
   return request<T>(path, {
     method: "PUT",
-    body: JSON.stringify(payload),
+    body: isFormData ? payload : JSON.stringify(payload),
   });
 }
 

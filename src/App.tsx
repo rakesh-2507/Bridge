@@ -22,6 +22,8 @@ import CoordinatorProjectSetup from "./pages/CoordinatorProjectSetup";
 import ProjectDetails from "./pages/ProjectDetails";
 import ProjectFolderFiles from "./pages/ProjectFolderFiles";
 import GanttChart from "./pages/GanttChart";
+import Profile from "./pages/Profile";
+
 import {
   getCurrentUser,
   isAuthenticated,
@@ -105,6 +107,8 @@ export default function App() {
             path="/dashboard/projects/:projectId/gantt"
             element={<GanttChart />}
           />
+
+          <Route path="/profile" element={<Profile />} />
           <Route element={<AdminRoute />}>
             <Route path="/masters" element={<Masters />} />
             <Route path="/users" element={<UsersPage />} />

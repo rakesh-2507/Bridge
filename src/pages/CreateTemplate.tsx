@@ -1,6 +1,12 @@
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import {
+    useEffect,
+    useRef,
+    useState,
+    type ChangeEvent,
+    type FormEvent,
+    type DragEvent,
+} from "react"; import { useLocation, useNavigate } from "react-router-dom";
 import {
     Check,
     ChevronDown,
@@ -892,15 +898,15 @@ function RoleFolderCheckbox({
                             <Folder
                                 size={17}
                                 className={`shrink-0 ${checked
-                                        ? "text-primary"
-                                        : "text-slate-500 dark:text-slate-400"
+                                    ? "text-primary"
+                                    : "text-slate-500 dark:text-slate-400"
                                     }`}
                             />
 
                             <span
                                 className={`min-w-0 flex-1 break-words text-sm ${checked
-                                        ? "font-medium text-primary"
-                                        : "text-slate-700 dark:text-slate-200"
+                                    ? "font-medium text-primary"
+                                    : "text-slate-700 dark:text-slate-200"
                                     }`}
                             >
                                 {folder.fname.trim() || "Untitled folder"}
@@ -999,7 +1005,7 @@ export default function CreateTemplate() {
     const [parsedPreview, setParsedPreview] = useState<ParsedFolder[]>([]);
     const [importedFileName, setImportedFileName] = useState("");
     const [parsingFile, setParsingFile] = useState(false);
-
+    const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [saving, setSaving] = useState(false);
@@ -1217,10 +1223,8 @@ export default function CreateTemplate() {
         setError("");
     }
 
-    async function handleFileSelection(event: ChangeEvent<HTMLInputElement>) {
-        const file = event.target.files?.[0];
-        if (!file) return;
 
+    async function processSelectedFile(file: File): Promise<void> {
         setError("");
         setSuccess("");
         setParsedPreview([]);
@@ -1229,16 +1233,24 @@ export default function CreateTemplate() {
         const format = getFileFormat(file.name);
 
         if (!format) {
-            setError("Unsupported file type. Upload .md, .txt, .pdf, .docx, .xlsx, or .csv.");
+            setError(
+                "Unsupported file type. Upload .md, .txt, .pdf, .docx, .xlsx, or .csv.",
+            );
             setSelectedFile(null);
-            event.target.value = "";
+
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
             return;
         }
 
         if (file.size > 15 * 1024 * 1024) {
             setError("The file is too large. Please upload a file smaller than 15 MB.");
             setSelectedFile(null);
-            event.target.value = "";
+
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
             return;
         }
 
@@ -1246,10 +1258,11 @@ export default function CreateTemplate() {
             setParsingFile(true);
 
             const result = await parseUploadedFile(file, format);
-            if (!result.length) throw new Error("No folders could be extracted from this file.");
 
-            // Validate sibling duplicates without disallowing the same name
-            // in different branches of the tree.
+            if (!result.length) {
+                throw new Error("No folders could be extracted from this file.");
+            }
+
             const findDuplicate = (items: ParsedFolder[]): string | null => {
                 const names = new Set<string>();
 
@@ -1267,17 +1280,51 @@ export default function CreateTemplate() {
             };
 
             const duplicate = findDuplicate(result);
+
             if (duplicate) {
-                throw new Error(`The file contains duplicate sibling folder names: "${duplicate}".`);
+                throw new Error(
+                    `The file contains duplicate sibling folder names: "${duplicate}".`,
+                );
             }
 
             setParsedPreview(result);
-            setSuccess(`Found ${result.length} root folder(s) in "${file.name}". Review the preview before importing.`);
+            setSuccess(
+                `Found ${result.length} root folder(s) in "${file.name}". Review the preview before importing.`,
+            );
         } catch (err) {
             setParsedPreview([]);
-            setError(err instanceof Error ? err.message : "Unable to parse this file.");
+            setError(
+                err instanceof Error ? err.message : "Unable to parse this file.",
+            );
         } finally {
             setParsingFile(false);
+        }
+    }
+
+    async function handleFileSelection(
+        event: ChangeEvent<HTMLInputElement>,
+    ) {
+        const file = event.target.files?.[0];
+
+        // Allows selecting the same file again after clearing the import.
+        event.target.value = "";
+
+        if (file) {
+            await processSelectedFile(file);
+        }
+    }
+
+    function handleFileDrop(event: DragEvent<HTMLDivElement>) {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(false);
+
+        if (disabled || parsingFile) return;
+
+        const file = event.dataTransfer.files?.[0];
+
+        if (file) {
+            void processSelectedFile(file);
         }
     }
 
@@ -1787,13 +1834,99 @@ export default function CreateTemplate() {
                                                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Supported: Markdown, TXT, PDF, DOCX, XLSX, CSV. Maximum 15 MB.</p>
                                             </div>
 
-                                            <input ref={fileInputRef} type="file" accept=".md,.txt,.pdf,.docx,.xlsx,.csv" onChange={(event) => void handleFileSelection(event)} disabled={disabled || parsingFile} className="hidden" />
 
-                                            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled || parsingFile} className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center transition hover:border-blue-400 hover:bg-primary/5/40 disabled:opacity-50 dark:border-gray-700 dark:hover:border-blue-700">
-                                                {parsingFile ? <Loader2 size={30} className="animate-spin text-primary" /> : <FileUp size={30} className="text-primary dark:text-primary" />}
-                                                <span className="mt-3 text-sm font-semibold text-gray-900 dark:text-white">{parsingFile ? "Reading and parsing file..." : "Choose a file to upload"}</span>
-                                                <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">.md · .txt · .pdf · .docx · .xlsx · .csv</span>
-                                            </button>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept=".md,.txt,.pdf,.docx,.xlsx,.csv"
+                                                onChange={(event) => void handleFileSelection(event)}
+                                                disabled={disabled || parsingFile}
+                                                className="hidden"
+                                            />
+
+                                            <div
+                                                onDragEnter={(event) => {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+
+                                                    if (!disabled && !parsingFile) {
+                                                        setIsDragging(true);
+                                                    }
+                                                }}
+                                                onDragOver={(event) => {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+
+                                                    if (!disabled && !parsingFile) {
+                                                        event.dataTransfer.dropEffect = "copy";
+                                                        setIsDragging(true);
+                                                    }
+                                                }}
+                                                onDragLeave={(event) => {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+
+                                                    // Keep the highlight while moving over children inside the drop area.
+                                                    if (
+                                                        !event.currentTarget.contains(
+                                                            event.relatedTarget as Node | null,
+                                                        )
+                                                    ) {
+                                                        setIsDragging(false);
+                                                    }
+                                                }}
+                                                onDrop={handleFileDrop}
+                                                className={`flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${isDragging
+                                                        ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                                                        : "border-gray-300 hover:border-primary hover:bg-primary/5 dark:border-gray-700 dark:hover:border-primary"
+                                                    } ${disabled || parsingFile
+                                                        ? "cursor-not-allowed opacity-50"
+                                                        : "cursor-pointer"
+                                                    }`}
+                                            >
+                                                {parsingFile ? (
+                                                    <Loader2
+                                                        size={30}
+                                                        className="animate-spin text-primary"
+                                                    />
+                                                ) : (
+                                                    <FileUp
+                                                        size={30}
+                                                        className="text-primary"
+                                                    />
+                                                )}
+
+                                                <span className="mt-3 text-sm font-semibold text-gray-900 dark:text-white">
+                                                    {parsingFile
+                                                        ? "Reading and parsing file..."
+                                                        : isDragging
+                                                            ? "Drop your file here"
+                                                            : "Drag and drop your file here"}
+                                                </span>
+
+                                                <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    or browse your computer
+                                                </span>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={disabled || parsingFile}
+                                                    className={`${primaryButtonClass} mt-4`}
+                                                >
+                                                    <Upload size={16} />
+                                                    Browse Files
+                                                </button>
+
+                                                <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                                    .md · .txt · .pdf · .docx · .xlsx · .csv
+                                                </p>
+
+                                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    Maximum file size: 15 MB
+                                                </p>
+                                            </div>
+
 
                                             {selectedFile && (
                                                 <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">

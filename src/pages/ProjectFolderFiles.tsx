@@ -349,7 +349,7 @@ function getFolderProgressPercentage(
         status === "in progress" ||
         status === "in_progress"
     ) {
-        return Math.max(5, savedPercentage);
+        return Math.max(1, savedPercentage);
     }
 
     return savedPercentage;
@@ -1935,7 +1935,7 @@ export default function ProjectFolderFiles() {
                                         </p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
+                                    <div className="overflow-x-auto scrollbar-thin">
                                         <table className="w-full min-w-[1050px] text-left text-sm">
                                             <thead className="bg-primary text-white">
                                                 <tr>
