@@ -1679,7 +1679,7 @@ export default function ProjectFolderFiles() {
                             </div>
                         )}
 
-                       
+
                     </div>
 
                     {!loading && !error && (
@@ -1878,7 +1878,7 @@ export default function ProjectFolderFiles() {
                                 </div>
                             )}
 
-                            
+
 
                             {deleteError && (
                                 <div
@@ -2691,8 +2691,8 @@ export default function ProjectFolderFiles() {
                 </div>
             </Modal>
 
-            <section className="mt-6 space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+            {notificationsLoading || folderNotifications.length > 0 ? (
+                <section className="mt-6 space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-5">                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                             <MessageSquare size={20} className="text-primary" />
@@ -2722,82 +2722,82 @@ export default function ProjectFolderFiles() {
                     </button>
                 </div>
 
-                {notificationsError && (
-                    <div
-                        role="alert"
-                        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
-                    >
-                        {notificationsError}
-                    </div>
-                )}
+                    {notificationsError && (
+                        <div
+                            role="alert"
+                            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                        >
+                            {notificationsError}
+                        </div>
+                    )}
 
-                {notificationsLoading ? (
-                    <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-500">
-                        <Loader2 size={20} className="animate-spin text-primary" />
-                        Loading comments...
-                    </div>
-                ) : notificationsError ? null : folderNotifications.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-600">
-                        <MessageSquare
-                            size={28}
-                            className="mx-auto mb-2 text-gray-400"
-                        />
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                            No comments received
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Comments sent to your account will appear here.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-3">
-                        {folderNotifications.map((notification) => (
-                            <article
-                                key={notification.notificationid}
-                                className="rounded-lg border border-gray-200 p-1 transition hover:border-primary/40 dark:border-gray-700"
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                                        <MessageSquare
-                                            size={18}
-                                            className="text-primary"
-                                        />
-                                    </div>
+                    {notificationsLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-8 text-sm text-gray-500">
+                            <Loader2 size={20} className="animate-spin text-primary" />
+                            Loading comments...
+                        </div>
+                    ) : notificationsError ? null : folderNotifications.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-gray-300 px-4 py-8 text-center dark:border-gray-600">
+                            <MessageSquare
+                                size={28}
+                                className="mx-auto mb-2 text-gray-400"
+                            />
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                No comments received
+                            </p>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Comments sent to your account will appear here.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {folderNotifications.map((notification) => (
+                                <article
+                                    key={notification.notificationid}
+                                    className="rounded-lg border border-gray-200 p-1 transition hover:border-primary/40 dark:border-gray-700"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                            <MessageSquare
+                                                size={18}
+                                                className="text-primary"
+                                            />
+                                        </div>
 
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap
                                          justify-between gap-2 items-center">
-                                            <div>
-                                                <p className="font-semibold text-gray-900 dark:text-white">
-                                                    {notification.from || "Unknown sender"}
-                                                </p>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900 dark:text-white">
+                                                        {notification.from || "Unknown sender"}
+                                                    </p>
 
-                                                <p className="mt-1 text-sm font-medium text-primary">
-                                                    {notification.subject
-                                                        .replace(/^New comment:\s*/i, "")}
-                                                </p>
+                                                    <p className="mt-1 text-sm font-medium text-primary">
+                                                        {notification.subject
+                                                            .replace(/^New comment:\s*/i, "")}
+                                                    </p>
+                                                </div>
+
+                                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                                                    Comment
+                                                </span>
                                             </div>
 
-                                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                                                Comment
-                                            </span>
-                                        </div>
+                                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                                {notification.date && (
+                                                    <span>
+                                                        {formatUploadedDate(notification.date)}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                                            {notification.date && (
-                                                <span>
-                                                    {formatUploadedDate(notification.date)}
-                                                </span>
-                                            )}
                                         </div>
-
                                     </div>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                )}
-            </section>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </section>) : null}
 
             {successMessage &&
                 createPortal(
