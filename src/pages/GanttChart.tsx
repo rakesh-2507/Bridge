@@ -335,7 +335,7 @@ export default function GanttChart() {
             } catch (err) {
                 if (!cancelled) {
                     console.error("Failed to load project timeline:", err);
-                    setError("Failed to load project timeline. Unauthorized.");
+                    setError("Failed to load project timeline. Please Try Again.");
                 }
             } finally {
                 if (!cancelled) setLoading(false);

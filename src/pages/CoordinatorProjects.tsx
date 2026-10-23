@@ -36,7 +36,7 @@ import mrImage from "../assets/mr.png";
 import mrsImage from "../assets/mrs.png";
 
 import Modal from "../components/models/Modal";
-import ProjectFolderTree from "../components/models/FolderTree";
+// import ProjectFolderTree from "../components/models/FolderTree";
 
 // ========================================
 // Response Helpers
@@ -833,22 +833,22 @@ export default function CoordinatorProjects() {
         );
     };
 
-    const openFolderFiles = (folder: ProjectFolder) => {
-        if (!projectDetails) return;
+    // const openFolderFiles = (folder: ProjectFolder) => {
+    //     if (!projectDetails) return;
 
-        setFolderModalOpen(false);
+    //     setFolderModalOpen(false);
 
-        navigate(
-            `/dashboard/projects/${projectDetails.project_id}/folders/${folder.fid}`,
-            {
-                state: {
-                    project: projectDetails,
-                    folder,
-                    folderName: folder.fname,
-                },
-            },
-        );
-    };
+    //     navigate(
+    //         `/dashboard/projects/${projectDetails.project_id}/folders/${folder.fid}`,
+    //         {
+    //             state: {
+    //                 project: projectDetails,
+    //                 folder,
+    //                 folderName: folder.fname,
+    //             },
+    //         },
+    //     );
+    // };
 
     // ----------------------------------------
     // Search and derived values
@@ -1098,9 +1098,9 @@ export default function CoordinatorProjects() {
                                                                 folder.fid
                                                             }
                                                             type="button"
-                                                            onClick={() =>
-                                                                openFolderFiles(folder)
-                                                            }
+                                                            // onClick={() =>
+                                                            //     openFolderFiles(folder)
+                                                            // }
                                                             className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-primary/10"
                                                         >
                                                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -1305,12 +1305,12 @@ export default function CoordinatorProjects() {
                     {projectDetails &&
                         (projectDetails.folders?.length ? (
                             <>
-                                <div className="rounded-xl px-2">
+                                {/* <div className="rounded-xl px-2">
                                     <ProjectFolderTree
                                         folders={projectDetails.folders}
                                         onFolderClick={openFolderFiles}
                                     />
-                                </div>
+                                </div> */}
 
                                 <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-800">
                                     <div className="flex items-center gap-1.5">
