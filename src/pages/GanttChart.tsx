@@ -1,172 +1,318 @@
-
-import {
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useState,
-    type MouseEvent as ReactMouseEvent,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-    ArrowLeft,
-    RefreshCw,
-    Loader2,
-    AlertCircle,
-    X,
-} from "lucide-react";
+import { Gantt, Willow } from "@svar-ui/react-gantt";
+import type { ITask } from "@svar-ui/react-gantt";
+import "@svar-ui/react-gantt/all.css";
+import { AlertCircle, ArrowLeft, Loader2, RefreshCw } from "lucide-react";
 
 import {
     getProjectFolderTimeline,
-    type ProjectFolderTimelineResponse,
     type ProjectFolderTimelineItem,
+    type ProjectFolderTimelineResponse,
 } from "../api/projects";
 
-function parseDate(value: string | null): Date | null {
+function parseDate(value: string | null | undefined): Date | null {
     if (!value) return null;
-
     const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatDate(value: string | null): string {
-    const date = parseDate(value);
+function addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+}
 
+function formatDate(value: string | null | undefined): string {
+    const date = parseDate(value);
     return date
         ? date.toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-          })
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        })
         : "Not scheduled";
 }
 
 function getProgress(folder: ProjectFolderTimelineItem): number {
-    return Math.min(
-        100,
-        Math.max(0, Number(folder.progress_percentage ?? 0)),
+    return Math.min(100, Math.max(0, Number(folder.progress_percentage ?? 0)));
+}
+
+function getStatus(folder: ProjectFolderTimelineItem) {
+    const value =
+        folder.status === null || folder.status === undefined || folder.status === ""
+            ? null
+            : Number(folder.status);
+
+    if (value === 2) {
+        return { value, label: "Completed", type: "completed" };
+    }
+    if (value === 1) {
+        return { value, label: "In Progress", type: "in-progress" };
+    }
+    if (value === 0) {
+        return { value, label: "Pending", type: "pending" };
+    }
+    return { value, label: "Status unavailable", type: "pending" };
+}
+
+type BridgeTaskData = {
+    id?: string | number;
+    text?: string;
+    type?: string;
+    assignee?: string;
+    keypersonid?: number | string | null;
+    statusLabel?: string;
+    startLabel?: string;
+    endLabel?: string;
+    daysLabel?: string;
+    progressLabel?: string;
+    remarks?: string;
+    progressNotes?: string;
+    hasChildren?: boolean;
+};
+
+type BridgeTaskTemplateProps = {
+    data: ITask & BridgeTaskData;
+    api: unknown;
+    onAction: (event: {
+        action: string;
+        data: Record<string, unknown>;
+    }) => void;
+};
+
+function BridgeTaskTemplate({ data }: BridgeTaskTemplateProps) {
+    const [tooltip, setTooltip] = useState<{
+        x: number;
+        y: number;
+    } | null>(null);
+
+    useEffect(() => {
+        if (!tooltip) return;
+
+        const closeTooltip = () => setTooltip(null);
+        window.addEventListener("pointerdown", closeTooltip);
+
+        return () => {
+            window.removeEventListener("pointerdown", closeTooltip);
+        };
+    }, [tooltip]);
+
+    const assignedName =
+        data.assignee?.trim() && data.assignee !== "Unassigned"
+            ? `${data.assignee} (${data.keypersonid ?? "N/A"})`
+            : "Unassigned";
+
+    const label =
+        data.assignee?.trim() && data.assignee !== "Unassigned"
+            ? assignedName
+            : data.text ?? "";
+
+    const showTooltip = (event: React.MouseEvent<HTMLDivElement>) => {
+        event.stopPropagation();
+
+        setTooltip({
+            x: Math.max(
+                12,
+                Math.min(event.clientX, window.innerWidth - 332),
+            ),
+            y: Math.max(
+                12,
+                Math.min(event.clientY + 12, window.innerHeight - 310),
+            ),
+        });
+    };
+
+    return (
+        <>
+            <div
+                className="wx-content cursor-pointer"
+                onClick={showTooltip}
+                title="Click to view folder details"
+            >
+                {label}
+            </div>
+
+            {tooltip &&
+                createPortal(
+                    <div
+                        className="fixed z-[99999] w-[320px] rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        style={{
+                            left: tooltip.x,
+                            top: tooltip.y,
+                        }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                            <h3 className="font-semibold">
+                                {data.text ?? "Folder details"}
+                            </h3>
+
+                            <button
+                                type="button"
+                                onClick={() => setTooltip(null)}
+                                className="text-lg leading-none text-slate-500 hover:text-primary"
+                                aria-label="Close folder details"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <DetailRow label="Status" value={data.statusLabel} />
+                            <DetailRow label="Assigned user" value={assignedName} />
+                            <DetailRow label="Progress" value={data.progressLabel} />
+                            <DetailRow label="Start date" value={data.startLabel} />
+                            <DetailRow label="End date" value={data.endLabel} />
+                            <DetailRow label="Duration" value={data.daysLabel} />
+                            <DetailRow label="Remarks" value={data.remarks} />
+                            <DetailRow
+                                label="Progress notes"
+                                value={data.progressNotes}
+                            />
+                        </div>
+                    </div>,
+                    document.body,
+                )}
+        </>
     );
 }
 
-type TaskStatus = {
-    value: number | null;
+function DetailRow({
+    label,
+    value,
+}: {
     label: string;
-    barClass: string;
-    fillClass: string;
-    badgeClass: string;
-};
-
-function getTaskStatus(folder: ProjectFolderTimelineItem): TaskStatus {
-    const rawStatus = folder.status;
-    const value =
-        rawStatus === null || rawStatus === undefined || rawStatus === ""
-            ? null
-            : Number(rawStatus);
-
-    if (value === 2) {
-        return {
-            value,
-            label: "Completed",
-            barClass: "bg-green-100 dark:bg-green-950/60",
-            fillClass: "bg-green-600",
-            badgeClass:
-                "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-        };
-    }
-
-    if (value === 1) {
-        return {
-            value,
-            label: "In progress",
-            barClass: "bg-blue-100 dark:bg-blue-950/60",
-            fillClass: "bg-blue-600",
-            badgeClass:
-                "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-        };
-    }
-
-    if (value === 0) {
-        return {
-            value,
-            label: "Pending",
-            barClass: "bg-slate-200 dark:bg-slate-700",
-            fillClass: "bg-slate-500",
-            badgeClass:
-                "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-        };
-    }
-
-    return {
-        value,
-        label: "Status unavailable",
-        barClass: "bg-slate-200 dark:bg-slate-700",
-        fillClass: "bg-primary",
-        badgeClass:
-            "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-    };
+    value?: string | number | null;
+}) {
+    return (
+        <div className="grid grid-cols-[105px_1fr] gap-2">
+            <span className="text-slate-500 dark:text-slate-400">
+                {label}
+            </span>
+            <span className="break-words font-medium">
+                {value == null || value === "" || value === "—"
+                    ? "—"
+                    : value}
+            </span>
+        </div>
+    );
 }
 
-interface DependencyLine {
-    fid: number;
-    path: string;
-}
+const taskTypes = [
+    { id: "task", label: "Task" },
+    { id: "pending", label: "Pending" },
+    { id: "in-progress", label: "In Progress" },
+    { id: "completed", label: "Completed" },
+    { id: "parent-folder", label: "Parent folder" },
+];
 
-interface DependencyLayout {
-    width: number;
-    height: number;
-    lines: DependencyLine[];
-}
+const columns = [
+    { id: "text", header: "Folder / Subfolder", flexgrow: 2, sort: false },
+    { id: "daysLabel", header: "Days", width: 65, align: "center" as const, sort: false },
+];
+
+const styles = `
+  .bridge-gantt {
+    --bridge-primary: var(--color-primary, #ff6b35);
+    --bridge-primary-light: var(--color-primary-light, #f8aa91);
+    --wx-gantt-task-color: var(--bridge-primary);
+    --wx-gantt-task-fill-color: var(--bridge-primary);
+    --wx-gantt-task-border-color: var(--bridge-primary);
+    --wx-gantt-task-font-color: #ffffff;
+    --wx-gantt-link-color: var(--bridge-primary);
+    --wx-gantt-link-marker-color: var(--bridge-primary);
+    --wx-gantt-link-marker-background: #ffffff;
+    color: #111827;
+  }
+
+  .dark .bridge-gantt { color: #e2e8f0; }
+  .bridge-gantt .wx-gantt,
+  .bridge-gantt .wx-grid,
+  .bridge-gantt .wx-grid-header,
+  .bridge-gantt .wx-timeline,
+  .bridge-gantt .wx-timeline-header,
+  .bridge-gantt .wx-header,
+  .bridge-gantt .wx-cell,
+  .bridge-gantt .wx-table {
+    background: #ffffff;
+    color: #111827;
+  }
+  .dark .bridge-gantt .wx-gantt,
+  .dark .bridge-gantt .wx-grid,
+  .dark .bridge-gantt .wx-grid-header,
+  .dark .bridge-gantt .wx-timeline,
+  .dark .bridge-gantt .wx-timeline-header,
+  .dark .bridge-gantt .wx-header,
+  .dark .bridge-gantt .wx-cell,
+  .dark .bridge-gantt .wx-table {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-color: #334155;
+  }
+  .dark .bridge-gantt .wx-grid *,
+  .dark .bridge-gantt .wx-timeline *,
+  .dark .bridge-gantt .wx-gantt * { border-color: #334155; }
+  .dark .bridge-gantt .wx-cell,
+  .dark .bridge-gantt .wx-header,
+  .dark .bridge-gantt .wx-bar-label { color: #e2e8f0; }
+
+  .bridge-gantt .wx-bar.wx-task.pending {
+    background-color: #9ca3af !important;
+    border-color: #6b7280 !important;
+    color: #ffffff !important;
+  }
+  .bridge-gantt .wx-bar.wx-task.in-progress {
+    background-color: #ff7645 !important;
+    border-color: #e85a24 !important;
+    color: #ffffff !important;
+  }
+  .bridge-gantt .wx-bar.wx-task.completed {
+    background-color: #16a34a !important;
+    border-color: #15803d !important;
+    color: #ffffff !important;
+  }
+
+  .bridge-gantt .wx-chart.wx-mR7v2Xag {
+    scrollbar-width: thin;
+    }
+
+  .bridge-gantt .wx-task .wx-progress-percent.wx-GKbcLEGA {
+    background-color: #16a34a;
+    }
+
+  /* Parent folders with children are headings, not scheduled tasks. */
+  .bridge-gantt .wx-bar.wx-task.parent-folder {
+    display: none !important;
+  }
+`;
 
 export default function GanttChart() {
     const { projectId: projectIdParam } = useParams();
     const navigate = useNavigate();
     const projectId = Number(projectIdParam);
 
-    const [timeline, setTimeline] =
-        useState<ProjectFolderTimelineResponse | null>(null);
+    const [timeline, setTimeline] = useState<ProjectFolderTimelineResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const [selectedProgressFolderId, setSelectedProgressFolderId] =
-        useState<number | null>(null);
-
-    const [popupPosition, setPopupPosition] = useState<{
-        top: number;
-        left: number;
-        placement: "above" | "below";
-    } | null>(null);
-
-    const chartRef = useRef<HTMLDivElement | null>(null);
-    const barRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
-
-    const [dependencyLayout, setDependencyLayout] =
-        useState<DependencyLayout>({
-            width: 0,
-            height: 0,
-            lines: [],
-        });
-
     const loadTimeline = useCallback(async () => {
-        if (!projectId) {
-            setError("Project ID is missing.");
+        if (!projectId || !Number.isFinite(projectId)) {
+            setError("Project ID is missing or invalid.");
             setLoading(false);
             return;
         }
 
+        setLoading(true);
+        setError("");
         try {
-            setLoading(true);
-            setError("");
-
             const response = await getProjectFolderTimeline(projectId);
             setTimeline(response);
-            setSelectedProgressFolderId(null);
-            setPopupPosition(null);
         } catch (err) {
             console.error("Failed to load project timeline:", err);
-            setError("Failed to load project timeline. Please try again.");
+            setError("Failed to load project timeline. Please Try Again.");
         } finally {
             setLoading(false);
         }
@@ -176,272 +322,118 @@ export default function GanttChart() {
         let cancelled = false;
 
         async function fetchTimeline() {
-            if (!projectId) {
-                setError("Project ID is missing.");
+            if (!projectId || !Number.isFinite(projectId)) {
+                setError("Project ID is missing or invalid.");
                 setLoading(false);
                 return;
             }
-
             setLoading(true);
             setError("");
-
             try {
                 const response = await getProjectFolderTimeline(projectId);
-
-                if (!cancelled) {
-                    setTimeline(response);
-                }
+                if (!cancelled) setTimeline(response);
             } catch (err) {
                 if (!cancelled) {
                     console.error("Failed to load project timeline:", err);
-                    setError(
-                        "Failed to load project timeline. Please try again.",
-                    );
+                    setError("Failed to load project timeline. Unauthorized.");
                 }
             } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
+                if (!cancelled) setLoading(false);
             }
         }
 
         void fetchTimeline();
-
-        return () => {
-            cancelled = true;
-        };
+        return () => { cancelled = true; };
     }, [projectId]);
 
-    const rows = useMemo(() => {
-        if (!timeline) return [];
+    const chartData = useMemo(() => {
+        if (!timeline) return { tasks: [], links: [], unscheduledCount: 0 };
 
         const folders = timeline.folders ?? [];
-        const folderMap = new Map(
-            folders.map((folder) => [folder.fid, folder]),
+        const folderIds = new Set(folders.map((folder) => Number(folder.fid)));
+        // A folder is a parent heading only when at least one API folder points to it.
+        const parentFolderIds = new Set(
+            folders
+                .filter((folder) => folder.parent_fid != null)
+                .map((folder) => Number(folder.parent_fid)),
         );
-
-        function getDepth(folder: ProjectFolderTimelineItem) {
-            let depth = 0;
-            let parentId = folder.parent_fid;
-            const visited = new Set<number>([folder.fid]);
-
-            while (parentId != null && folderMap.has(parentId)) {
-                if (visited.has(parentId)) break;
-
-                visited.add(parentId);
-                depth += 1;
-                parentId = folderMap.get(parentId)?.parent_fid ?? null;
-            }
-
-            return depth;
-        }
-
-        return folders.map((folder) => ({
-            ...folder,
-            depth: getDepth(folder),
-        }));
-    }, [timeline]);
-
-    const dateRange = useMemo(() => {
-        if (!timeline) return null;
-
-        const dates = [
+        const allDates = [
             parseDate(timeline.project_start_date),
             parseDate(timeline.project_end_date),
-            ...(timeline.folders ?? []).flatMap((folder) => [
-                parseDate(folder.startdate),
-                parseDate(folder.enddate),
-            ]),
+            ...folders.flatMap((folder) => [parseDate(folder.startdate), parseDate(folder.enddate)]),
         ].filter((date): date is Date => date !== null);
+        const fallbackDate = allDates.length
+            ? new Date(Math.min(...allDates.map((date) => date.getTime())))
+            : new Date();
 
-        if (dates.length === 0) return null;
+        let unscheduledCount = 0;
+        const tasks = folders.map((folder) => {
+            const startDate = parseDate(folder.startdate);
+            const endDate = parseDate(folder.enddate);
+            const hasChildren = parentFolderIds.has(Number(folder.fid));
+            const hasSchedule = Boolean(startDate && endDate && endDate >= startDate);
+            const start = hasSchedule ? startDate! : fallbackDate;
+            // SVAR treats end as an exclusive boundary; add one day to include the API end date.
+            const end = hasSchedule ? addDays(endDate!, 1) : addDays(start, 1);
+            if (!hasSchedule && !hasChildren) unscheduledCount += 1;
 
-        const start = new Date(
-            Math.min(...dates.map((date) => date.getTime())),
-        );
+            const status = getStatus(folder);
+            const person = folder.key_person_options?.find(
+                (user) => Number(user.uid) === Number(folder.keypersonid),
+            );
+            const personName = person
+                ? [person.firstname, person.lastname].filter(Boolean).join(" ") || "Unassigned"
+                : "Unassigned";
+            const folderName = folder.fname || `Folder ${folder.fid}`;
 
-        const lastDate = new Date(
-            Math.max(...dates.map((date) => date.getTime())),
-        );
-
-        // Exclusive end boundary gives the final scheduled day a full width.
-        const end = new Date(lastDate);
-        end.setDate(end.getDate() + 1);
-
-        return { start, end };
-    }, [timeline]);
-
-    const totalDays = dateRange
-        ? Math.max(
-              1,
-              Math.round(
-                  (dateRange.end.getTime() - dateRange.start.getTime()) /
-                      86400000,
-              ),
-          )
-        : 0;
-
-    function getBar(folder: ProjectFolderTimelineItem) {
-        if (!dateRange || totalDays <= 0) return null;
-
-        const start = parseDate(folder.startdate);
-        const end = parseDate(folder.enddate);
-
-        if (!start || !end || end < start) return null;
-
-        const dayMs = 86400000;
-        const timelineStart = dateRange.start.getTime();
-
-        const left =
-            ((start.getTime() - timelineStart) / dayMs / totalDays) * 100;
-
-        const width =
-            (((end.getTime() - start.getTime()) / dayMs + 1) /
-                totalDays) *
-            100;
-
-        const safeLeft = Math.max(0, Math.min(100, left));
-        const safeWidth = Math.max(0, Math.min(width, 100 - safeLeft));
-
-        return {
-            left: safeLeft,
-            width: safeWidth,
-        };
-    }
-
-    useLayoutEffect(() => {
-        const chart = chartRef.current;
-
-        if (!chart || rows.length === 0) {
-            setDependencyLayout({ width: 0, height: 0, lines: [] });
-            return;
-        }
-
-        const calculateConnections = () => {
-            const chartRect = chart.getBoundingClientRect();
-            const width = chart.scrollWidth;
-            const height = chart.scrollHeight;
-            const lines: DependencyLine[] = [];
-
-            rows.forEach((folder) => {
-                if (folder.predecessorsid == null) return;
-
-                const predecessorId = Number(folder.predecessorsid);
-
-                if (!Number.isFinite(predecessorId)) return;
-
-                const predecessorBar = barRefs.current.get(predecessorId);
-                const dependentBar = barRefs.current.get(folder.fid);
-
-                // A connector can only be drawn when both tasks have scheduled bars.
-                if (!predecessorBar || !dependentBar) return;
-
-                const predecessorRect = predecessorBar.getBoundingClientRect();
-                const dependentRect = dependentBar.getBoundingClientRect();
-
-                // Start at the predecessor's right edge and end at the dependent's left edge.
-                const x1 = predecessorRect.right - chartRect.left;
-                const y1 =
-                    predecessorRect.top +
-                    predecessorRect.height / 2 -
-                    chartRect.top;
-
-                const x2 = dependentRect.left - chartRect.left;
-                const y2 =
-                    dependentRect.top +
-                    dependentRect.height / 2 -
-                    chartRect.top;
-
-                // Use a right-angle route for a clear, readable dependency connection.
-                const middleX = x1 + (x2 - x1) / 2;
-                const path = [
-                    `M ${x1} ${y1}`,
-                    `H ${middleX}`,
-                    `V ${y2}`,
-                    `H ${x2}`,
-                ].join(" ");
-
-                lines.push({ fid: folder.fid, path });
-            });
-
-            setDependencyLayout({ width, height, lines });
-        };
-
-        calculateConnections();
-
-        const observer = new ResizeObserver(calculateConnections);
-        observer.observe(chart);
-        window.addEventListener("resize", calculateConnections);
-
-        return () => {
-            observer.disconnect();
-            window.removeEventListener("resize", calculateConnections);
-        };
-    }, [rows, dateRange, loading]);
-
-    const selectedProgressFolder = rows.find(
-        (folder) => folder.fid === selectedProgressFolderId,
-    );
-
-    const openProgressPopup = (
-        event: ReactMouseEvent<HTMLButtonElement>,
-        folder: ProjectFolderTimelineItem,
-    ) => {
-        if (folder.is_parent) return;
-
-        if (selectedProgressFolderId === folder.fid) {
-            setSelectedProgressFolderId(null);
-            setPopupPosition(null);
-            return;
-        }
-
-        const rect = event.currentTarget.getBoundingClientRect();
-
-        const popupWidth = Math.min(320, window.innerWidth - 16);
-        const popupHeight = 260;
-
-        const left = Math.max(
-            8,
-            Math.min(
-                rect.left,
-                window.innerWidth - popupWidth - 8,
-            ),
-        );
-
-        const hasRoomAbove = rect.top >= popupHeight + 16;
-
-        setPopupPosition({
-            top: hasRoomAbove ? rect.top - 8 : rect.bottom + 8,
-            left,
-            placement: hasRoomAbove ? "above" : "below",
+            return {
+                id: Number(folder.fid),
+                parent: folder.parent_fid != null && folderIds.has(Number(folder.parent_fid))
+                    ? Number(folder.parent_fid)
+                    : 0,
+                open: Boolean(folder.is_parent),
+                text: hasChildren || hasSchedule ? folderName : `${folderName} (Unscheduled)`,
+                start,
+                end,
+                progress: hasChildren ? 0 : getProgress(folder),
+                type: hasChildren ? "parent-folder" : status.type,
+                // Keep the API fields available to the grid and for future edit/save wiring.
+                fid: folder.fid,
+                parent_fid: folder.parent_fid,
+                is_parent: folder.is_parent,
+                predecessorsid: folder.predecessorsid,
+                days: folder.days,
+                progress_percentage: folder.progress_percentage,
+                status_value: status.value,
+                statusLabel: hasChildren ? "" : status.label,
+                startLabel: hasChildren ? "" : formatDate(folder.startdate),
+                endLabel: hasChildren ? "" : formatDate(folder.enddate),
+                daysLabel: hasChildren ? "" : folder.days == null ? "_" : String(folder.days),
+                progressLabel: hasChildren ? "" : `${getProgress(folder)}%`,
+                assignee: hasChildren ? "" : personName,
+                remarks: hasChildren ? "" : folder.remarks?.trim() || "_",
+                progressNotes: hasChildren ? "" : folder.progress_notes?.trim() || "_",
+                keypersonid: folder.keypersonid,
+                key_person_options: folder.key_person_options,
+                remarks_raw: folder.remarks,
+                progress_notes_raw: folder.progress_notes,
+                scheduled: hasSchedule && !hasChildren,
+                hasChildren,
+            };
         });
 
-        setSelectedProgressFolderId(folder.fid);
-    };
+        const links = folders
+            .filter((folder) => folder.predecessorsid != null)
+            .filter((folder) => folderIds.has(Number(folder.predecessorsid)))
+            .map((folder, index) => ({
+                id: index + 1,
+                source: Number(folder.predecessorsid),
+                target: Number(folder.fid),
+                type: "e2s" as const,
+            }));
 
-    useEffect(() => {
-        if (selectedProgressFolderId === null) return;
-
-        const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setSelectedProgressFolderId(null);
-                setPopupPosition(null);
-            }
-        };
-
-        const closeOnScroll = () => {
-            setSelectedProgressFolderId(null);
-            setPopupPosition(null);
-        };
-
-        window.addEventListener("keydown", closeOnEscape);
-        window.addEventListener("scroll", closeOnScroll, true);
-
-        return () => {
-            window.removeEventListener("keydown", closeOnEscape);
-            window.removeEventListener("scroll", closeOnScroll, true);
-        };
-    }, [selectedProgressFolderId]);
+        return { tasks, links, unscheduledCount };
+    }, [timeline]);
 
     if (loading) {
         return (
@@ -454,7 +446,8 @@ export default function GanttChart() {
 
     return (
         <div className="min-h-full bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100 sm:p-6">
-            <div className="mx-auto max-w-[1600px] space-y-5">
+            <style>{styles}</style>
+            <div className="mx-auto max-w-[1800px] space-y-5">
                 <header className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <button
@@ -465,397 +458,70 @@ export default function GanttChart() {
                         >
                             <ArrowLeft size={18} />
                         </button>
-
                         <div>
-                            <h1 className="text-xl font-bold">
-                                Project Gantt Chart
-                            </h1>
+                            <h1 className="text-xl font-bold">Project Gantt Chart</h1>
                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Project #{projectId}
+                                Project #{timeline?.project_id ?? projectId}
                             </p>
                         </div>
                     </div>
-
                     <button
                         type="button"
                         onClick={() => void loadTimeline()}
                         className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:brightness-90"
                     >
-                        <RefreshCw size={16} />
-                        Refresh
+                        <RefreshCw size={16} /> Refresh
                     </button>
                 </header>
 
                 {error && (
-                    <div
-                        role="alert"
-                        className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
-                    >
+                    <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
                         <AlertCircle size={18} />
                         <span className="flex-1">{error}</span>
-                        <button
-                            type="button"
-                            onClick={() => void loadTimeline()}
-                            className="font-semibold underline"
-                        >
-                            Retry
-                        </button>
+                        <button type="button" onClick={() => void loadTimeline()} className="font-semibold underline">Retry</button>
                     </div>
                 )}
 
                 {timeline && !error && (
                     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                         <div className="border-b border-slate-200 p-5 dark:border-slate-800">
-                            <h2 className="font-semibold">Folder Timeline</h2>
-
+                            <h2 className="font-semibold">Project #{timeline.project_id}</h2>
                             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                {rows.length} folders Â· Project #
-                                {timeline.project_id}
+                                {chartData.tasks.length} folders 
+                                {chartData.unscheduledCount > 0 && (
+                                    <span className="ml-2 text-amber-600 dark:text-amber-400">
+                                        Ã‚Â· {chartData.unscheduledCount} unscheduled
+                                    </span>
+                                )}
                             </p>
-
-                            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                                <span className="inline-flex items-center gap-2">
-                                    <span className="h-3 w-3 rounded-sm bg-slate-500" />
-                                    Pending
-                                </span>
-                                <span className="inline-flex items-center gap-2">
-                                    <span className="h-3 w-3 rounded-sm bg-blue-600" />
-                                    In progress
-                                </span>
-                                <span className="inline-flex items-center gap-2">
-                                    <span className="h-3 w-3 rounded-sm bg-green-600" />
-                                    Completed
-                                </span>
-                                <span className="inline-flex items-center gap-2">
-                                    <svg width="34" height="12" viewBox="0 0 34 12" aria-hidden="true">
-                                        <path d="M1 6 H27" stroke="#ff6b35" strokeWidth="2" />
-                                        <path d="M24 2 L31 6 L24 10 Z" fill="#ff6b35" />
-                                    </svg>
-                                    Predecessor dependency
-                                </span>
+                            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-300">
+                                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-gray-400" />Pending</span>
+                                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-orange-500" />In Progress</span>
+                                <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-green-600" />Completed</span>
+                                <span className="text-slate-500 dark:text-slate-400">Dependencies connect predecessor folders to dependent folders.</span>
                             </div>
-
-                            {!dateRange && (
-                                <p className="mt-3 rounded-lg bg-primary/5 p-3 text-sm text-slate-600 dark:text-slate-300">
-                                    No schedule dates are available yet. Save
-                                    the project start date and schedule the
-                                    folders to display their timeline bars.
-                                </p>
-                            )}
                         </div>
 
-                        {rows.length === 0 ? (
-                            <div className="p-12 text-center text-sm text-slate-500">
-                                No folders available for this project.
+                        {chartData.tasks.length === 0 ? (
+                            <div className="p-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                No folder timeline data is available for this project.
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <div ref={chartRef} className="relative min-w-[900px]">
-                                    <div className="grid grid-cols-[280px_minmax(600px,1fr)] border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
-                                        <div className="p-4 text-xs font-semibold uppercase">
-                                            Folder / Assignee
-                                        </div>
-
-                                        <div className="p-4 text-xs text-slate-500">
-                                            {dateRange
-                                                ? `${formatDate(
-                                                      dateRange.start
-                                                          .toISOString(),
-                                                  )} â€“ ${formatDate(
-                                                      new Date(
-                                                          dateRange.end.getTime() -
-                                                              86400000,
-                                                      ).toISOString(),
-                                                  )}`
-                                                : "Calendar dates unavailable"}
-                                        </div>
-                                    </div>
-
-                                    {rows.map((folder) => {
-                                        const bar = getBar(folder);
-
-                                        const person =
-                                            folder.key_person_options?.find(
-                                                (user) =>
-                                                    user.uid ===
-                                                    folder.keypersonid,
-                                            );
-
-                                        const personName = person
-                                            ? [
-                                                  person.firstname,
-                                                  person.lastname,
-                                              ]
-                                                  .filter(Boolean)
-                                                  .join(" ")
-                                            : "Unassigned";
-
-                                        const progress = getProgress(folder);
-
-                                        return (
-                                            <div
-                                                key={folder.fid}
-                                                className="grid grid-cols-[280px_minmax(600px,1fr)] border-b border-slate-100 last:border-0 dark:border-slate-800"
-                                            >
-                                                <div className="min-w-0 p-3">
-                                                    <div
-                                                        className="min-w-0"
-                                                        style={{
-                                                            paddingLeft: `${folder.depth * 20}px`,
-                                                        }}
-                                                    >
-                                                        <p className="break-words text-sm font-medium">
-                                                            {folder.fname}
-                                                        </p>
-
-                                                        <p className="mt-1 text-xs text-slate-500">
-                                                            {folder.is_parent
-                                                                ? "Parent folder"
-                                                                : personName}
-                                                        </p>
-
-                                                        <p className="mt-1 text-xs text-slate-500">
-                                                            {formatDate(
-                                                                folder.startdate,
-                                                            )}{" "}
-                                                            â€“{" "}
-                                                            {formatDate(
-                                                                folder.enddate,
-                                                            )}
-                                                        </p>
-
-                                                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                            <span
-                                                                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${getTaskStatus(folder).badgeClass}`}
-                                                            >
-                                                                {getTaskStatus(folder).label}
-                                                            </span>
-                                                            {!folder.is_parent && (
-                                                                <span className="text-xs text-slate-500">
-                                                                    Progress: {progress}%
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex min-h-[88px] items-center px-3">
-                                                    {dateRange ? (
-                                                        <div className="relative h-9 w-full rounded bg-slate-50 dark:bg-slate-950">
-                                                            {bar ? (
-                                                                <button
-                                                                    ref={(element) => {
-                                                                        if (element) {
-                                                                            barRefs.current.set(folder.fid, element);
-                                                                        } else {
-                                                                            barRefs.current.delete(folder.fid);
-                                                                        }
-                                                                    }}
-                                                                    type="button"
-                                                                    title={
-                                                                        folder.is_parent
-                                                                            ? folder.fname
-                                                                            : `View progress notes for ${folder.fname}`
-                                                                    }
-                                                                    onClick={(
-                                                                        event,
-                                                                    ) =>
-                                                                        openProgressPopup(
-                                                                            event,
-                                                                            folder,
-                                                                        )
-                                                                    }
-                                                                    className={`absolute top-1 z-20 h-7 cursor-pointer overflow-hidden rounded-md border-0 p-0 text-left focus:outline-none focus:ring-2 focus:ring-primary ${getTaskStatus(folder).barClass} ${
-                                                                        folder.is_parent ? "cursor-default" : ""
-                                                                    }`}
-                                                                    style={{
-                                                                        left: `${bar.left}%`,
-                                                                        width: `${bar.width}%`,
-                                                                        minWidth:
-                                                                            "4px",
-                                                                    }}
-                                                                >
-                                                                    {!folder.is_parent && (
-                                                                        <>
-                                                                            <div
-                                                                                className={`absolute inset-y-0 left-0 rounded-l-md ${getTaskStatus(folder).fillClass} transition-[width] duration-500`}
-                                                                                style={{
-                                                                                    width: `${progress}%`,
-                                                                                }}
-                                                                            />
-
-                                                                            <span className="absolute inset-0 flex items-center justify-center">
-                                                                                <span className="whitespace-nowrap rounded-sm bg-white/90 px-1 text-[10px] font-bold text-slate-900 shadow-sm dark:bg-slate-950/90 dark:text-white">
-                                                                                    {
-                                                                                        progress
-                                                                                    }
-                                                                                    %
-                                                                                </span>
-                                                                            </span>
-                                                                        </>
-                                                                    )}
-                                                                </button>
-                                                            ) : (
-                                                                <span className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
-                                                                    Not
-                                                                    scheduled
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-xs text-slate-400">
-                                                            Dates required to
-                                                            position this task
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-
-                                    {dependencyLayout.lines.length > 0 && (
-                                        <svg
-                                            className="pointer-events-none absolute left-0 top-0 z-10 overflow-visible"
-                                            width={dependencyLayout.width}
-                                            height={dependencyLayout.height}
-                                            viewBox={`0 0 ${dependencyLayout.width} ${dependencyLayout.height}`}
-                                            fill="none"
-                                            aria-label="Task dependency connections"
-                                        >
-                                            <defs>
-                                                <marker
-                                                    id="dependency-arrow"
-                                                    markerWidth="8"
-                                                    markerHeight="8"
-                                                    refX="6"
-                                                    refY="3"
-                                                    orient="auto"
-                                                    markerUnits="userSpaceOnUse"
-                                                >
-                                                    <path
-                                                        d="M0,0 L6,3 L0,6 Z"
-                                                        fill="#ff6b35"
-                                                    />
-                                                </marker>
-                                            </defs>
-
-                                            {dependencyLayout.lines.map((line) => (
-                                                <path
-                                                    key={line.fid}
-                                                    d={line.path}
-                                                    stroke="#ff6b35"
-                                                    strokeWidth="2"
-                                                    strokeLinejoin="round"
-                                                    strokeLinecap="round"
-                                                    markerEnd="url(#dependency-arrow)"
-                                                    opacity="0.95"
-                                                />
-                                            ))}
-                                        </svg>
-                                    )}
-                                </div>
+                            <div className="bridge-gantt h-[650px] w-full overflow-auto scrollbar-hide bg-white dark:bg-slate-900">
+                                <Willow>
+                                    <Gantt
+                                        tasks={chartData.tasks}
+                                        links={chartData.links}
+                                        taskTypes={taskTypes}
+                                        columns={columns}
+                                        taskTemplate={BridgeTaskTemplate}
+                                    />
+                                </Willow>
                             </div>
                         )}
                     </section>
                 )}
             </div>
-
-            {selectedProgressFolder &&
-                popupPosition &&
-                !selectedProgressFolder.is_parent &&
-                createPortal(
-                    <div
-                        role="dialog"
-                        aria-label={`${selectedProgressFolder.fname} progress notes`}
-                        className="fixed z-[99999] w-80 max-w-[calc(100vw-16px)] rounded-xl border border-slate-200 bg-white p-4 text-left shadow-2xl dark:border-slate-700 dark:bg-slate-900"
-                        style={{
-                            top: popupPosition.top,
-                            left: popupPosition.left,
-                            transform:
-                                popupPosition.placement === "above"
-                                    ? "translateY(-100%)"
-                                    : "none",
-                        }}
-                    >
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                                <h3 className="break-words font-semibold text-slate-900 dark:text-white">
-                                    {selectedProgressFolder.fname}
-                                </h3>
-
-                                <p className="mt-1 text-xs font-medium text-primary">
-                                    Progress:{" "}
-                                    {getProgress(selectedProgressFolder)}%
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedProgressFolderId(null);
-                                    setPopupPosition(null);
-                                }}
-                                className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
-                                aria-label="Close progress notes"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        <div className="mb-3">
-                            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Progress Notes
-                            </p>
-
-                            <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                                {selectedProgressFolder.progress_notes?.trim() ||
-                                    "No progress notes added yet."}
-                            </p>
-                        </div>
-
-                        <div className="space-y-1.5 border-t border-slate-200 pt-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                            <p>
-                                Assignee:{" "}
-                                {(() => {
-                                    const person =
-                                        selectedProgressFolder.key_person_options?.find(
-                                            (user) =>
-                                                user.uid ===
-                                                selectedProgressFolder.keypersonid,
-                                        );
-
-                                    return person
-                                        ? [
-                                              person.firstname,
-                                              person.lastname,
-                                          ]
-                                              .filter(Boolean)
-                                              .join(" ") || "Unassigned"
-                                        : "Unassigned";
-                                })()}
-                            </p>
-
-                            <p>
-                                Start:{" "}
-                                {formatDate(
-                                    selectedProgressFolder.startdate,
-                                )}
-                            </p>
-
-                            <p>
-                                End:{" "}
-                                {formatDate(selectedProgressFolder.enddate)}
-                            </p>
-                            {selectedProgressFolder.predecessorsid != null && (
-                                <p>
-                                    Depends on folder ID:{" "}
-                                    {selectedProgressFolder.predecessorsid}
-                                </p>
-                            )}
-                        </div>
-                    </div>,
-                    document.body,
-                )}
         </div>
     );
 }

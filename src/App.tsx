@@ -105,7 +105,6 @@ export default function App() {
             path="/dashboard/projects/:projectId/gantt"
             element={<GanttChart />}
           />
-
           <Route element={<AdminRoute />}>
             <Route path="/masters" element={<Masters />} />
             <Route path="/users" element={<UsersPage />} />

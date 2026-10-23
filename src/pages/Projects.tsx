@@ -436,7 +436,7 @@ export default function Projects() {
                   <button
                     type="button"
                     onClick={() =>
-                      navigate(`/projects/${selectedProjectId}/gantt`)
+                      navigate(`/dashboard/projects/${selectedProjectId}/gantt`)
                     }
                     title="View Gantt Chart"
                     aria-label="View Gantt Chart"
