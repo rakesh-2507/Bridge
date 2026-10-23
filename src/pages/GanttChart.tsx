@@ -438,7 +438,7 @@ const styles = `
     }
 
     .bridge-gantt .wx-task .wx-progress-percent {
-        background: #ffffff40;
+        background: #047857;
         border-radius: 5px;
     }
 
