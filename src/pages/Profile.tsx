@@ -128,32 +128,31 @@ export default function Profile() {
   const photoPath = profile?.photo_url || profile?.photo || "";
 
   function getPhotoUrl(path: string): string {
-    if (!path) return "";
+    const value = path.trim();
 
-    // Keep locally selected photo previews unchanged.
-    if (path.startsWith("blob:") || path.startsWith("data:")) {
-      return path;
+    if (!value) return "";
+
+    // Local preview selected by the user
+    if (value.startsWith("blob:") || value.startsWith("data:")) {
+      return value;
     }
 
-    // Normalize relative paths.
-    if (path.startsWith("uploads/")) {
-      return `https://bridge.sidpz.com/${path}`;
+    // Absolute HTTP/HTTPS URLs
+    if (/^https?:\/\//i.test(value)) {
+      return value.replace(/^http:\/\//i, "https://");
     }
 
-    // Upgrade insecure absolute URLs.
-    if (path.startsWith("http://")) {
-      return `https://${path.slice("http://".length)}`;
-    }
+    // Relative server paths
+    const normalizedPath = value.replace(/^\/+/, "");
+    const imagePath = normalizedPath.startsWith("uploads/")
+      ? normalizedPath
+      : `uploads/${normalizedPath}`;
 
-    return path;
+    return `https://bridge.sidpz.com/${imagePath}`;
   }
 
   const displayedPhoto = photoPreview || getPhotoUrl(photoPath);
-  console.log("Profile photo URL:", {
-    photo: profile?.photo,
-    photo_url: profile?.photo_url,
-    displayedPhoto,
-  });
+
   const fullName = profile
     ? `${profile.title ? `${profile.title} ` : ""}${profile.firstname ?? ""} ${profile.lastname ?? ""}`.trim()
     : "";
