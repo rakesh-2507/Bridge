@@ -1100,23 +1100,7 @@ export default function GanttChart() {
                             </div>
                         </section>
 
-                        {/* Footer */}
-                        <footer className="flex flex-wrap items-center
-                            justify-between gap-3 border-t
-                            border-slate-200 pt-5 text-xs text-slate-500
-                            dark:border-slate-800 dark:text-slate-400">
-                            <span>
-                                BRIDGE
-                                <span className="mx-2 text-slate-300 dark:text-slate-700">
-                                    ·
-                                </span>
-                                Build. Plan. Ship.
-                            </span>
 
-                            <span className="font-medium text-primary">
-                                Great things take time. ✦
-                            </span>
-                        </footer>
                     </>
                 )}
             </div>
