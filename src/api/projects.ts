@@ -213,6 +213,7 @@ export async function setupCoordinatorProject(
 // Folder Timeline Types
 // ==============================
 
+
 export interface FolderTimelineKeyPerson {
   uid: number;
   loginname: string;
@@ -235,7 +236,10 @@ export interface ProjectFolderTimelineItem {
   key_person_options: FolderTimelineKeyPerson[];
 
   remarks: string | null;
-  status: string;
+  status: number | string | null;
+
+  progress_percentage: number | null;
+  progress_notes: string | null;
 }
 
 export interface ProjectFolderTimelineResponse {
@@ -244,6 +248,7 @@ export interface ProjectFolderTimelineResponse {
   project_end_date: string | null;
   folders: ProjectFolderTimelineItem[];
 }
+
 
 // ==============================
 // Get Folder Timeline

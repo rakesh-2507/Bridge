@@ -271,11 +271,13 @@ function ProjectRow({
     openedProjectId,
     onSelect,
     // onToggleFolders,
+    onViewGantt,
 }: {
     project: Project;
     openedProjectId: number | null;
     onSelect: (project: Project) => void;
     onToggleFolders: (project: Project) => void;
+    onViewGantt: (project: Project) => void;
 }) {
     // const [foldersExpanded, setFoldersExpanded] = useState(false);
 
@@ -339,7 +341,7 @@ function ProjectRow({
                         </div>
 
                         <div className="min-w-0">
-                            <div className="mb-1 flex items-center gap-1.5">
+                            <div className="mb-1 flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
                                     onClick={(event) => {
@@ -364,6 +366,21 @@ function ProjectRow({
                                     )}
                                     {roleLabel}
                                 </span>
+
+                                {isCoordinator && (
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onViewGantt(project);
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-1 text-xs font-medium text-primary transition hover:bg-primary/10"
+                                        title="View project Gantt chart"
+                                    >
+                                        <CalendarDays size={13} />
+                                        View Gantt
+                                    </button>
+                                )}
                             </div>
 
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -618,6 +635,9 @@ export default function CoordinatorProjects() {
         });
     };
 
+    const handleViewGantt = (project: Project) => {
+        navigate(`/dashboard/projects/${project.project_id}/gantt`);
+    };
 
     // ========================================
     // Search
@@ -841,6 +861,7 @@ export default function CoordinatorProjects() {
                                                         openedProjectId={openedProjectId}
                                                         onSelect={handleProjectSelect}
                                                         onToggleFolders={handleProjectSelect}
+                                                        onViewGantt={handleViewGantt}
                                                     />
                                                 ))}
                                             </tbody>
