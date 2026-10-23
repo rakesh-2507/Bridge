@@ -48,19 +48,26 @@ export function getUser(uid: number): Promise<User> {
   return get<User>(`/getuser/${uid}`);
 }
 
-export function createUser(
-  payload: CreateUserPayload,
-): Promise<User> {
-  return post<User>("/createuser", payload);
-}
-
-export function updateUser(
-  uid: number,
-  payload: FormData,
-): Promise<User> {
-  return put<User>(`/updateuser/${uid}`, payload);
-}
-
 export function deleteUser(uid: number): Promise<string> {
   return del<string>(`/deleteuser/${uid}`);
+}
+
+function toUserFormData(payload: UserPayload): FormData {
+  const formData = new FormData();
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+
+  return formData;
+}
+
+export function createUser(payload: CreateUserPayload): Promise<User> {
+  return post<User>("/createuser", toUserFormData(payload));
+}
+
+export function updateUser(uid: number, payload: FormData): Promise<User> {
+  return put<User>(`/updateuser/${uid}`, payload);
 }

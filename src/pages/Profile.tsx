@@ -125,20 +125,35 @@ export default function Profile() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoFailed, setPhotoFailed] = useState(false);
 
-  // The API returns a complete photo_url.
-  // Only selected local files need an object URL preview.
   const photoPath = profile?.photo_url || profile?.photo || "";
 
-  const displayedPhoto = photoPreview
-    ? photoPreview
-    : photoPath
-      ? photoPath.startsWith("http://")
-        ? photoPath.replace("http://", "https://")
-        : photoPath.startsWith("uploads/")
-          ? `https://bridge.sidpz.com/${photoPath}`
-          : photoPath
-      : "";
+  function getPhotoUrl(path: string): string {
+    if (!path) return "";
 
+    // Keep locally selected photo previews unchanged.
+    if (path.startsWith("blob:") || path.startsWith("data:")) {
+      return path;
+    }
+
+    // Normalize relative paths.
+    if (path.startsWith("uploads/")) {
+      return `https://bridge.sidpz.com/${path}`;
+    }
+
+    // Upgrade insecure absolute URLs.
+    if (path.startsWith("http://")) {
+      return `https://${path.slice("http://".length)}`;
+    }
+
+    return path;
+  }
+
+  const displayedPhoto = photoPreview || getPhotoUrl(photoPath);
+  console.log("Profile photo URL:", {
+    photo: profile?.photo,
+    photo_url: profile?.photo_url,
+    displayedPhoto,
+  });
   const fullName = profile
     ? `${profile.title ? `${profile.title} ` : ""}${profile.firstname ?? ""} ${profile.lastname ?? ""}`.trim()
     : "";
@@ -433,10 +448,13 @@ export default function Profile() {
           className="h-full w-full object-cover"
           onLoad={() => setPhotoFailed(false)}
           onError={(event) => {
-            console.error("Profile image failed:", {
-              src: event.currentTarget.src,
-              reason: "Image failed to load",
+            console.error("Profile image failed to load:", {
+              originalPhotoUrl: photoPath,
+              renderedPhotoUrl: displayedPhoto,
+              actualRequestUrl: event.currentTarget.src,
+              pageProtocol: window.location.protocol,
             });
+
             setPhotoFailed(true);
           }}
         />

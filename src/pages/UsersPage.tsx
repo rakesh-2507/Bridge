@@ -112,7 +112,7 @@ export default function UsersPage() {
             cancelled = true;
         };
     }, []);
-    
+
     // GET /api/getuser/{uid}
     async function handleGetUser(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -180,8 +180,15 @@ export default function UsersPage() {
                     ...(form.password ? { password: form.password } : {}),
                 };
 
-                response = await updateUser(editingId, updatePayload);
-                setMessage(`PUT /api/updateuser/${editingId} succeeded.`);
+                const updateFormData = new FormData();
+
+                Object.entries(updatePayload).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        updateFormData.append(key, String(value));
+                    }
+                });
+
+                response = await updateUser(editingId, updateFormData); setMessage(`PUT /api/updateuser/${editingId} succeeded.`);
             } else {
                 if (!form.password.trim()) {
                     setError("Password is required when creating a user.");
