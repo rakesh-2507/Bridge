@@ -668,7 +668,7 @@ export default function ProjectFolderFiles() {
             });
 
             setProgressPercentage(100);
-            setSuccessMessage("Folder completed successfully.");
+            showSuccessWithProgress("Folder completed successfully.");
         } catch (err: unknown) {
             setCompleteFolderError(
                 err instanceof Error
@@ -1074,7 +1074,7 @@ export default function ProjectFolderFiles() {
             });
 
             setShowStatusModal(false);
-            setSuccessMessage("Folder progress saved successfully.");
+            showSuccessWithProgress("Folder progress saved successfully.");
         } catch (err: unknown) {
             setStatusError(
                 err instanceof Error
@@ -1120,7 +1120,7 @@ export default function ProjectFolderFiles() {
                 return updated;
             });
 
-            setSuccessMessage(`"${fileName}" deleted successfully.`);
+            showSuccessWithProgress(`"${fileName}" deleted successfully.`);
             setReloadKey((key) => key + 1);
         } catch (err: unknown) {
             setDeleteError(
@@ -1159,7 +1159,7 @@ export default function ProjectFolderFiles() {
                 selected,
             );
 
-            setSuccessMessage(
+            showSuccessWithProgress(
                 `${selected.length} file${selected.length === 1 ? "" : "s"} uploaded successfully.`,
             );
 
@@ -1525,7 +1525,7 @@ export default function ProjectFolderFiles() {
             setSelectedFiles(failedKeys);
 
             if (deletedCount > 0) {
-                setSuccessMessage(
+                showSuccessWithProgress(
                     `${deletedCount} file${deletedCount === 1 ? "" : "s"} deleted successfully.`,
                 );
 
@@ -1545,17 +1545,59 @@ export default function ProjectFolderFiles() {
     };
 
     const [successMessage, setSuccessMessage] = useState("");
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [progressFinished, setProgressFinished] = useState(false);
+
+    const progressIntervalRef = useRef<number | null>(null);
+    const successTimeoutRef = useRef<number | null>(null);
+
+    const showSuccessWithProgress = (message: string) => {
+        // Clear any previous animation and dismissal timer.
+        if (progressIntervalRef.current !== null) {
+            window.clearInterval(progressIntervalRef.current);
+        }
+
+        if (successTimeoutRef.current !== null) {
+            window.clearTimeout(successTimeoutRef.current);
+        }
+
+        setSuccessMessage(message);
+        setUploadProgress(1);
+        setProgressFinished(false);
+
+        let progress = 1;
+
+        progressIntervalRef.current = window.setInterval(() => {
+            progress = Math.min(progress + 1, 100);
+            setUploadProgress(progress);
+
+            if (progress >= 100) {
+                if (progressIntervalRef.current !== null) {
+                    window.clearInterval(progressIntervalRef.current);
+                    progressIntervalRef.current = null;
+                }
+
+                setProgressFinished(true);
+
+                successTimeoutRef.current = window.setTimeout(() => {
+                    setSuccessMessage("");
+                    successTimeoutRef.current = null;
+                }, 1200);
+            }
+        }, 25);
+    };
 
     useEffect(() => {
-        if (!successMessage) return;
+        return () => {
+            if (progressIntervalRef.current !== null) {
+                window.clearInterval(progressIntervalRef.current);
+            }
 
-        const timer = window.setTimeout(() => {
-            setSuccessMessage("");
-        }, 3000);
-
-        return () => window.clearTimeout(timer);
-    }, [successMessage]);
-
+            if (successTimeoutRef.current !== null) {
+                window.clearTimeout(successTimeoutRef.current);
+            }
+        };
+    }, []);
     return (
         <div
             onDragEnter={handlePageDragEnter}
@@ -1609,7 +1651,7 @@ export default function ProjectFolderFiles() {
                                     {currentFolderName}
                                 </span>
 
-                                {currentFolder  && canViewFolderProgress && (
+                                {currentFolder && canViewFolderProgress && (
                                     <>
                                         {canUpdateFolderStatus ? (
                                             <button
@@ -1791,7 +1833,7 @@ export default function ProjectFolderFiles() {
                         )}
 
                         {/* Files section: hide for folders containing subfolders */}
-                        { (
+                        {(
                             <section className="space-y-3">
                                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -2831,26 +2873,81 @@ export default function ProjectFolderFiles() {
 
             {successMessage &&
                 createPortal(
-                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 p-4">
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
                         <div
                             role="alertdialog"
                             aria-modal="true"
                             aria-labelledby="success-modal-title"
                             className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-2xl dark:border-gray-700 dark:bg-gray-800"
                         >
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                                <Check className="h-9 w-9 text-green-600 dark:text-green-400" />
+                            {/* Animated success icon */}
+                            <div
+                                className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full transition-colors duration-300 ${progressFinished
+                                    ? "bg-green-100 dark:bg-green-900/30"
+                                    : "bg-primary/10"
+                                    }`}
+                            >
+                                {progressFinished ? (
+                                    <Check
+                                        size={36}
+                                        className="animate-in zoom-in text-green-600 dark:text-green-400"
+                                        strokeWidth={3}
+                                    />
+                                ) : (
+                                    <span className="text-lg font-bold text-primary">
+                                        {uploadProgress}%
+                                    </span>
+                                )}
                             </div>
 
                             <h3
                                 id="success-modal-title"
                                 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white"
                             >
-                                Success!
+                                {progressFinished ? "Success!" : "Processing..."}
                             </h3>
 
-                            <p className="text-sm text-gray-600 dark:text-gray-300">
-                                {successMessage}
+                            <p className="mb-5 text-sm text-gray-600 dark:text-gray-300">
+                                {progressFinished
+                                    ? successMessage
+                                    : "Please wait while we finish..."}
+                            </p>
+
+                            {/* Animated progress bar */}
+                            <div className="mb-2 flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {progressFinished ? "Completed" : "Progress"}
+                                </span>
+
+                                <span
+                                    className={`text-sm font-bold ${progressFinished
+                                        ? "text-green-600 dark:text-green-400"
+                                        : "text-primary"
+                                        }`}
+                                >
+                                    {uploadProgress}%
+                                </span>
+                            </div>
+
+                            <div
+                                className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                                role="progressbar"
+                                aria-label="Operation progress"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={uploadProgress}
+                            >
+                                <div
+                                    className={`h-full rounded-full transition-[width] duration-75 ease-linear ${progressFinished ? "bg-green-500" : "bg-primary"
+                                        }`}
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+
+                            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                {progressFinished
+                                    ? "✓ Completed successfully"
+                                    : "Please wait..."}
                             </p>
                         </div>
                     </div>,
