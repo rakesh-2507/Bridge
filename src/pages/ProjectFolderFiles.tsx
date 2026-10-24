@@ -453,8 +453,8 @@ export default function ProjectFolderFiles() {
         "Folder files";
 
     const subfolders = currentFolder?.children ?? [];
-    const hasSubfolders = subfolders.length > 0;
-    const showFilesSection = !hasSubfolders;
+    // const hasSubfolders = subfolders.length > 0;
+    // const showFilesSection = !hasSubfolders;
     const [previewFile, setPreviewFile] = useState<FolderFile | null>(null);
     const [previewText, setPreviewText] = useState("");
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -1609,7 +1609,7 @@ export default function ProjectFolderFiles() {
                                     {currentFolderName}
                                 </span>
 
-                                {currentFolder && !hasSubfolders && canViewFolderProgress && (
+                                {currentFolder  && canViewFolderProgress && (
                                     <>
                                         {canUpdateFolderStatus ? (
                                             <button
@@ -1791,7 +1791,7 @@ export default function ProjectFolderFiles() {
                         )}
 
                         {/* Files section: hide for folders containing subfolders */}
-                        {showFilesSection && (
+                        { (
                             <section className="space-y-3">
                                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
