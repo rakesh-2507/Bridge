@@ -79,6 +79,18 @@ function getCoordinatorName(
     .join(" ");
 }
 
+function getUserPhotoUrl(user: User | undefined): string | null {
+  const photo = user?.photo?.trim();
+
+  if (!photo) return null;
+
+  if (/^https?:\/\//i.test(photo)) {
+    return photo;
+  }
+
+  return `https://bridge.sidpz.com/${photo.replace(/^\/+/, "")}`;
+}
+
 export default function Projects() {
   const navigate = useNavigate();
 
@@ -572,12 +584,9 @@ export default function Projects() {
                             (u) => String(u.uid) === String(memberId),
                           );
 
-                          const normalizedTitle =
-                            user?.title?.trim().toLowerCase();
+                          const normalizedTitle = user?.title?.trim().toLowerCase();
 
-                          const isMr =
-                            normalizedTitle === "mr" ||
-                            normalizedTitle === "mr.";
+                          const isMr = ["mr", "mr."].includes(normalizedTitle ?? "");
 
                           const isMrs = [
                             "ms",
@@ -588,11 +597,13 @@ export default function Projects() {
                             "miss.",
                           ].includes(normalizedTitle ?? "");
 
-                          const profileImage = isMr
+                          const defaultAvatar = isMr
                             ? mrImage
                             : isMrs
                               ? mrsImage
                               : null;
+
+                         const profileImage = getUserPhotoUrl(user);
 
                           const fullName = user
                             ? [
@@ -610,13 +621,23 @@ export default function Projects() {
                               className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                             >
                               <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
-                                {profileImage ? (
-                                  <img
-                                    src={profileImage}
-                                    alt={`${user?.title ?? "User"} avatar`}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
+                                <img
+                                  src={profileImage || defaultAvatar || undefined}
+                                  alt={`${fullName}'s avatar`}
+                                  className="h-full w-full object-cover"
+                                  onError={(event) => {
+                                    const image = event.currentTarget;
+
+                                    if (defaultAvatar && image.src !== new URL(defaultAvatar, window.location.href).href) {
+                                      image.onerror = null;
+                                      image.src = defaultAvatar;
+                                    } else {
+                                      image.style.display = "none";
+                                    }
+                                  }}
+                                />
+
+                                {!profileImage && !defaultAvatar && (
                                   <CircleUser
                                     size={24}
                                     className="text-primary"
