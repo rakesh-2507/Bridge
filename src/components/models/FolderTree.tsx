@@ -107,16 +107,17 @@ function FolderTreeItem({
           onClick={() => onFolderClick(folder)}
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
-          {hasChildren ? (
+          {containsFiles ? (
             <FolderOpen size={19} className="shrink-0 text-primary" />
+          ) : hasChildren ? (
+            <FolderOpen
+              size={19}
+              className="shrink-0 text-slate-400 dark:text-slate-500"
+            />
           ) : (
             <Folder
               size={19}
-              className={
-                hasFiles
-                  ? "shrink-0 text-primary"
-                  : "shrink-0 text-slate-400 dark:text-slate-500"
-              }
+              className="shrink-0 text-slate-400 dark:text-slate-500"
             />
           )}
 

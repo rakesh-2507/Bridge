@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, MouseEvent } from "react";
 import {
     Folder, Check, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, File, FileImage, FileText, FileSpreadsheet, FileCode, FileArchive, FileType, Pencil, MessageSquare, Send,
@@ -441,7 +441,7 @@ export default function ProjectFolderFiles() {
     const [selectedFiles, setSelectedFiles] = useState<Set<string>>(
         new Set(),
     );
-
+    const folderInputRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [folderError, setFolderError] = useState("");
@@ -453,7 +453,8 @@ export default function ProjectFolderFiles() {
         "Folder files";
 
     const subfolders = currentFolder?.children ?? [];
-
+    const hasSubfolders = subfolders.length > 0;
+    const showFilesSection = !hasSubfolders;
     const [previewFile, setPreviewFile] = useState<FolderFile | null>(null);
     const [previewText, setPreviewText] = useState("");
     const [previewLoading, setPreviewLoading] = useState(false);
@@ -1151,6 +1152,7 @@ export default function ProjectFolderFiles() {
         setUploadError("");
 
         try {
+            // Preserve File objects and webkitRelativePath for folder uploads.
             await uploadProjectFolderFiles(
                 parsedProjectId,
                 parsedFolderId,
@@ -1181,9 +1183,27 @@ export default function ProjectFolderFiles() {
         const input = event.currentTarget;
         const selected = Array.from(input.files ?? []);
 
-        await uploadFiles(selected);
+        if (selected.length === 0) {
+            setUploadError("The selected folder contains no files.");
+            return;
+        }
 
-        input.value = "";
+        // Confirm the browser selected individual files.
+        console.table(
+            selected.map((file) => ({
+                name: file.name,
+                path: (
+                    file as File & { webkitRelativePath?: string }
+                ).webkitRelativePath,
+                size: file.size,
+            })),
+        );
+
+        try {
+            await uploadFiles(selected);
+        } finally {
+            input.value = "";
+        }
     };
 
     const handlePageDragEnter = (event: DragEvent<HTMLDivElement>) => {
@@ -1589,7 +1609,7 @@ export default function ProjectFolderFiles() {
                                     {currentFolderName}
                                 </span>
 
-                                {currentFolder && canViewFolderProgress && (
+                                {currentFolder && !hasSubfolders && canViewFolderProgress && (
                                     <>
                                         {canUpdateFolderStatus ? (
                                             <button
@@ -1770,395 +1790,405 @@ export default function ProjectFolderFiles() {
                             </section>
                         )}
 
-                        {/* Files section */}
-                        <section className="space-y-3">
-                            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Files ({files.length})
-                                </h2>
+                        {/* Files section: hide for folders containing subfolders */}
+                        {showFilesSection && (
+                            <section className="space-y-3">
+                                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        Files ({files.length})
+                                    </h2>
 
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                                        {selectedFiles.size} selected
-                                    </span>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                                            {selectedFiles.size} selected
+                                        </span>
 
-                                    {selectedFiles.size > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setSelectedFiles(new Set())
-                                            }
-                                            className="text-sm font-medium text-primary hover:opacity-80"
-                                        >
-                                            Clear selection
-                                        </button>
-                                    )}
-
-                                    {selectedFiles.size > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => void handleDeleteSelectedFiles()}
-                                            disabled={deletingSelected || deletingFileId !== null}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {deletingSelected ? (
-                                                <Loader2 size={16} className="animate-spin" />
-                                            ) : (
-                                                <Trash2 size={16} />
-                                            )}
-
-                                            {deletingSelected
-                                                ? "Deleting..."
-                                                : `Delete Selected (${selectedFiles.size})`}
-                                        </button>
-                                    )}
-
-                                    {/* Browse button: dropping works across the page */}
-                                    <label
-                                        className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading
-                                            ? "pointer-events-none opacity-60"
-                                            : ""
-                                            }`}
-                                    >
-                                        {uploading ? (
-                                            <Loader2
-                                                size={16}
-                                                className="animate-spin"
-                                            />
-                                        ) : (
-                                            <Upload size={16} />
+                                        {selectedFiles.size > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setSelectedFiles(new Set())
+                                                }
+                                                className="text-sm font-medium text-primary hover:opacity-80"
+                                            >
+                                                Clear selection
+                                            </button>
                                         )}
 
-                                        {uploading
-                                            ? "Uploading..."
-                                            : "Browse Files"}
+                                        {selectedFiles.size > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleDeleteSelectedFiles()}
+                                                disabled={deletingSelected || deletingFileId !== null}
+                                                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {deletingSelected ? (
+                                                    <Loader2 size={16} className="animate-spin" />
+                                                ) : (
+                                                    <Trash2 size={16} />
+                                                )}
 
-                                        <input
-                                            type="file"
-                                            multiple
-                                            disabled={uploading}
-                                            onChange={handleUploadFiles}
-                                            className="hidden"
-                                            aria-label="Choose files to upload"
-                                        />
-                                    </label>
+                                                {deletingSelected
+                                                    ? "Deleting..."
+                                                    : `Delete Selected (${selectedFiles.size})`}
+                                            </button>
+                                        )}
 
-                                    <button
-                                        type="button"
-                                        onClick={openCommentModal}
-                                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-                                    >
-                                        <MessageSquare size={16} />
-                                        Comment
-                                    </button>
-                                </div>
-                            </div>
+                                        {/* Browse button: dropping works across the page */}
+                                        {/* Upload individual files */}
+                                        <label
+                                            className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading ? "pointer-events-none opacity-60" : ""
+                                                }`}
+                                        >
+                                            <Upload size={16} />
+                                            Upload Files
 
-                            {/* Upload feedback */}
-                            {uploadError && (
-                                <div
-                                    role="alert"
-                                    className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
-                                >
-                                    <AlertCircle
-                                        size={18}
-                                        className="mt-0.5 shrink-0"
-                                    />
-
-                                    <span>{uploadError}</span>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setUploadError("")}
-                                        className="ml-auto shrink-0"
-                                        aria-label="Dismiss upload error"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            )}
-
-
-
-                            {deleteError && (
-                                <div
-                                    role="alert"
-                                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
-                                >
-                                    {deleteError}
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setDeleteError("")}
-                                        className="ml-3 font-semibold"
-                                    >
-                                        Dismiss
-                                    </button>
-                                </div>
-                            )}
-
-                            {bulkDeleteError && (
-                                <div
-                                    role="alert"
-                                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
-                                >
-                                    {bulkDeleteError}
-                                    <button
-                                        type="button"
-                                        onClick={() => setBulkDeleteError("")}
-                                        className="ml-3 font-semibold"
-                                    >
-                                        Dismiss
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Files table */}
-                            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                                {files.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                                            <FileText
-                                                size={28}
-                                                className="text-gray-400"
+                                            <input
+                                                type="file"
+                                                multiple
+                                                disabled={uploading}
+                                                onChange={handleUploadFiles}
+                                                className="hidden"
+                                                aria-label="Choose files to upload"
                                             />
-                                        </div>
+                                        </label>
 
-                                        <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">
-                                            No files yet
-                                        </h3>
+                                        <label
+                                            className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/10 dark:bg-gray-800 ${uploading ? "pointer-events-none opacity-60" : ""
+                                                }`}
+                                        >
+                                            <FolderOpen size={16} />
+                                            Upload Folder
 
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            There are no files in this folder.
-                                            Drag files anywhere on this page to
-                                            upload them.
-                                        </p>
+                                            <input
+                                                ref={folderInputRef}
+                                                type="file"
+                                                multiple
+                                                disabled={uploading}
+                                                onChange={handleUploadFiles}
+                                                className="hidden"
+                                                aria-label="Choose a folder to upload"
+                                                {...({ webkitdirectory: "", directory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+                                            />
+                                        </label>
+
+                                        <button
+                                            type="button"
+                                            onClick={openCommentModal}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                        >
+                                            <MessageSquare size={16} />
+                                            Comment
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="overflow-x-auto scrollbar-thin">
-                                        <table className="w-full min-w-[1050px] text-left text-sm">
-                                            <thead className="bg-primary text-white">
-                                                <tr>
-                                                    <th className="w-12 px-4 py-4">
-                                                        <input
-                                                            type="checkbox"
-                                                            aria-label="Select all files"
-                                                            checked={allFilesSelected}
-                                                            onChange={toggleSelectAll}
-                                                            className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-white"
-                                                        />
-                                                    </th>
+                                </div>
 
-                                                    <th className="whitespace-nowrap px-4 py-4 font-semibold">
-                                                        FID
-                                                    </th>
+                                {/* Upload feedback */}
+                                {uploadError && (
+                                    <div
+                                        role="alert"
+                                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                    >
+                                        <AlertCircle
+                                            size={18}
+                                            className="mt-0.5 shrink-0"
+                                        />
 
-                                                    <th className="px-4 py-4 font-semibold">
-                                                        File Name
-                                                    </th>
+                                        <span>{uploadError}</span>
 
-                                                    <th className="px-4 py-4 font-semibold">
-                                                        Uploaded By
-                                                    </th>
+                                        <button
+                                            type="button"
+                                            onClick={() => setUploadError("")}
+                                            className="ml-auto shrink-0"
+                                            aria-label="Dismiss upload error"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                )}
 
-                                                    <th className="whitespace-nowrap px-4 py-4 font-semibold">
-                                                        File Size
-                                                    </th>
 
-                                                    <th className="whitespace-nowrap px-4 py-4 font-semibold">
-                                                        Uploaded Date
-                                                    </th>
 
-                                                    <th className="px-4 py-4 text-center font-semibold">
-                                                        Delete
-                                                    </th>
-                                                </tr>
-                                            </thead>
+                                {deleteError && (
+                                    <div
+                                        role="alert"
+                                        className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                    >
+                                        {deleteError}
 
-                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                                {files.map((file, index) => {
-                                                    const fileKey = getFileKey(
-                                                        file,
-                                                        index,
-                                                    );
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeleteError("")}
+                                            className="ml-3 font-semibold"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                )}
 
-                                                    const isSelected =
-                                                        selectedFiles.has(
-                                                            fileKey,
-                                                        );
+                                {bulkDeleteError && (
+                                    <div
+                                        role="alert"
+                                        className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                    >
+                                        {bulkDeleteError}
+                                        <button
+                                            type="button"
+                                            onClick={() => setBulkDeleteError("")}
+                                            className="ml-3 font-semibold"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                )}
 
-                                                    const fileName =
-                                                        getFileName(file);
+                                {/* Files table */}
+                                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                    {files.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+                                                <FileText
+                                                    size={28}
+                                                    className="text-gray-400"
+                                                />
+                                            </div>
 
-                                                    const uploaderName =
-                                                        getUploaderName(
+                                            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">
+                                                No files yet
+                                            </h3>
+
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                There are no files in this folder.
+                                                Drag files anywhere on this page to
+                                                upload them.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto scrollbar-thin">
+                                            <table className="w-full min-w-[1050px] text-left text-sm">
+                                                <thead className="bg-primary text-white">
+                                                    <tr>
+                                                        <th className="w-12 px-4 py-4">
+                                                            <input
+                                                                type="checkbox"
+                                                                aria-label="Select all files"
+                                                                checked={allFilesSelected}
+                                                                onChange={toggleSelectAll}
+                                                                className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-white"
+                                                            />
+                                                        </th>
+
+                                                        <th className="whitespace-nowrap px-4 py-4 font-semibold">
+                                                            FID
+                                                        </th>
+
+                                                        <th className="px-4 py-4 font-semibold">
+                                                            File Name
+                                                        </th>
+
+                                                        <th className="px-4 py-4 font-semibold">
+                                                            Uploaded By
+                                                        </th>
+
+                                                        <th className="whitespace-nowrap px-4 py-4 font-semibold">
+                                                            File Size
+                                                        </th>
+
+                                                        <th className="whitespace-nowrap px-4 py-4 font-semibold">
+                                                            Uploaded Date
+                                                        </th>
+
+                                                        <th className="px-4 py-4 text-center font-semibold">
+                                                            Delete
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                                    {files.map((file, index) => {
+                                                        const fileKey = getFileKey(
                                                             file,
-                                                            users,
+                                                            index,
                                                         );
 
-                                                    return (
-                                                        <tr
-                                                            key={fileKey}
-                                                            className={`transition ${isSelected
-                                                                ? "bg-primary/10 dark:bg-primary/20"
-                                                                : "hover:bg-gray-50 dark:hover:bg-gray-700/40"
-                                                                }`}
-                                                        >
-                                                            <td className="px-4 py-4">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    aria-label={`Select ${fileName}`}
-                                                                    checked={isSelected}
-                                                                    onChange={() =>
-                                                                        toggleFileSelection(
-                                                                            fileKey,
-                                                                        )
-                                                                    }
-                                                                    className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-primary"
-                                                                />
-                                                            </td>
+                                                        const isSelected =
+                                                            selectedFiles.has(
+                                                                fileKey,
+                                                            );
 
-                                                            <td className="whitespace-nowrap px-4 py-4 font-medium text-gray-700 dark:text-gray-300">
-                                                                {file.file_id ??
-                                                                    file.id ??
-                                                                    "—"}
-                                                            </td>
+                                                        const fileName =
+                                                            getFileName(file);
 
-                                                            <td className="max-w-[280px] px-4 py-4">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        void handleOpenFile(
-                                                                            file,
-                                                                        )
-                                                                    }
-                                                                    className="group flex w-full min-w-0 items-center gap-3 rounded-lg text-left"
-                                                                    title={`Preview ${fileName}`}
-                                                                >
-                                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 transition group-hover:bg-primary/10 dark:bg-gray-700/50 dark:group-hover:bg-primary/20">
-                                                                        {getFileIcon(
-                                                                            fileName,
-                                                                        )}
-                                                                    </div>
+                                                        const uploaderName =
+                                                            getUploaderName(
+                                                                file,
+                                                                users,
+                                                            );
 
-                                                                    <div className="min-w-0">
-                                                                        <p className="break-words font-semibold text-gray-700 group-hover:underline dark:text-gray-300">
-                                                                            {fileName}
-                                                                        </p>
+                                                        return (
+                                                            <tr
+                                                                key={fileKey}
+                                                                className={`transition ${isSelected
+                                                                    ? "bg-primary/10 dark:bg-primary/20"
+                                                                    : "hover:bg-gray-50 dark:hover:bg-gray-700/40"
+                                                                    }`}
+                                                            >
+                                                                <td className="px-4 py-4">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        aria-label={`Select ${fileName}`}
+                                                                        checked={isSelected}
+                                                                        onChange={() =>
+                                                                            toggleFileSelection(
+                                                                                fileKey,
+                                                                            )
+                                                                        }
+                                                                        className="h-4 w-4 cursor-pointer rounded border-gray-300 accent-primary"
+                                                                    />
+                                                                </td>
 
-                                                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                                            {file.mime_type ||
-                                                                                getFileExtension(
-                                                                                    file,
-                                                                                ).toUpperCase() ||
-                                                                                "Unknown file type"}
-                                                                        </p>
-                                                                    </div>
-                                                                </button>
-                                                            </td>
+                                                                <td className="whitespace-nowrap px-4 py-4 font-medium text-gray-700 dark:text-gray-300">
+                                                                    {file.file_id ??
+                                                                        file.id ??
+                                                                        "—"}
+                                                                </td>
 
-                                                            <td className="px-4 py-4">
-                                                                <span
-                                                                    title={uploaderName}
-                                                                    className="block max-w-[180px] truncate text-gray-700 dark:text-gray-300"
-                                                                >
-                                                                    {uploaderName}
-                                                                </span>
-                                                            </td>
+                                                                <td className="max-w-[280px] px-4 py-4">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            void handleOpenFile(
+                                                                                file,
+                                                                            )
+                                                                        }
+                                                                        className="group flex w-full min-w-0 items-center gap-3 rounded-lg text-left"
+                                                                        title={`Preview ${fileName}`}
+                                                                    >
+                                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 transition group-hover:bg-primary/10 dark:bg-gray-700/50 dark:group-hover:bg-primary/20">
+                                                                            {getFileIcon(
+                                                                                fileName,
+                                                                            )}
+                                                                        </div>
 
-                                                            <td className="whitespace-nowrap px-4 py-4 text-gray-700 dark:text-gray-300">
-                                                                {formatFileSize(
-                                                                    file.filesize,
-                                                                )}
-                                                            </td>
+                                                                        <div className="min-w-0">
+                                                                            <p className="break-words font-semibold text-gray-700 group-hover:underline dark:text-gray-300">
+                                                                                {fileName}
+                                                                            </p>
 
-                                                            <td className="whitespace-nowrap px-4 py-4 text-gray-700 dark:text-gray-300">
-                                                                {formatUploadedDate(
-                                                                    file.createddate,
-                                                                )}
-                                                            </td>
+                                                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                                {file.mime_type ||
+                                                                                    getFileExtension(
+                                                                                        file,
+                                                                                    ).toUpperCase() ||
+                                                                                    "Unknown file type"}
+                                                                            </p>
+                                                                        </div>
+                                                                    </button>
+                                                                </td>
 
-                                                            <td className="px-4 py-4 text-center">
-                                                                <button
-                                                                    type="button"
-                                                                    title={
-                                                                        deletingFileId ===
+                                                                <td className="px-4 py-4">
+                                                                    <span
+                                                                        title={uploaderName}
+                                                                        className="block max-w-[180px] truncate text-gray-700 dark:text-gray-300"
+                                                                    >
+                                                                        {uploaderName}
+                                                                    </span>
+                                                                </td>
+
+                                                                <td className="whitespace-nowrap px-4 py-4 text-gray-700 dark:text-gray-300">
+                                                                    {formatFileSize(
+                                                                        file.filesize,
+                                                                    )}
+                                                                </td>
+
+                                                                <td className="whitespace-nowrap px-4 py-4 text-gray-700 dark:text-gray-300">
+                                                                    {formatUploadedDate(
+                                                                        file.createddate,
+                                                                    )}
+                                                                </td>
+
+                                                                <td className="px-4 py-4 text-center">
+                                                                    <button
+                                                                        type="button"
+                                                                        title={
+                                                                            deletingFileId ===
+                                                                                Number(
+                                                                                    file.file_id ??
+                                                                                    file.id,
+                                                                                )
+                                                                                ? "Deleting file..."
+                                                                                : "Delete file"
+                                                                        }
+                                                                        aria-label={`Delete ${fileName}`}
+                                                                        disabled={deletingFileId !== null || deletingSelected}
+                                                                        onClick={() =>
+                                                                            void handleDeleteFile(
+                                                                                file,
+                                                                            )
+                                                                        }
+                                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                                                                    >
+                                                                        {deletingFileId ===
                                                                             Number(
                                                                                 file.file_id ??
                                                                                 file.id,
-                                                                            )
-                                                                            ? "Deleting file..."
-                                                                            : "Delete file"
-                                                                    }
-                                                                    aria-label={`Delete ${fileName}`}
-                                                                    disabled={deletingFileId !== null || deletingSelected}
-                                                                    onClick={() =>
-                                                                        void handleDeleteFile(
-                                                                            file,
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                                                                >
-                                                                    {deletingFileId ===
-                                                                        Number(
-                                                                            file.file_id ??
-                                                                            file.id,
-                                                                        ) ? (
-                                                                        <Loader2
-                                                                            size={18}
-                                                                            className="animate-spin"
-                                                                        />
-                                                                    ) : (
-                                                                        <Trash2
-                                                                            size={18}
-                                                                        />
-                                                                    )}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
+                                                                            ) ? (
+                                                                            <Loader2
+                                                                                size={18}
+                                                                                className="animate-spin"
+                                                                            />
+                                                                        ) : (
+                                                                            <Trash2
+                                                                                size={18}
+                                                                            />
+                                                                        )}
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
 
 
-                            {submittedComments.length > 0 && (
-                                <section className="mt-6 rounded-xl border border-gray-200 bg-white p-4">
-                                    <h3 className="mb-4 flex items-center gap-2 font-semibold">
-                                        <MessageSquare size={18} className="text-primary" />
-                                        Sent Comments
-                                    </h3>
+                                {submittedComments.length > 0 && (
+                                    <section className="mt-6 rounded-xl border border-gray-200 bg-white p-4">
+                                        <h3 className="mb-4 flex items-center gap-2 font-semibold">
+                                            <MessageSquare size={18} className="text-primary" />
+                                            Sent Comments
+                                        </h3>
 
-                                    <div className="space-y-3">
-                                        {submittedComments.map((comment, index) => (
-                                            <div
-                                                key={`${comment.createdAt}-${index}`}
-                                                className="rounded-lg border border-gray-100 bg-gray-50 p-4"
-                                            >
-                                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                                    <p className="font-medium">{comment.subject}</p>
-                                                    <span className="text-xs text-gray-500">
-                                                        {comment.createdAt}
-                                                    </span>
+                                        <div className="space-y-3">
+                                            {submittedComments.map((comment, index) => (
+                                                <div
+                                                    key={`${comment.createdAt}-${index}`}
+                                                    className="rounded-lg border border-gray-100 bg-gray-50 p-4"
+                                                >
+                                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                                        <p className="font-medium">{comment.subject}</p>
+                                                        <span className="text-xs text-gray-500">
+                                                            {comment.createdAt}
+                                                        </span>
+                                                    </div>
+
+                                                    <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+                                                        {comment.message}
+                                                    </p>
+
+                                                    <p className="mt-3 text-xs text-gray-500">
+                                                        Sent to: {comment.recipientNames.join(", ")}
+                                                    </p>
                                                 </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
 
-                                                <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
-                                                    {comment.message}
-                                                </p>
-
-                                                <p className="mt-3 text-xs text-gray-500">
-                                                    Sent to: {comment.recipientNames.join(", ")}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                        </section>
+                            </section>
+                        )}
 
                         {/* Folder tree warning */}
                         {folderError && (

@@ -620,7 +620,7 @@ export default function Projects() {
                               key={memberId}
                               className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                             >
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+                              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidde bg-primary/10">
                                 <img
                                   src={profileImage || defaultAvatar || undefined}
                                   alt={`${fullName}'s avatar`}
@@ -708,7 +708,6 @@ export default function Projects() {
           )}
         </div>
 
-        {/* Reusable folder structure modal */}
         <Modal
           isOpen={folderModalOpen && !!projectDetails}
           onClose={() => setFolderModalOpen(false)}

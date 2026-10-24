@@ -67,16 +67,13 @@ export interface Project {
   is_project_manage: number;
   projecttype: number | null;
 
-  // Indicates this user's relationship to this project.
   view_type?: ProjectViewType;
 
   member_ids?: number[];
   members?: ProjectMember[];
 
-  // Folders available in the project.
   folders?: ProjectFolder[];
 
-  // Folders accessible to the logged-in user, when supplied by the API.
   folder_access?: ProjectFolderAccess[];
 
   assigned_role_ids?: number[];
@@ -213,7 +210,6 @@ export async function setupCoordinatorProject(
 // Folder Timeline Types
 // ==============================
 
-
 export interface FolderTimelineKeyPerson {
   uid: number;
   loginname: string;
@@ -248,7 +244,6 @@ export interface ProjectFolderTimelineResponse {
   project_end_date: string | null;
   folders: ProjectFolderTimelineItem[];
 }
-
 
 // ==============================
 // Get Folder Timeline
@@ -310,7 +305,13 @@ export async function uploadProjectFolderFiles<T = unknown>(
   const formData = new FormData();
 
   files.forEach((file) => {
-    formData.append("files", file);
+    formData.append("files", file, file.name);
+
+    const relativePath =
+      (file as File & { webkitRelativePath?: string })
+        .webkitRelativePath || file.name;
+
+    formData.append("relative_paths", relativePath);
   });
 
   return post<T>(
@@ -409,7 +410,6 @@ export async function createProjectFolderComment(
   return post(`/projects/${projectId}/folders/${folderId}/comments`, payload);
 }
 
-
 export interface Notification {
   notificationid: number;
   from: string;
@@ -432,42 +432,42 @@ export async function getNotifications() {
 }
 
 export interface FolderFile {
-    file_id?: number;
-    id?: number;
-    filename?: string;
-    file_name?: string;
-    name?: string;
-    createduid?: number | string | null;
-    createddate?: string | null;
-    filesize?: number | string | null;
-    mime_type?: string | null;
-    file_url?: string;
-    download_url?: string;
-    url?: string;
-    path?: string;
-    [key: string]: unknown;
+  file_id?: number;
+  id?: number;
+  filename?: string;
+  file_name?: string;
+  name?: string;
+  createduid?: number | string | null;
+  createddate?: string | null;
+  filesize?: number | string | null;
+  mime_type?: string | null;
+  file_url?: string;
+  download_url?: string;
+  url?: string;
+  path?: string;
+  [key: string]: unknown;
 }
 
 export interface ProjectFolder {
-    fid: number;
-    fname: string;
-    parent_fid?: number | null;
-    keypersonid?: number | null;
-    status?: number | string;
-    progress_percentage?: number | null;
-    progress_notes?: string | null;
-    children?: ProjectFolder[];
-    fileCount?: number;
+  fid: number;
+  fname: string;
+  parent_fid?: number | null;
+  keypersonid?: number | null;
+  status?: number | string;
+  progress_percentage?: number | null;
+  progress_notes?: string | null;
+  children?: ProjectFolder[];
+  fileCount?: number;
 }
 
 export interface FolderNavigationState {
-    project?: Project;
-    folder?: ProjectFolder;
-    folderName?: string;
+  project?: Project;
+  folder?: ProjectFolder;
+  folderName?: string;
 }
 
 export interface FolderProgress {
-    progress_percentage?: number | null;
-    progress_notes?: string | null;
-    status?: number | string | null;
+  progress_percentage?: number | null;
+  progress_notes?: string | null;
+  status?: number | string | null;
 }

@@ -16,6 +16,11 @@
 @theme {
   --color-primary: #ff6b35;
   --color-primary-light: #f8aa91;
+
+  --color-contrast: #1a659e;
+  --color-contrast-dark: #004e89;
+
+  --color-secondary: #a8dadc;
 }
 
 .dark {
