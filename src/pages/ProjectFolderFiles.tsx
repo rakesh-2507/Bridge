@@ -182,41 +182,6 @@ function normalizeFolderTree(
 
     return roots;
 }
-async function addFolderFileCounts(
-    projectId: number,
-    folders: ProjectFolder[],
-): Promise<ProjectFolder[]> {
-    return Promise.all(
-        folders.map(async (folder) => {
-            let fileCount = 0;
-
-            try {
-                const response = await getProjectFolderFiles(
-                    projectId,
-                    Number(folder.fid),
-                );
-
-                fileCount = normalizeFiles(response).length;
-            } catch (error) {
-                console.error(
-                    `Failed to get file count for folder ${folder.fid}:`,
-                    error,
-                );
-            }
-
-            const children = await addFolderFileCounts(
-                projectId,
-                folder.children ?? [],
-            );
-
-            return {
-                ...folder,
-                fileCount,
-                children,
-            };
-        }),
-    );
-}
 
 function getProjectFolders(
     project: Project | null | undefined,
@@ -848,66 +813,53 @@ export default function ProjectFolderFiles() {
             setFolderError("");
 
             try {
-                const activeProject =
-                    navigationState?.project ??
-                    project ??
-                    (await getProject(parsedProjectId));
+                // Load only the project data and the currently opened folder's files.
+                const projectPromise = navigationState?.project
+                    ? Promise.resolve(navigationState.project)
+                    : getProject(parsedProjectId);
 
-                if (cancelled) {
-                    return;
-                }
-
-                setProject(activeProject);
-
-                // Normalize the folder hierarchy and fetch file counts.
-                const normalizedFolders = getProjectFolders(activeProject);
-
-                const foldersWithCounts = await addFolderFileCounts(
+                const filesPromise = getProjectFolderFiles(
                     parsedProjectId,
-                    normalizedFolders,
-                );
-
-                if (cancelled) {
-                    return;
-                }
-
-                setFolderTree(foldersWithCounts);
-
-                const folder = findProjectFolder(
-                    foldersWithCounts,
                     parsedFolderId,
                 );
 
-                if (cancelled) {
-                    return;
-                }
+                const [activeProject, filesResponse] = await Promise.all([
+                    projectPromise,
+                    filesPromise,
+                ]);
+
+                if (cancelled) return;
+
+                setProject(activeProject);
+
+                // Normalize the tree locally. Do not fetch files for every folder.
+                const normalizedFolders = getProjectFolders(activeProject);
+                setFolderTree(normalizedFolders);
+
+                const folder = findProjectFolder(
+                    normalizedFolders,
+                    parsedFolderId,
+                );
+
+                const stateFolder =
+                    navigationState?.folder &&
+                        Number(navigationState.folder.fid) === parsedFolderId
+                        ? navigationState.folder
+                        : null;
 
                 if (folder) {
                     setCurrentFolder(folder);
-                } else {
-                    const stateFolder =
-                        navigationState?.folder &&
-                            Number(navigationState.folder.fid) === parsedFolderId
-                            ? navigationState.folder
-                            : null;
-
+                } else if (stateFolder) {
                     setCurrentFolder(stateFolder);
-
+                    setFolderError("");
+                } else {
+                    setCurrentFolder(null);
                     setFolderError(
                         "Folder details are unavailable in the project folder tree.",
                     );
                 }
 
-                const response = await getProjectFolderFiles(
-                    parsedProjectId,
-                    parsedFolderId,
-                );
-
-                if (cancelled) {
-                    return;
-                }
-
-                setFiles(normalizeFiles(response));
+                setFiles(normalizeFiles(filesResponse));
             } catch (err: unknown) {
                 if (!cancelled) {
                     setError(
@@ -933,12 +885,12 @@ export default function ProjectFolderFiles() {
         folderId,
         parsedProjectId,
         parsedFolderId,
-        project,
         navigationState?.project,
         navigationState?.folder,
         navigationState?.folderName,
         reloadKey,
     ]);
+
 
     const toggleFileSelection = (fileKey: string) => {
         setSelectedFiles((previous) => {

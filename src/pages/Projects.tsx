@@ -19,7 +19,7 @@ import {
 import {
   getProjects,
   getProject,
-  getProjectFolderFiles,
+  // getProjectFolderFiles,
   deleteProject,
   type Project,
   type ProjectFolder,
@@ -36,27 +36,27 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-async function addFolderFileCounts(
-  folders: ProjectFolder[],
-  projectId: number,
-): Promise<ProjectFolder[]> {
-  return Promise.all(
-    folders.map(async (folder) => {
-      const [response, children] = await Promise.all([
-        getProjectFolderFiles(projectId, folder.fid) as Promise<{
-          files?: unknown[];
-        }>,
-        addFolderFileCounts(folder.children ?? [], projectId),
-      ]);
+// async function addFolderFileCounts(
+//   folders: ProjectFolder[],
+//   projectId: number,
+// ): Promise<ProjectFolder[]> {
+//   return Promise.all(
+//     folders.map(async (folder) => {
+//       const [response, children] = await Promise.all([
+//         getProjectFolderFiles(projectId, folder.fid) as Promise<{
+//           files?: unknown[];
+//         }>,
+//         addFolderFileCounts(folder.children ?? [], projectId),
+//       ]);
 
-      return {
-        ...folder,
-        fileCount: response.files?.length ?? 0,
-        children,
-      };
-    }),
-  );
-}
+//       return {
+//         ...folder,
+//         fileCount: response.files?.length ?? 0,
+//         children,
+//       };
+//     }),
+//   );
+// }
 
 function getCoordinatorName(
   coordinatorId: number | string | null | undefined,
@@ -184,18 +184,23 @@ export default function Projects() {
       setFolderModalOpen(false);
 
       try {
+        // const response = await getProject(projectId);
+
+        // const foldersWithCounts = await addFolderFileCounts(
+        //   response.folders ?? [],
+        //   projectId,
+        // );
+
+        // if (!cancelled) {
+        //   setProjectDetails({
+        //     ...response,
+        //     folders: foldersWithCounts,
+        //   });
+        // }
         const response = await getProject(projectId);
 
-        const foldersWithCounts = await addFolderFileCounts(
-          response.folders ?? [],
-          projectId,
-        );
-
         if (!cancelled) {
-          setProjectDetails({
-            ...response,
-            folders: foldersWithCounts,
-          });
+          setProjectDetails(response);
         }
       } catch (err: unknown) {
         if (!cancelled) {
@@ -250,17 +255,19 @@ export default function Projects() {
     setDetailsError("");
 
     try {
+      // const response = await getProject(selectedProjectId);
+
+      // const foldersWithCounts = await addFolderFileCounts(
+      //   response.folders ?? [],
+      //   selectedProjectId,
+      // );
+
+      // setProjectDetails({
+      //   ...response,
+      //   folders: foldersWithCounts,
+      // });
       const response = await getProject(selectedProjectId);
-
-      const foldersWithCounts = await addFolderFileCounts(
-        response.folders ?? [],
-        selectedProjectId,
-      );
-
-      setProjectDetails({
-        ...response,
-        folders: foldersWithCounts,
-      });
+      setProjectDetails(response);
     } catch (err: unknown) {
       setDetailsError(
         getErrorMessage(
@@ -603,7 +610,7 @@ export default function Projects() {
                               ? mrsImage
                               : null;
 
-                         const profileImage = getUserPhotoUrl(user);
+                          const profileImage = getUserPhotoUrl(user);
 
                           const fullName = user
                             ? [
