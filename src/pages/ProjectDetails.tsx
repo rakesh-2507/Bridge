@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import {
-    ArrowLeft,
     Folder,
     BriefcaseBusiness,
     Loader2,
@@ -249,14 +248,6 @@ export default function ProjectDetails() {
     return (
         <div className="min-h-full w-full bg-gray-50 p-4 dark:bg-gray-900 sm:p-6">
             <div className="space-y-6">
-                <button
-                    type="button"
-                    onClick={() => navigate("/dashboard/projects")}
-                    className="flex items-center gap-2 text-sm text-gray-500 transition hover:text-primary dark:text-gray-400 dark:hover:text-blue-400"
-                >
-                    <ArrowLeft size={17} />
-                    Back
-                </button>
 
                 {/* Project header */}
                 <div className="flex items-center gap-3">
