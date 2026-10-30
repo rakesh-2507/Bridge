@@ -222,7 +222,7 @@ export interface ProjectFolderTimelineItem {
   fname: string;
   parent_fid: number | null;
   is_parent: boolean;
-
+  is_top_level?: boolean;
   predecessorsid: number | null;
   days: number | null;
   startdate: string | null;
@@ -308,8 +308,8 @@ export async function uploadProjectFolderFiles<T = unknown>(
     formData.append("files", file, file.name);
 
     const relativePath =
-      (file as File & { webkitRelativePath?: string })
-        .webkitRelativePath || file.name;
+      (file as File & { webkitRelativePath?: string }).webkitRelativePath ||
+      file.name;
 
     formData.append("relative_paths", relativePath);
   });

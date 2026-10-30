@@ -30,10 +30,6 @@ import {
     type FolderProgress,
 } from "../api/projects";
 
-// ========================================
-// Helpers
-// ========================================
-
 function normalizeProjects(
     response: CoordinatorProjectsResponse,
 ): Project[] {
@@ -63,28 +59,19 @@ function getTodayDate(): string {
     return formatDate(new Date());
 }
 
-/**
- * A folder with children is a container.
- * Its timeline is defined by its schedulable descendants.
- */
-function hasSubfolders(
-    folder: ProjectFolderTimelineItem,
-    folders: ProjectFolderTimelineItem[],
-): boolean {
-    return folders.some((item) => item.parent_fid === folder.fid);
-}
+// function hasSubfolders(
+//     folder: ProjectFolderTimelineItem,
+//     folders: ProjectFolderTimelineItem[],
+// ): boolean {
+//     return folders.some((item) => item.parent_fid === folder.fid);
+// }
 
 function isContainerFolder(
     folder: ProjectFolderTimelineItem,
-    folders: ProjectFolderTimelineItem[],
 ): boolean {
-    return hasSubfolders(folder, folders);
+    return folder.is_parent === true && folder.is_top_level === true;
 }
 
-/**
- * Keep all API folders and display parents before their descendants.
- * Missing parents and circular folder relationships do not discard data.
- */
 function orderFoldersByHierarchy(
     folders: ProjectFolderTimelineItem[],
 ): ProjectFolderTimelineItem[] {
@@ -123,7 +110,6 @@ function orderFoldersByHierarchy(
         visit(root);
     }
 
-    // Retain folders not reachable from a root, including cyclic data.
     for (const folder of folders) {
         visit(folder);
     }
@@ -158,10 +144,6 @@ interface CalculatedDates {
     end: string;
 }
 
-/**
- * Calculates dates from the project start date, duration and predecessor.
- * Container folders are not independently scheduled.
- */
 function calculateFolderDates(
     folder: ProjectFolderTimelineItem,
     folders: ProjectFolderTimelineItem[],
@@ -171,7 +153,7 @@ function calculateFolderDates(
     if (
         !projectStartDate ||
         visiting.has(folder.fid) ||
-        isContainerFolder(folder, folders)
+        isContainerFolder(folder)
     ) {
         return { start: "", end: "" };
     }
@@ -194,7 +176,7 @@ function calculateFolderDates(
 
         if (
             !predecessor ||
-            isContainerFolder(predecessor, folders)
+            isContainerFolder(predecessor)
         ) {
             return { start: "", end: "" };
         }
@@ -213,7 +195,6 @@ function calculateFolderDates(
         startDate = new Date(`${predecessorDates.end}T00:00:00`);
         startDate.setDate(startDate.getDate() + 1);
     } else {
-        // First folder starts one day after the project start date.
         startDate.setDate(startDate.getDate() + 1);
     }
 
@@ -228,9 +209,6 @@ function calculateFolderDates(
 
 type SetupStep = 1 | 2;
 
-// ========================================
-// Component
-// ========================================
 
 export default function CoordinatorProjectSetup() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -258,7 +236,6 @@ export default function CoordinatorProjectSetup() {
         ProjectFolderTimelineItem[]
     >([]);
 
-    // User progress modal state.
     const [selectedProgressFolder, setSelectedProgressFolder] =
         useState<ProjectFolderTimelineItem | null>(null);
     const [folderProgress, setFolderProgress] =
@@ -266,7 +243,6 @@ export default function CoordinatorProjectSetup() {
     const [progressLoading, setProgressLoading] = useState(false);
     const [progressError, setProgressError] = useState("");
 
-    // Progress percentage comes from the progress API, not folder status.
     const progressPercentage = Math.min(
         100,
         Math.max(
@@ -305,10 +281,6 @@ export default function CoordinatorProjectSetup() {
               .filter(Boolean)
               .join(" ") || progressKeyPerson.loginname
         : "Unassigned";
-
-    // ========================================
-    // Load project
-    // ========================================
 
     const fetchProject = useCallback(
         async (cancelled?: () => boolean) => {
@@ -386,8 +358,6 @@ export default function CoordinatorProjectSetup() {
     useEffect(() => {
         let cancelled = false;
 
-        // Defer invocation to avoid synchronously starting state updates
-        // in the effect body.
         const timeoutId = window.setTimeout(() => {
             void fetchProject(() => cancelled);
         }, 0);
@@ -397,10 +367,6 @@ export default function CoordinatorProjectSetup() {
             window.clearTimeout(timeoutId);
         };
     }, [fetchProject]);
-
-    // ========================================
-    // Derived data
-    // ========================================
 
     const members = getProjectMembers(project);
     const roles: ProjectRole[] = project?.available_roles ?? [];
@@ -413,10 +379,6 @@ export default function CoordinatorProjectSetup() {
         selectedMembers.includes(member.memberid),
     );
 
-    // ========================================
-    // Navigation
-    // ========================================
-
     const handleBack = () => navigate("/dashboard");
 
     const goToPreviousStep = () => {
@@ -424,10 +386,6 @@ export default function CoordinatorProjectSetup() {
         setSuccess("");
         setStep(1);
     };
-
-    // ========================================
-    // Member and role selection
-    // ========================================
 
     const toggleMember = (memberId: number) => {
         setError("");
@@ -488,10 +446,6 @@ export default function CoordinatorProjectSetup() {
         setSetupSaved(false);
     };
 
-    // ========================================
-    // Load folder timeline
-    // ========================================
-
     const loadTimeline = async () => {
         if (!project) {
             setError("Project details are not available.");
@@ -543,10 +497,6 @@ export default function CoordinatorProjectSetup() {
         }
     };
 
-    // ========================================
-    // Load folder progress
-    // ========================================
-
     const handleViewProgress = async (
         folder: ProjectFolderTimelineItem,
     ) => {
@@ -586,10 +536,6 @@ export default function CoordinatorProjectSetup() {
         setProgressError("");
         setProgressLoading(false);
     };
-
-    // ========================================
-    // Step 1: Save setup
-    // ========================================
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -677,10 +623,6 @@ export default function CoordinatorProjectSetup() {
         }
     };
 
-    // ========================================
-    // Timeline field updates
-    // ========================================
-
     const updateTimelineFolder = (
         fid: number,
         changes: Partial<ProjectFolderTimelineItem>,
@@ -695,10 +637,6 @@ export default function CoordinatorProjectSetup() {
         setSuccess("");
     };
 
-    // ========================================
-    // Step 2: Save folder timeline
-    // ========================================
-
     const handleSaveTimeline = async () => {
         if (!project) {
             setError("Project details are not available.");
@@ -710,10 +648,8 @@ export default function CoordinatorProjectSetup() {
             return;
         }
 
-        // Only leaf folders are scheduled. Container folders remain in the
-        // displayed hierarchy but are not included as timeline entries.
         const scheduledFolders = timelineFolders.filter(
-            (folder) => !isContainerFolder(folder, timelineFolders),
+            (folder) => !isContainerFolder(folder),
         );
 
         if (scheduledFolders.length === 0) {
@@ -769,7 +705,7 @@ export default function CoordinatorProjectSetup() {
             folders: timelineFolders.map((folder) => {
                 const isContainer = isContainerFolder(
                     folder,
-                    timelineFolders,
+                    
                 );
 
                 return {
@@ -814,16 +750,8 @@ export default function CoordinatorProjectSetup() {
         }
     };
 
-    // ========================================
-    // Shared field styling
-    // ========================================
-
     const inputClass =
         "rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-white";
-
-    // ========================================
-    // Loading state
-    // ========================================
 
     if (loading) {
         return (
@@ -878,10 +806,6 @@ export default function CoordinatorProjectSetup() {
         );
     }
 
-    // ========================================
-    // Main UI
-    // ========================================
-
     return (
         <div className="flex h-full min-h-0 flex-col bg-gray-50 dark:bg-gray-950">
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900 sm:px-6">
@@ -921,7 +845,6 @@ export default function CoordinatorProjectSetup() {
             >
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6">
                     <div className="mx-auto flex flex-col gap-5">
-                        {/* STEP 1: Members and roles */}
                         {step === 1 && (
                             <section className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 sm:p-5">
                                 <div className="mb-4 flex items-center gap-2">
@@ -1382,7 +1305,7 @@ export default function CoordinatorProjectSetup() {
                                                         const container =
                                                             isContainerFolder(
                                                                 folder,
-                                                                timelineFolders,
+                                                                
                                                             );
                                                         const dates = container
                                                             ? {
@@ -1407,7 +1330,7 @@ export default function CoordinatorProjectSetup() {
                                                                         folder.fid &&
                                                                     !isContainerFolder(
                                                                         candidate,
-                                                                        timelineFolders,
+                                                                        
                                                                     ),
                                                             );
 
