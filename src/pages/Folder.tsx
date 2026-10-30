@@ -346,7 +346,7 @@ export default function FolderPage() {
               void loadFolders();
             }}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <RefreshCw
               size={16}
@@ -357,7 +357,7 @@ export default function FolderPage() {
 
           <button
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
           >
             <Plus size={18} />
             Create Folder
@@ -369,7 +369,7 @@ export default function FolderPage() {
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+          className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
         >
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           <span className="flex-1">{error}</span>
@@ -380,7 +380,7 @@ export default function FolderPage() {
       )}
 
       {success && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+        <div className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
           <CheckCircle2 size={18} />
           <span className="flex-1">{success}</span>
           <button
@@ -411,13 +411,13 @@ export default function FolderPage() {
             value={lookupId}
             onChange={(event) => setLookupId(event.target.value)}
             placeholder="Enter folder ID"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            className="min-w-0 flex-1  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
 
           <button
             type="submit"
             disabled={lookupLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-700"
+            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-slate-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-700"
           >
             {lookupLoading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -429,7 +429,7 @@ export default function FolderPage() {
         </form>
 
         {viewingFolder && (
-          <div className="mt-4 rounded-lg border border-blue-200 bg-primary/5/70 p-4 dark:border-primary/30 dark:bg-primary/10/20">
+          <div className="mt-4  rounded-tl-xl rounded-br-xl   border border-blue-200 bg-primary/5/70 p-4 dark:border-primary/30 dark:bg-primary/10/20">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-primary dark:text-blue-300">
@@ -463,7 +463,7 @@ export default function FolderPage() {
       </section>
 
       {/* Folder list */}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-800 sm:flex-row sm:items-center">
           <div>
             <h2 className="font-semibold text-slate-900 dark:text-white">
@@ -486,7 +486,7 @@ export default function FolderPage() {
                 onChange={(event) =>
                   void handleTemplateFilter(event.target.value)
                 }
-                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-8 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white sm:w-56"
+                className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white py-2.5 pl-9 pr-8 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white sm:w-56"
               >
                 <option value="">All templates</option>
                 {templates.map((template) => (
@@ -506,7 +506,7 @@ export default function FolderPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search folders..."
-                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white sm:w-56"
+                className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white sm:w-56"
               />
             </div>
           </div>
@@ -628,7 +628,7 @@ export default function FolderPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="folder-modal-title"
-            className="my-auto w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+            className="my-auto w-full max-w-lg  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
               <div>
@@ -670,7 +670,7 @@ export default function FolderPage() {
                     setForm({ ...form, fname: event.target.value })
                   }
                   placeholder="Enter folder name"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </div>
 
@@ -688,7 +688,7 @@ export default function FolderPage() {
                   onChange={(event) =>
                     setForm({ ...form, tid: event.target.value })
                   }
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">Select template</option>
                   {templates.map((template) => (
@@ -720,7 +720,7 @@ export default function FolderPage() {
                   onChange={(event) =>
                     setForm({ ...form, pid: event.target.value })
                   }
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Use 0 for a root folder if supported by your backend.
@@ -743,7 +743,7 @@ export default function FolderPage() {
                     setForm({ ...form, fnamedesc: event.target.value })
                   }
                   placeholder="Enter folder description"
-                  className="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="w-full resize-y  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </div>
 
@@ -760,7 +760,7 @@ export default function FolderPage() {
                 <button
                   type="submit"
                   disabled={saving || templates.length === 0}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving && (
                     <Loader2 size={16} className="animate-spin" />
@@ -780,7 +780,7 @@ export default function FolderPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-folder-title"
-            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+            className="w-full max-w-md  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400">
               <Trash2 size={22} />
@@ -810,7 +810,7 @@ export default function FolderPage() {
               <button
                 onClick={() => void handleDelete()}
                 disabled={deleting}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {deleting && (
                   <Loader2 size={16} className="animate-spin" />

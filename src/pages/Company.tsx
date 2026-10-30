@@ -288,7 +288,7 @@ export default function Company() {
               type="button"
               onClick={() => void loadCompanies()}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+              className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
             >
               <RefreshCw
                 size={16}
@@ -300,7 +300,7 @@ export default function Company() {
             <button
               type="button"
               onClick={openCreateModal}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+              className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90"
             >
               <Plus size={18} />
               Add Company
@@ -312,7 +312,7 @@ export default function Company() {
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+            className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
           >
             <AlertCircle size={18} className="mt-0.5 shrink-0" />
             <span className="min-w-0 flex-1">{error}</span>
@@ -329,7 +329,7 @@ export default function Company() {
         {success && (
           <div
             role="status"
-            className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
+            className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
           >
             <CheckCircle2 size={18} />
             <span className="min-w-0 flex-1">{success}</span>
@@ -360,13 +360,13 @@ export default function Company() {
               value={lookupId}
               onChange={(event) => setLookupId(event.target.value)}
               placeholder="Enter company ID"
-              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+              className="min-w-0 flex-1  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
             />
 
             <button
               type="submit"
               disabled={lookupLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
+              className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-slate-800 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
             >
               {lookupLoading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -378,7 +378,7 @@ export default function Company() {
           </form>
 
           {lookupResult && (
-            <div className="mt-4 flex flex-col justify-between gap-3 rounded-lg border border-blue-200 bg-primary/5 p-4 dark:border-primary/30 dark:bg-primary/10/30 sm:flex-row sm:items-center">
+            <div className="mt-4 flex flex-col justify-between gap-3  rounded-tl-xl rounded-br-xl   border border-blue-200 bg-primary/5 p-4 dark:border-primary/30 dark:bg-primary/10/30 sm:flex-row sm:items-center">
               <div>
                 <p className="font-semibold">
                   {lookupResult.company_name}
@@ -392,7 +392,7 @@ export default function Company() {
                 <button
                   type="button"
                   onClick={() => void openEditModal(lookupResult.cid)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                  className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                 >
                   <Pencil size={15} />
                   Edit
@@ -401,7 +401,7 @@ export default function Company() {
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(lookupResult)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-slate-900 dark:hover:bg-red-950/40"
+                  className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-slate-900 dark:hover:bg-red-950/40"
                 >
                   <Trash2 size={15} />
                   Delete
@@ -412,7 +412,7 @@ export default function Company() {
         </section>
 
         {/* Company list */}
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-800 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-lg font-semibold">Company List</h2>
@@ -431,7 +431,7 @@ export default function Company() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search name or ID..."
-                className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
               />
             </div>
           </div>
@@ -460,7 +460,7 @@ export default function Company() {
                 <button
                   type="button"
                   onClick={openCreateModal}
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                  className="mt-4 inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                 >
                   <Plus size={16} />
                   Add Company
@@ -558,7 +558,7 @@ export default function Company() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="company-modal-title"
-            className="my-auto w-full max-w-lg rounded-2xl bg-white shadow-xl dark:bg-slate-900"
+            className="my-auto w-full max-w-lg  rounded-tl-xl rounded-br-xl   bg-white shadow-xl dark:bg-slate-900"
           >
             <div className="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
               <div>
@@ -610,7 +610,7 @@ export default function Company() {
                       })
                     }
                     placeholder="Enter company name"
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                    className="w-full  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
                   />
                 </div>
               </div>
@@ -628,7 +628,7 @@ export default function Company() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving && (
                     <Loader2 size={16} className="animate-spin" />
@@ -652,7 +652,7 @@ export default function Company() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-company-title"
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
+            className="w-full max-w-md  rounded-tl-xl rounded-br-xl   bg-white p-6 shadow-xl dark:bg-slate-900"
           >
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-300">
               <Trash2 size={22} />
@@ -687,7 +687,7 @@ export default function Company() {
                 type="button"
                 onClick={() => void handleDelete()}
                 disabled={deleting}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting && (
                   <Loader2 size={16} className="animate-spin" />

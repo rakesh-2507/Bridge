@@ -463,7 +463,7 @@ export default function CreateProject() {
     }
 
     const inputClass =
-        "w-full rounded-lg border border-primary/30 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-primary/20";
+        "w-full  rounded-tl-xl rounded-br-xl   border border-primary/30 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-primary/20";
 
     const labelClass =
         "mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300";
@@ -480,7 +480,7 @@ export default function CreateProject() {
                         <button
                             type="button"
                             onClick={() => navigate("/projects")}
-                            className="mt-1 rounded-lg border border-slate-300 bg-white p-2 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                            className="mt-1  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white p-2 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                             aria-label="Back to projects"
                         >
                             <ArrowLeft size={19} />
@@ -518,7 +518,7 @@ export default function CreateProject() {
                             type="button"
                             onClick={() => void handleDelete()}
                             disabled={loading || loadingProject}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
                         >
                             <Trash2 size={17} />
                             Delete Project
@@ -527,14 +527,14 @@ export default function CreateProject() {
                 </div>
 
                 {loadingProject && (
-                    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">
+                    <div className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary/30 bg-primary/5 p-3 text-sm text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">
                         <Loader2 size={17} className="animate-spin" />
                         Loading project details...
                     </div>
                 )}
 
                 {loadingOptions && (
-                    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">
+                    <div className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary/30 bg-primary/5 p-3 text-sm text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary">
                         <Loader2 size={17} className="animate-spin" />
                         Loading templates, companies, project types and users...
                     </div>
@@ -543,7 +543,7 @@ export default function CreateProject() {
                 {optionsError && (
                     <div
                         role="alert"
-                        className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+                        className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
                     >
                         <AlertCircle size={18} className="mt-0.5 shrink-0" />
                         <span>{optionsError}</span>
@@ -553,7 +553,7 @@ export default function CreateProject() {
                 {error && (
                     <div
                         role="alert"
-                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                        className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
                     >
                         <AlertCircle size={18} className="mt-0.5 shrink-0" />
                         <span className="flex-1">{error}</span>
@@ -571,7 +571,7 @@ export default function CreateProject() {
                     <div className="grid w-full grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
                         {/* Basic information */}
                         {/* Project configuration */}
-                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <section className="w-full min-w-0 overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
                                 <div className="rounded-lg bg-primary/10 p-2 text-primary dark:bg-primary/15 dark:text-primary">
                                     <Hash size={20} />
@@ -750,7 +750,7 @@ export default function CreateProject() {
                         </section>
 
 
-                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <section className="w-full min-w-0 overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
                                 <div className="rounded-lg bg-primary/10 p-2 text-primary dark:bg-primary/15 dark:text-primary">
                                     <FileText size={20} />
@@ -801,7 +801,7 @@ export default function CreateProject() {
                         </section>
 
                         {/* Project members */}
-                        <section className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <section className="w-full min-w-0 overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
                                 <div className="rounded-lg bg-primary/10 p-2 text-primary dark:bg-primary/15 dark:text-primary">
                                     <Users size={20} />
@@ -826,7 +826,7 @@ export default function CreateProject() {
                                         </span>
                                     </div>
 
-                                    <div className="max-h-80 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2 dark:border-slate-700">
+                                    <div className="max-h-80 space-y-1 overflow-y-auto  rounded-tl-xl rounded-br-xl   border border-slate-200 p-2 dark:border-slate-700">
                                         {users.length === 0 ? (
                                             <p className="p-3 text-sm text-slate-500 dark:text-slate-400">
                                                 {loadingOptions
@@ -842,7 +842,7 @@ export default function CreateProject() {
                                                 return (
                                                     <label
                                                         key={user.uid}
-                                                        className={`flex items-center gap-3 rounded-lg p-3 transition ${optionsDisabled
+                                                        className={`flex items-center gap-3  rounded-tl-xl rounded-br-xl   p-3 transition ${optionsDisabled
                                                             ? "cursor-not-allowed opacity-60"
                                                             : "cursor-pointer"
                                                             } ${selected
@@ -884,7 +884,7 @@ export default function CreateProject() {
                                         </span>
                                     </div>
 
-                                    <div className="max-h-80 min-h-40 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/50">
+                                    <div className="max-h-80 min-h-40 space-y-2 overflow-y-auto  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/50">
                                         {form.member_ids.length === 0 ? (
                                             <div className="flex min-h-32 flex-col items-center justify-center text-center">
                                                 <Users
@@ -910,7 +910,7 @@ export default function CreateProject() {
                                                     return (
                                                         <div
                                                             key={userId}
-                                                            className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                                                            className="flex items-center justify-between gap-3  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                                                         >
                                                             <span className="text-sm text-slate-600 dark:text-slate-300">
                                                                 User ID: {userId}
@@ -933,7 +933,7 @@ export default function CreateProject() {
                                                 return (
                                                     <div
                                                         key={userId}
-                                                        className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                                                        className="flex items-center gap-3  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                                                     >
                                                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary dark:bg-primary/15 dark:text-primary">
                                                             {getUserLabel(user)
@@ -994,7 +994,7 @@ export default function CreateProject() {
                             type="button"
                             onClick={() => navigate("/projects")}
                             disabled={loading}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                         >
                             <X size={17} />
                             Cancel
@@ -1008,7 +1008,7 @@ export default function CreateProject() {
                                 loadingProject ||
                                 Boolean(optionsError)
                             }
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-5 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {loading ? (
                                 <Loader2 size={17} className="animate-spin" />

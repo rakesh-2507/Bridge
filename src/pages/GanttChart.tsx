@@ -176,7 +176,7 @@ function BridgeTaskTemplate({ data }: BridgeTaskTemplateProps) {
             {tooltip &&
                 createPortal(
                     <div
-                        className="fixed z-[99999] w-[320px] rounded-2xl
+                        className="fixed z-[99999] w-[320px]  rounded-tl-2xl rounded-br-2xl  
                             border border-orange-200 bg-white p-4
                             text-sm text-slate-800 shadow-2xl
                             dark:border-slate-700 dark:bg-slate-900
@@ -205,7 +205,7 @@ function BridgeTaskTemplate({ data }: BridgeTaskTemplateProps) {
                             <button
                                 type="button"
                                 onClick={() => setTooltip(null)}
-                                className="rounded-lg px-2 py-1 text-lg
+                                className="rounded-tl-xl rounded-br-xl px-2 py-1 text-lg
                                     text-slate-500 transition
                                     hover:bg-orange-50 hover:text-primary
                                     dark:text-slate-400
@@ -826,7 +826,7 @@ export default function GanttChart() {
                             type="button"
                             onClick={() => navigate("/projects")}
                             className="mb-5 inline-flex items-center gap-2
-                                rounded-lg border border-slate-200
+                                 rounded-tl-xl rounded-br-xl   border border-slate-200
                                 bg-white px-3 py-2 text-sm text-slate-600
                                 shadow-sm transition hover:border-primary
                                 hover:text-primary
@@ -877,7 +877,7 @@ export default function GanttChart() {
                     <button
                         type="button"
                         onClick={() => void loadTimeline()}
-                        className="inline-flex items-center gap-2 rounded-xl
+                        className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  
                             bg-primary px-5 py-3 text-sm font-semibold
                             text-white shadow-lg shadow-orange-500/15
                             transition hover:-translate-y-0.5
@@ -892,7 +892,7 @@ export default function GanttChart() {
                 {error && (
                     <div
                         role="alert"
-                        className="flex items-center gap-3 rounded-xl
+                        className="flex items-center gap-3  rounded-tl-xl rounded-br-xl  
                             border border-red-200 bg-red-50 p-4
                             text-sm text-red-700
                             dark:border-red-500/20 dark:bg-red-500/10
@@ -916,7 +916,7 @@ export default function GanttChart() {
                     <>
                         {/* Project metadata */}
                         <section className="flex flex-wrap items-center gap-x-8
-                            gap-y-4 rounded-2xl border border-slate-200
+                            gap-y-4  rounded-tl-xl rounded-br-xl   border border-slate-200
                             bg-white p-5 shadow-sm
                             dark:border-slate-800 dark:bg-slate-900">
                             <MetadataItem
@@ -943,19 +943,19 @@ export default function GanttChart() {
                             />
 
                             <div className="ml-auto hidden items-center gap-2
-                                rounded-full border border-emerald-200
+                                rounded-tl-xl rounded-br-xl border border-emerald-200
                                 bg-emerald-50 px-3 py-2 text-xs
                                 text-emerald-700 md:flex
                                 dark:border-emerald-500/20
                                 dark:bg-emerald-500/10 dark:text-emerald-300">
                                 <span className="h-2 w-2 animate-pulse
-                                    rounded-full bg-emerald-500" />
+                                    rounded-tl-xl rounded-br-xl bg-emerald-500" />
                                 Timeline loaded
                             </div>
                         </section>
 
                         {/* Summary cards */}
-                        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 ">
                             <SummaryCard
                                 label="Total folders"
                                 value={chartData.tasks.length}
@@ -998,7 +998,7 @@ export default function GanttChart() {
                         </section>
 
                         {/* Gantt chart */}
-                        <section className="overflow-hidden rounded-2xl
+                        <section className="overflow-hidden  rounded-tl-xl rounded-br-xl  
                             border border-slate-200 bg-white shadow-sm
                             dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex flex-wrap items-center
@@ -1047,7 +1047,7 @@ export default function GanttChart() {
                             {chartData.tasks.length === 0 ? (
                                 <div className="flex min-h-72 flex-col
                                     items-center justify-center px-6 text-center">
-                                    <div className="mb-4 rounded-2xl
+                                    <div className="mb-4  rounded-tl-xl rounded-br-xl  
                                         border border-orange-100
                                         bg-orange-50 p-4 text-primary
                                         dark:border-slate-700
@@ -1200,7 +1200,7 @@ function SummaryCard({
 
     return (
         <div
-            className={`rounded-2xl border ${colorStyles.border}
+            className={`rounded-tl-xl rounded-br-xl border ${colorStyles.border}
                 bg-gradient-to-br ${colorStyles.background}
                 to-white p-4 shadow-sm transition duration-200
                 hover:-translate-y-0.5 hover:shadow-md sm:p-5
@@ -1240,7 +1240,7 @@ function StatusLegend({
 }) {
     return (
         <span className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-            <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
+            <span className={`h-2.5 w-2.5 rounded-tl-xl rounded-br-xl ${color}`} />
             {label}
         </span>
     );

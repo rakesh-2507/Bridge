@@ -54,7 +54,7 @@ const initialForm: ProfileForm = {
 };
 
 const inputClass =
-  "w-full rounded-lg border border-primary/40 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 dark:text-white";
+  "w-full  rounded-tl-xl rounded-br-xl   border border-primary/40 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 dark:text-white";
 
 const labelClass =
   "mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300";
@@ -427,7 +427,7 @@ export default function Profile() {
     const isLarge = size === "large";
 
     const containerClass = isLarge
-      ? "flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-primary text-2xl font-bold text-white shadow-md dark:border-gray-950"
+      ? "flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden  rounded-tl-xl rounded-br-xl   border-4 border-white bg-primary text-2xl font-bold text-white shadow-md dark:border-gray-950"
       : "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary";
 
     if (!displayedPhoto || photoFailed) {
@@ -489,7 +489,7 @@ export default function Profile() {
         <button
           type="button"
           onClick={() => void loadProfile()}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="mt-4 inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
         >
           <RefreshCw size={16} />
           Try again
@@ -518,7 +518,7 @@ export default function Profile() {
           <button
             type="button"
             onClick={startEditing}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
           >
             <Pencil size={16} />
             Edit Profile
@@ -545,7 +545,7 @@ export default function Profile() {
       )}
 
       {/* Profile summary */}
-      <section className="overflow-hidden rounded-2xl border border-primary/20 bg-white shadow-sm dark:bg-gray-950">
+      <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-primary/20 bg-white shadow-sm dark:bg-gray-950">
         <div className="h-32 bg-gradient-to-r from-primary/90 via-primary/70 to-orange-300 dark:from-primary/40 dark:via-primary/20 dark:to-orange-900/40" />
 
         <div className="px-5 pb-6 sm:px-8">
@@ -724,7 +724,7 @@ export default function Profile() {
 
           {/* Profile photo upload */}
           <FormField label="Profile Photo" htmlFor="profile-photo">
-            <div className="flex flex-col gap-4 rounded-xl border border-primary/30 p-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-4  rounded-tl-xl rounded-br-xl   border border-primary/30 p-4 sm:flex-row sm:items-center">
               {renderProfilePhoto("small")}
 
               <div className="min-w-0 flex-1">
@@ -743,7 +743,7 @@ export default function Profile() {
                     type="button"
                     onClick={() => photoInputRef.current?.click()}
                     disabled={!editing || saving}
-                    className="inline-flex items-center gap-2 rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ImagePlus size={16} />
                     Choose Photo
@@ -754,7 +754,7 @@ export default function Profile() {
                       type="button"
                       onClick={clearSelectedPhoto}
                       disabled={saving}
-                      className="inline-flex items-center gap-2 rounded-lg border border-primary/30 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-primary/5 disabled:opacity-50 dark:text-gray-200"
+                      className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary/30 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-primary/5 disabled:opacity-50 dark:text-gray-200"
                     >
                       <X size={15} />
                       Remove
@@ -812,7 +812,7 @@ export default function Profile() {
               type="button"
               onClick={cancelEditing}
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/30 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-primary/5 disabled:opacity-50 dark:text-gray-200"
+              className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary/30 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-primary/5 disabled:opacity-50 dark:text-gray-200"
             >
               <X size={16} />
               Cancel
@@ -821,7 +821,7 @@ export default function Profile() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />

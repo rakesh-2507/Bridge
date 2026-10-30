@@ -71,6 +71,23 @@ const getFileIcon = (fileName: string) => {
     }
 };
 
+function getFolderFileCount(folder: ProjectFolder): number {
+    const data = folder as ProjectFolder & {
+        file_count?: number;
+        files_count?: number;
+        files?: unknown[];
+    };
+
+    const count =
+        data.fileCount ??
+        data.file_count ??
+        data.files_count ??
+        data.files?.length ??
+        0;
+
+    return Math.max(0, Number(count) || 0);
+}
+
 function normalizeFiles(response: unknown): FolderFile[] {
     if (Array.isArray(response)) {
         return response as FolderFile[];
@@ -128,7 +145,6 @@ function findProjectFolder(
     return undefined;
 }
 
-
 function normalizeFolderTree(
     folders: ProjectFolder[],
 ): ProjectFolder[] {
@@ -142,6 +158,7 @@ function normalizeFolderTree(
     if (!isFlatResponse) {
         return folders.map((folder) => ({
             ...folder,
+            fileCount: getFolderFileCount(folder),
             children: normalizeFolderTree(folder.children ?? []),
         }));
     }
@@ -152,6 +169,7 @@ function normalizeFolderTree(
     folders.forEach((folder) => {
         folderMap.set(Number(folder.fid), {
             ...folder,
+            fileCount: getFolderFileCount(folder),
             parent_fid:
                 folder.parent_fid == null
                     ? null
@@ -859,7 +877,31 @@ export default function ProjectFolderFiles() {
                     );
                 }
 
-                setFiles(normalizeFiles(filesResponse));
+                const loadedFiles = normalizeFiles(filesResponse);
+
+                setFiles(loadedFiles);
+
+                // Update the currently opened folder's file count in the tree.
+                const updateFolderFileCount = (
+                    folders: ProjectFolder[],
+                ): ProjectFolder[] =>
+                    folders.map((folder) => {
+                        if (Number(folder.fid) === parsedFolderId) {
+                            return {
+                                ...folder,
+                                fileCount: loadedFiles.length,
+                            };
+                        }
+
+                        return folder.children?.length
+                            ? {
+                                ...folder,
+                                children: updateFolderFileCount(folder.children),
+                            }
+                            : folder;
+                    });
+
+                setFolderTree(updateFolderFileCount(normalizedFolders));
             } catch (err: unknown) {
                 if (!cancelled) {
                     setError(
@@ -1561,7 +1603,7 @@ export default function ProjectFolderFiles() {
         >
             {isDragging && (
                 <div className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center border-4 border-dashed border-primary bg-primary/10">
-                    <div className="mx-4 rounded-2xl border border-primary/30 bg-white px-8 py-7 text-center shadow-2xl dark:bg-gray-800">
+                    <div className="mx-4  rounded-tl-xl rounded-br-xl   border border-primary/30 bg-white px-8 py-7 text-center shadow-2xl dark:bg-gray-800">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                             <Upload size={32} className="text-primary" />
                         </div>
@@ -1581,9 +1623,9 @@ export default function ProjectFolderFiles() {
             )}
 
             <div className="mx-auto w-full space-y-6">
-                <div className="flex w-full flex-col justify-between gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:p-6">
+                <div className="flex w-full flex-col justify-between gap-4 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:p-6">
                     <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl    bg-primary">
                             <Folder size={26} className="text-white" />
                         </div>
 
@@ -1653,7 +1695,7 @@ export default function ProjectFolderFiles() {
                                                         void handleCompleteFolder()
                                                     }
                                                     disabled={completingFolder}
-                                                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                                                 >
                                                     {completingFolder ? (
                                                         <Loader2
@@ -1679,7 +1721,7 @@ export default function ProjectFolderFiles() {
                         {completeFolderError && (
                             <div
                                 role="alert"
-                                className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                className="flex items-center justify-between gap-3  rounded-tl-xl rounded-br-xl  border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
                             >
                                 <span>{completeFolderError}</span>
 
@@ -1697,8 +1739,8 @@ export default function ProjectFolderFiles() {
                     </div>
 
                     {!loading && !error && (
-                        <div className="flex shrink-0 items-center gap-3 rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                        <div className="flex shrink-0 items-center gap-3  rounded-tl-xl rounded-br-xl  bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
+                            <div className="flex h-10 w-10 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/20">
                                 <FileText
                                     size={21}
                                     className="text-primary dark:text-gray-100"
@@ -1720,7 +1762,7 @@ export default function ProjectFolderFiles() {
 
                 {/* Loading and error states */}
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-16 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white px-4 py-16 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
                         <Loader2
                             size={30}
                             className="animate-spin text-primary"
@@ -1728,7 +1770,7 @@ export default function ProjectFolderFiles() {
                         Loading folder contents...
                     </div>
                 ) : error ? (
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-12 text-center dark:border-gray-700 dark:bg-gray-800">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white px-4 py-12 text-center dark:border-gray-700 dark:bg-gray-800">
                         <AlertCircle size={32} className="text-red-500" />
 
                         <p className="text-sm text-red-600 dark:text-red-400">
@@ -1738,7 +1780,7 @@ export default function ProjectFolderFiles() {
                         <button
                             type="button"
                             onClick={() => setReloadKey((key) => key + 1)}
-                            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                            className="flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                         >
                             <RefreshCw size={16} />
                             Try again
@@ -1761,9 +1803,9 @@ export default function ProjectFolderFiles() {
                                             onClick={() =>
                                                 handleOpenSubfolder(folder)
                                             }
-                                            className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-primary/60 hover:bg-primary/10 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary"
+                                            className="group flex items-center gap-3 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white p-4 text-left transition hover:border-primary/60 hover:bg-primary/10 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary"
                                         >
-                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition group-hover:bg-primary/20">
+                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/10 transition group-hover:bg-primary/20">
                                                 <Folder
                                                     size={23}
                                                     className="text-primary"
@@ -1814,7 +1856,7 @@ export default function ProjectFolderFiles() {
                                                 type="button"
                                                 onClick={() => void handleDeleteSelectedFiles()}
                                                 disabled={deletingSelected || deletingFileId !== null}
-                                                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 {deletingSelected ? (
                                                     <Loader2 size={16} className="animate-spin" />
@@ -1831,7 +1873,7 @@ export default function ProjectFolderFiles() {
                                         {/* Browse button: dropping works across the page */}
                                         {/* Upload individual files */}
                                         <label
-                                            className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading ? "pointer-events-none opacity-60" : ""
+                                            className={`inline-flex cursor-pointer items-center justify-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${uploading ? "pointer-events-none opacity-60" : ""
                                                 }`}
                                         >
                                             <Upload size={16} />
@@ -1848,7 +1890,7 @@ export default function ProjectFolderFiles() {
                                         </label>
 
                                         <label
-                                            className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-primary bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/10 dark:bg-gray-800 ${uploading ? "pointer-events-none opacity-60" : ""
+                                            className={`inline-flex cursor-pointer items-center justify-center gap-2  rounded-tl-xl rounded-br-xl  border border-primary bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/10 dark:bg-gray-800 ${uploading ? "pointer-events-none opacity-60" : ""
                                                 }`}
                                         >
                                             <FolderOpen size={16} />
@@ -1869,7 +1911,7 @@ export default function ProjectFolderFiles() {
                                         <button
                                             type="button"
                                             onClick={openCommentModal}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                                         >
                                             <MessageSquare size={16} />
                                             Comment
@@ -1881,7 +1923,7 @@ export default function ProjectFolderFiles() {
                                 {uploadError && (
                                     <div
                                         role="alert"
-                                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                        className="flex items-start gap-2  rounded-tl-xl rounded-br-xl  border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
                                     >
                                         <AlertCircle
                                             size={18}
@@ -1937,7 +1979,7 @@ export default function ProjectFolderFiles() {
                                 )}
 
                                 {/* Files table */}
-                                <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                <div className="overflow-hidden rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                                     {files.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
                                             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
@@ -2055,10 +2097,10 @@ export default function ProjectFolderFiles() {
                                                                                 file,
                                                                             )
                                                                         }
-                                                                        className="group flex w-full min-w-0 items-center gap-3 rounded-lg text-left"
+                                                                        className="group flex w-full min-w-0 items-center gap-3  rounded-tl-xl rounded-br-xl  text-left"
                                                                         title={`Preview ${fileName}`}
                                                                     >
-                                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 transition group-hover:bg-primary/10 dark:bg-gray-700/50 dark:group-hover:bg-primary/20">
+                                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-gray-50 transition group-hover:bg-primary/10 dark:bg-gray-700/50 dark:group-hover:bg-primary/20">
                                                                             {getFileIcon(
                                                                                 fileName,
                                                                             )}
@@ -2120,7 +2162,7 @@ export default function ProjectFolderFiles() {
                                                                                 file,
                                                                             )
                                                                         }
-                                                                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
+                                                                        className="inline-flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
                                                                     >
                                                                         {deletingFileId ===
                                                                             Number(
@@ -2149,7 +2191,7 @@ export default function ProjectFolderFiles() {
 
 
                                 {submittedComments.length > 0 && (
-                                    <section className="mt-6 rounded-xl border border-gray-200 bg-white p-4">
+                                    <section className="mt-6 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white p-4">
                                         <h3 className="mb-4 flex items-center gap-2 font-semibold">
                                             <MessageSquare size={18} className="text-primary" />
                                             Sent Comments
@@ -2210,7 +2252,7 @@ export default function ProjectFolderFiles() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="folder-progress-title"
-                        className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+                        className="w-full max-w-md  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-800"
                         onClick={(event: MouseEvent<HTMLDivElement>) =>
                             event.stopPropagation()
                         }
@@ -2278,7 +2320,7 @@ export default function ProjectFolderFiles() {
                                         );
                                     }}
                                     disabled={statusSaving}
-                                    className="w-full rounded-lg border border-primary/50 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60 dark:bg-gray-900 dark:text-white"
+                                    className="w-full  rounded-tl-xl rounded-br-xl  border border-primary/50 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60 dark:bg-gray-900 dark:text-white"
                                 />
 
                                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
@@ -2315,7 +2357,7 @@ export default function ProjectFolderFiles() {
                                     }
                                     placeholder="Describe the work completed or remaining..."
                                     disabled={statusSaving}
-                                    className="w-full resize-y rounded-lg border border-primary/50 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60 dark:bg-gray-900 dark:text-white"
+                                    className="w-full resize-y  rounded-tl-xl rounded-br-xl  border border-primary/50 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60 dark:bg-gray-900 dark:text-white"
                                 />
                             </div>
                         </div>
@@ -2345,7 +2387,7 @@ export default function ProjectFolderFiles() {
                                 onClick={() =>
                                     void handleSaveFolderProgress()
                                 }
-                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {statusSaving && (
                                     <Loader2
@@ -2370,14 +2412,14 @@ export default function ProjectFolderFiles() {
                         role="dialog"
                         aria-modal="true"
                         aria-label={`Preview ${getFileName(previewFile)}`}
-                        className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                        className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
                         onClick={(event: MouseEvent<HTMLDivElement>) =>
                             event.stopPropagation()
                         }
                     >
                         <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-4 dark:border-gray-700 sm:px-6">
                             <div className="flex min-w-0 items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/10">
                                     <FileText className="text-primary" />
                                 </div>
 
@@ -2401,7 +2443,7 @@ export default function ProjectFolderFiles() {
                                         href={previewUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                        className="flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                                         title="Open in new tab"
                                         aria-label="Open file in new tab"
                                     >
@@ -2412,7 +2454,7 @@ export default function ProjectFolderFiles() {
                                 <button
                                     type="button"
                                     onClick={closePreview}
-                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                    className="flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
                                     title="Close preview"
                                     aria-label="Close preview"
                                 >
@@ -2446,7 +2488,7 @@ export default function ProjectFolderFiles() {
                                     <img
                                         src={previewUrl ?? undefined}
                                         alt={getFileName(previewFile)}
-                                        className="max-h-[75vh] max-w-full rounded-lg object-contain"
+                                        className="max-h-[75vh] max-w-full  rounded-tl-xl rounded-br-xl  object-contain"
                                     />
                                 </div>
                             ) : isTextFile(previewFile) ? (
@@ -2489,7 +2531,7 @@ export default function ProjectFolderFiles() {
                                         <a
                                             href={previewUrl}
                                             download={getFileName(previewFile)}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                                            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                                         >
                                             <Download size={16} />
                                             Download document
@@ -2516,7 +2558,7 @@ export default function ProjectFolderFiles() {
                                         <a
                                             href={previewUrl}
                                             download={getFileName(previewFile)}
-                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                                            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                                         >
                                             <Download size={16} />
                                             Download file
@@ -2541,7 +2583,7 @@ export default function ProjectFolderFiles() {
                         onFolderClick={handleOpenTreeFolder}
                     />
                 </div>
-                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-800">
+                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2  rounded-tl-xl rounded-br-xl  bg-slate-100 px-3 py-2 dark:bg-slate-800">
                     <div className="flex items-center gap-1.5">
                         <FolderOpen
                             size={16}
@@ -2612,7 +2654,7 @@ export default function ProjectFolderFiles() {
                                         No comment recipients are available for this folder.
                                     </p>
                                 ) : (
-                                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3">
+                                    <div className="max-h-48 space-y-2 overflow-y-auto  rounded-tl-xl rounded-br-xl  border border-gray-200 p-3">
                                         {commentRecipients.map((user) => {
                                             const fullName =
                                                 `${user.firstname ?? ""} ${user.lastname ?? ""}`.trim() ||
@@ -2665,7 +2707,7 @@ export default function ProjectFolderFiles() {
                                     onChange={(event) => setCommentSubject(event.target.value)}
                                     placeholder="Enter comment subject"
                                     maxLength={200}
-                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                    className="w-full  rounded-tl-xl rounded-br-xl  border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                 />
                             </div>
 
@@ -2678,7 +2720,7 @@ export default function ProjectFolderFiles() {
                                     onChange={(event) => setCommentMessage(event.target.value)}
                                     placeholder="Write your comment..."
                                     rows={4}
-                                    className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                    className="w-full resize-y  rounded-tl-xl rounded-br-xl  border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                                 />
                             </div>
 
@@ -2700,7 +2742,7 @@ export default function ProjectFolderFiles() {
                                         commentRecipients.length === 0
                                     }
                                     onClick={handleSubmitComment}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {commentSubmitting ? (
                                         <Loader2 size={16} className="animate-spin" />
@@ -2716,9 +2758,9 @@ export default function ProjectFolderFiles() {
             </Modal>
 
             {notificationsLoading || folderNotifications.length > 0 ? (
-                <section className="mt-6 space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-5">                <div className="flex flex-wrap items-center justify-between gap-3">
+                <section className="mt-6 space-y-4 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-5">                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <div className="flex h-10 w-10 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/10">
                             <MessageSquare size={20} className="text-primary" />
                         </div>
 
@@ -2736,7 +2778,7 @@ export default function ProjectFolderFiles() {
                         type="button"
                         onClick={() => setReloadKey((key) => key + 1)}
                         disabled={notificationsLoading}
-                        className="inline-flex items-center gap-2 rounded-lg border border-primary/30 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                        className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  border border-primary/30 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
                     >
                         <RefreshCw
                             size={15}
@@ -2830,7 +2872,7 @@ export default function ProjectFolderFiles() {
                             role="alertdialog"
                             aria-modal="true"
                             aria-labelledby="success-modal-title"
-                            className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-2xl dark:border-gray-700 dark:bg-gray-800"
+                            className="w-full max-w-sm  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-6 text-center shadow-2xl dark:border-gray-700 dark:bg-gray-800"
                         >
                             {/* Animated success icon */}
                             <div
@@ -2901,7 +2943,7 @@ export default function ProjectFolderFiles() {
                                     ? "✓ Completed successfully"
                                     : "Please wait..."}
                             </p>
-                           
+
                         </div>
                     </div>,
                     document.body

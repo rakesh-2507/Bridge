@@ -378,7 +378,7 @@ export default function Projects() {
           {detailsError && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+              className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
             >
               <AlertCircle
                 size={18}
@@ -403,7 +403,7 @@ export default function Projects() {
               Loading project details...
             </div>
           ) : projectDetails ? (
-            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               {/* Project header */}
               <div className="flex flex-col gap-4 border-b border-slate-200 p-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
@@ -411,7 +411,7 @@ export default function Projects() {
                     type="button"
                     onClick={() => setFolderModalOpen(true)}
                     aria-label={`View folders for ${projectDetails.projectname}`}
-                    className="shrink-0 rounded-xl bg-primary/50 p-3 text-white transition hover:bg-primary dark:bg-primary/10"
+                    className="shrink-0  rounded-tl-xl rounded-br-xl   bg-primary/50 p-3 text-white transition hover:bg-primary dark:bg-primary/10"
                   >
                     <FolderKanban size={26} />
                   </button>
@@ -459,7 +459,7 @@ export default function Projects() {
                     }
                     title="View Gantt Chart"
                     aria-label="View Gantt Chart"
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-90"
+                    className="inline-flex items-center gap-2  rounded-tl-2xl rounded-br-2xl   bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-90"
                   >
                     <FolderKanban size={16} />
                     <span>View Gantt Chart</span>
@@ -474,7 +474,7 @@ export default function Projects() {
                     }
                     title="Edit project"
                     aria-label="Edit project"
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary/60 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary"
+                    className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary/60 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary"
                   >
                     <Pencil size={16} />
                   </button>
@@ -485,7 +485,7 @@ export default function Projects() {
                     disabled={detailsLoading}
                     title="Delete project"
                     aria-label="Delete project"
-                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
+                    className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/40"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -496,7 +496,7 @@ export default function Projects() {
                     disabled={detailsLoading}
                     title="Refresh project details"
                     aria-label="Refresh project details"
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2.5 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                    className="inline-flex items-center justify-center  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white p-2.5 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                   >
                     <RefreshCw
                       size={16}
@@ -532,9 +532,9 @@ export default function Projects() {
                             key={folder.pfid}
                             type="button"
                             onClick={() => openFolderFiles(folder)}
-                            className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-primary/10"
+                            className="flex min-w-0 items-center gap-3  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white p-4 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-primary/10"
                           >
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary dark:bg-primary/10">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/20 text-primary dark:bg-primary/10">
                               <Folder size={23} />
                             </div>
 
@@ -566,9 +566,9 @@ export default function Projects() {
                 </div>
 
                 {/* Members sidebar */}
-                <aside className="min-w-0 border-t border-slate-200 dark:border-slate-800 lg:col-span-2 lg:border-l lg:border-t-0">
+                <aside className="min-w-0 rounded-tl-xl rounded-br-xl border-slate-200 dark:border-slate-800 lg:col-span-2 lg:border-l lg:border-t-0">
                   <div className="flex items-center gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
-                    <div className="rounded-lg bg-primary p-2 text-white">
+                    <div className="rounded-tl-xl rounded-br-xl bg-primary p-2 text-white">
                       <CircleUser size={20} />
                     </div>
 
@@ -625,7 +625,7 @@ export default function Projects() {
                           return (
                             <div
                               key={memberId}
-                              className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                              className="flex min-w-0 items-center gap-3  rounded-tl-2xl rounded-br-2xl   border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                             >
                               <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidde bg-primary/10">
                                 <img
@@ -706,7 +706,7 @@ export default function Projects() {
                   type="button"
                   onClick={() => void refreshProjectDetails()}
                   disabled={detailsLoading}
-                  className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:brightness-90 disabled:opacity-50"
+                  className="mt-4  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2 text-sm font-medium text-white hover:brightness-90 disabled:opacity-50"
                 >
                   Try again
                 </button>
@@ -732,7 +732,7 @@ export default function Projects() {
                 </div>
 
                 {/* Folder legend */}
-                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-800">
+                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2  rounded-tl-xl rounded-br-xl   bg-slate-100 px-3 py-2 dark:bg-slate-800">
                   <div className="flex items-center gap-1.5">
                     <FolderOpen
                       size={16}
@@ -797,7 +797,7 @@ export default function Projects() {
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+            className="flex items-start gap-3  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
           >
             <AlertCircle
               size={18}
@@ -817,7 +817,7 @@ export default function Projects() {
           </div>
         )}
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           {/* Projects header and controls */}
           <div className="border-b border-slate-200 p-2 dark:border-slate-800">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
@@ -844,7 +844,7 @@ export default function Projects() {
                     }
                     placeholder="Search projects..."
                     aria-label="Search projects"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-950"
+                    className="w-full  rounded-tl-2xl rounded-br-2xl   border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:bg-slate-950"
                   />
                 </div>
 
@@ -853,7 +853,7 @@ export default function Projects() {
                   type="button"
                   onClick={() => void refreshProjects()}
                   disabled={loading}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 p-2 text-sm font-medium text-slate-700 transition hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary/40 dark:hover:bg-primary/10"
+                  className="inline-flex shrink-0 items-center justify-center gap-2  rounded-tl-2xl rounded-br-2xl   border border-slate-200 p-2 text-sm font-medium text-slate-700 transition hover:border-primary/30 hover:bg-primary/5 focus:outline-none focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-primary/40 dark:hover:bg-primary/10"
                 >
                   <RefreshCw
                     size={16}
@@ -866,7 +866,7 @@ export default function Projects() {
                 <button
                   type="button"
                   onClick={() => navigate("/projects/create")}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary p-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-90 focus:outline-none focus:ring-4 focus:ring-primary/20"
+                  className="inline-flex shrink-0 items-center justify-center gap-2  rounded-tl-2xl rounded-br-2xl   bg-primary p-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-90 focus:outline-none focus:ring-4 focus:ring-primary/20"
                 >
                   <Plus size={17} />
                   Create Project
@@ -893,7 +893,7 @@ export default function Projects() {
             </div>
           ) : filteredProjects.length === 0 ? (
             <div className="flex min-h-72 flex-col items-center justify-center px-4 py-12 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/10">
                 <FolderKanban
                   size={32}
                   className="text-primary"
@@ -916,7 +916,7 @@ export default function Projects() {
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="mt-4 rounded-lg px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-4 focus:ring-primary/10"
+                  className="mt-4  rounded-tl-xl rounded-br-xl   px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/10 focus:outline-none focus:ring-4 focus:ring-primary/10"
                 >
                   Clear Search
                 </button>
@@ -1007,35 +1007,35 @@ export default function Projects() {
                       className="group cursor-pointer odd:bg-white even:bg-slate-100 transition-colors hover:bg-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary dark:odd:bg-slate-900 dark:even:bg-slate-800/50 dark:hover:bg-primary/10"
                     >
                       <td className="whitespace-nowrap p-4">
-                        <span className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="inline-flex  rounded-tl-xl rounded-br-xl  border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {project.project_id}
                         </span>
                       </td>
 
                       <td className="max-w-sm px-5 py-4 sm:px-6">
                         <p className="truncate font-semibold text-slate-800 transition-colors group-hover:text-primary dark:text-slate-100 dark:group-hover:text-white">
-                          {project.projectname || "—"}
+                          {project.projectname || ""}
                         </p>
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
-                        {project.tid ?? "—"}
+                        {project.tid ?? ""}
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 sm:px-6">
                         {project.projecttype ? (
-                          <span className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                          <span className="inline-flex  rounded-tl-xl rounded-br-xl  border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
                             {project.projecttype}
                           </span>
                         ) : (
                           <span className="text-slate-400">
-                            —
+                            
                           </span>
                         )}
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
-                        {project.cid ?? "—"}
+                        {project.cid ?? ""}
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
@@ -1046,11 +1046,11 @@ export default function Projects() {
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
-                        {project.start_date ?? "—"}
+                        {project.start_date ?? ""}
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 text-slate-600 dark:text-slate-300 sm:px-6">
-                        {project.end_date ?? "—"}
+                        {project.end_date ?? ""}
                       </td>
                     </tr>
                   ))}

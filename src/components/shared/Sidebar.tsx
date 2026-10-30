@@ -144,7 +144,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                   onBlur={hideTooltip}
                   aria-label={item.name}
                   className={({ isActive }) =>
-                    `group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${isActive
+                    `group relative flex h-12 w-12 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   transition-colors ${isActive
                       ? "bg-primary/10 text-primary dark:bg-primary/15 dark:text-gray-400"
                       : "text-slate-600 hover:bg-primary/10 hover:text-primary dark:text-slate-300 dark:hover:bg-primary/15 dark:hover:text-primary-light"
                     }`
@@ -173,7 +173,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             }
             onBlur={hideTooltip}
             aria-label="Logout"
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-primary transition hover:bg-primary/10 dark:text-primary-light dark:hover:bg-primary/15"
+            className="flex h-12 w-12 items-center justify-center  rounded-tl-xl rounded-br-xl   text-primary transition hover:bg-primary/10 dark:text-primary-light dark:hover:bg-primary/15"
           >
             <LogOut size={21} />
           </button>

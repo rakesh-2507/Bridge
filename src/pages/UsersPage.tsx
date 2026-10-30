@@ -280,7 +280,7 @@ export default function UsersPage() {
     }
 
     const inputClass =
-        "w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-900";
+        "w-full  rounded-tl-xl rounded-br-xl   border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:ring-blue-900";
 
     const buttonClass =
         "rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
@@ -490,7 +490,7 @@ export default function UsersPage() {
                     </form>
 
                     {selectedUser && (
-                        <div className="mt-5 rounded-lg bg-gray-50 p-4 dark:bg-gray-950">
+                        <div className="mt-5  rounded-tl-xl rounded-br-xl   bg-gray-50 p-4 dark:bg-gray-950">
                             <h3 className="font-medium">
                                 {selectedUser.firstname} {selectedUser.lastname}
                             </h3>
@@ -522,7 +522,7 @@ export default function UsersPage() {
             </section>
 
             {/* GET all users */}
-            <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-5 dark:border-gray-800">
                     <div>
                         <h2 className="text-lg font-semibold">All Users</h2>
@@ -613,7 +613,7 @@ export default function UsersPage() {
                 <p className="mb-3 mt-1 text-sm text-gray-500">
                     Inspect the response returned by the most recent operation.
                 </p>
-                <pre className="max-h-96 overflow-auto rounded-lg bg-gray-950 p-4 text-xs leading-5 text-green-300">
+                <pre className="max-h-96 overflow-auto  rounded-tl-xl rounded-br-xl   bg-gray-950 p-4 text-xs leading-5 text-green-300">
                     {apiResponse === null
                         ? "No response yet. Run an API operation to see its response."
                         : JSON.stringify(apiResponse, null, 2)}

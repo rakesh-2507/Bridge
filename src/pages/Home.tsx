@@ -120,7 +120,7 @@ export default function WelcomePage() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-5 py-10">
       <div className="w-full max-w-xl text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/5 dark:bg-slate-900/50">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/5 dark:bg-slate-900/50">
           <BriefcaseBusiness
             size={38}
             className="text-primary dark:text-gray-400"
@@ -138,7 +138,7 @@ export default function WelcomePage() {
         </p>
 
         {error ? (
-          <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/20">
+          <div className="mt-6  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/20">
             <p className="text-sm text-red-700 dark:text-red-300">
               {error}
             </p>
@@ -146,7 +146,7 @@ export default function WelcomePage() {
             <button
               type="button"
               onClick={handleRetry}
-              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              className="mt-3 inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
               <RefreshCw size={15} />
               Try again

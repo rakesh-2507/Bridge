@@ -53,7 +53,7 @@ export default function Masters() {
               <Link
                 key={card.title}
                 to={card.path}
-                className="group flex flex-col items-center justify-center rounded-2xl border-2 border-[var(--color-primary-light)] bg-white p-8 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-100/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-light)] dark:bg-slate-900 dark:hover:shadow-black/20"
+                className="group flex flex-col items-center justify-center  rounded-tl-xl rounded-br-xl   border-2 border-[var(--color-primary-light)] bg-white p-8 text-center transition-all duration-200 hover:-translate-y-1 hover:shadow-lg hover:shadow-orange-100/50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-light)] dark:bg-slate-900 dark:hover:shadow-black/20"
               >
                 <div className="flex h-12 w-12 items-center justify-center text-[var(--color-primary-light)] transition-transform duration-200 group-hover:scale-110">
                   <Icon size={30} strokeWidth={1.5} />

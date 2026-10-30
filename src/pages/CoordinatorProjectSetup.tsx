@@ -834,7 +834,7 @@ export default function CoordinatorProjectSetup() {
     if (!project) {
         return (
             <div className="flex h-full min-h-[300px] items-center justify-center bg-gray-50 p-4 dark:bg-gray-950">
-                <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 text-center dark:border-gray-800 dark:bg-gray-900">
+                <div className="w-full max-w-md  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-6 text-center dark:border-gray-800 dark:bg-gray-900">
                     <AlertCircle
                         size={32}
                         className="mx-auto mb-3 text-red-500"
@@ -876,7 +876,7 @@ export default function CoordinatorProjectSetup() {
                         type="button"
                         onClick={handleBack}
                         aria-label="Back to projects"
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                     >
                         <ArrowLeft size={18} />
                     </button>
@@ -950,12 +950,12 @@ export default function CoordinatorProjectSetup() {
                                                     }
                                                     placeholder="Search by member ID..."
                                                     aria-label="Search members by ID"
-                                                    className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                                    className="min-w-0 flex-1  rounded-tl-xl rounded-br-xl   border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={toggleAllVisible}
-                                                    className="shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                                                    className="shrink-0  rounded-tl-xl rounded-br-xl   border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                                                 >
                                                     {filteredMembers.length > 0 &&
                                                         filteredMembers.every(
@@ -1165,7 +1165,7 @@ export default function CoordinatorProjectSetup() {
                                             </div>
                                         </div>
 
-                                        <aside className="min-w-0 self-start rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                                        <aside className="min-w-0 self-start  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
                                             <div className="mb-3 flex items-center justify-between">
                                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                                                     Selected Members
@@ -1295,7 +1295,7 @@ export default function CoordinatorProjectSetup() {
                                     <button
                                         type="button"
                                         onClick={goToPreviousStep}
-                                        className="inline-flex items-center justify-center gap-1 self-start rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                                        className="inline-flex items-center justify-center gap-1 self-start  rounded-tl-xl rounded-br-xl   border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                                     >
                                         <ChevronLeft size={16} />
                                         Previous Step
@@ -1321,7 +1321,7 @@ export default function CoordinatorProjectSetup() {
                                             setError("");
                                             setSuccess("");
                                         }}
-                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        className="w-full  rounded-tl-xl rounded-br-xl   border border-gray-300 bg-white px-3 py-2.5 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
                                 </div>
 
@@ -1334,7 +1334,7 @@ export default function CoordinatorProjectSetup() {
                                         Loading folder timeline...
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <div className="overflow-x-auto  rounded-tl-xl rounded-br-xl   border border-gray-200 dark:border-gray-700">
                                         <table className="w-full min-w-[1250px] divide-y divide-gray-200 text-sm dark:divide-gray-700">
                                             <thead className="bg-gray-50 dark:bg-gray-800">
                                                 <tr>
@@ -1680,7 +1680,7 @@ export default function CoordinatorProjectSetup() {
                                     timelineLoading ||
                                     members.length === 0
                                 }
-                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving || timelineLoading ? (
                                     <Loader2
@@ -1701,7 +1701,7 @@ export default function CoordinatorProjectSetup() {
                                 type="button"
                                 onClick={() => void handleSaveTimeline()}
                                 disabled={saving || timelineLoading}
-                                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {saving ? (
                                     <Loader2
@@ -1728,13 +1728,13 @@ export default function CoordinatorProjectSetup() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="progress-modal-title"
-                        className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                        className="w-full max-w-lg overflow-hidden  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
                         onClick={(event) => event.stopPropagation()}
                     >
                         {/* Modal Header */}
                         <div className="flex items-start justify-between border-b border-gray-200 bg-orange-50/70 p-5 dark:border-gray-800 dark:bg-orange-950/20">
                             <div className="flex items-start gap-3">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/10 text-primary">
                                     <Clock size={22} />
                                 </div>
 
@@ -1798,7 +1798,7 @@ export default function CoordinatorProjectSetup() {
                                                         selectedProgressFolder,
                                                     )
                                                 }
-                                                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                                                className="mt-3 inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
                                             >
                                                 <Loader2
                                                     size={15}
@@ -1910,7 +1910,7 @@ export default function CoordinatorProjectSetup() {
                                             </h3>
                                         </div>
 
-                                        <div className="min-h-[110px] whitespace-pre-wrap break-words rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                        <div className="min-h-[110px] whitespace-pre-wrap break-words  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                                             {folderProgress.progress_notes?.trim() ||
                                                 "No notes have been added for this folder yet."}
                                         </div>

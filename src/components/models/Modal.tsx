@@ -41,7 +41,7 @@ export default function Modal({
         aria-modal="true"
         aria-label={title}
         className={`flex max-h-[90vh] w-full ${sizeClasses[size]}
-        flex-col overflow-hidden rounded-2xl border border-slate-200
+        flex-col overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200
         bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900`}
       >
         {/* Shared header */}
@@ -57,7 +57,7 @@ export default function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="shrink-0 rounded-lg p-2 text-slate-500
+            className="shrink-0  rounded-tl-xl rounded-br-xl   p-2 text-slate-500
             transition hover:bg-primary/10 hover:text-primary
             focus:outline-none focus-visible:ring-2
             focus-visible:ring-primary dark:text-slate-400"

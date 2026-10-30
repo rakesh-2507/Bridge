@@ -280,7 +280,7 @@ export default function TemplatesPage() {
                         paddingLeft: `${16 + depth * 24}px`,
                     }}
                     aria-expanded={hasChildren ? isExpanded : undefined}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left transition-colors hover:bg-primary/5 dark:hover:bg-primary/10 disabled:cursor-default disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
+                    className="flex w-full items-center gap-2  rounded-tl-xl rounded-br-xl   px-3 py-3 text-left transition-colors hover:bg-primary/5 dark:hover:bg-primary/10 disabled:cursor-default disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
                 >
                     {hasChildren ? (
                         isExpanded ? (
@@ -394,7 +394,7 @@ export default function TemplatesPage() {
                         <button
                             type="button"
                             onClick={() => navigate("/templates/create")}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+                            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-950"
                         >
                             <Plus className="h-4 w-4" />
                             Create Template
@@ -404,7 +404,7 @@ export default function TemplatesPage() {
                             type="button"
                             onClick={() => void loadTemplates()}
                             disabled={loading}
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                            className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                         >
                             <RefreshCw
                                 className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
@@ -418,7 +418,7 @@ export default function TemplatesPage() {
                 {error && (
                     <div
                         role="alert"
-                        className="mb-5 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
+                        className="mb-5 flex items-center gap-3  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
                     >
                         <AlertCircle className="h-5 w-5 shrink-0" />
                         <span>{error}</span>
@@ -428,8 +428,8 @@ export default function TemplatesPage() {
                 {/* Main content */}
                 <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
                     {/* Template list */}
-                    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+                    <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-center justify-between rounded-tl-xl rounded-br-xl border-slate-200 px-5 py-4 dark:border-slate-800">
                             <div>
                                 <h2 className="font-semibold text-slate-900 dark:text-white">
                                     All Templates
@@ -439,7 +439,7 @@ export default function TemplatesPage() {
                                 </p>
                             </div>
 
-                            <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary dark:text-gray-400">
+                            <span className="rounded-tl-xl rounded-br-xl bg-primary/10 px-3 py-1 text-sm font-semibold text-primary dark:text-gray-400">
                                 {templates.length}
                             </span>
                         </div>
@@ -461,7 +461,7 @@ export default function TemplatesPage() {
                                 <button
                                     type="button"
                                     onClick={() => navigate("/templates/create")}
-                                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                                    className="mt-4 inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                                 >
                                     <Plus className="h-4 w-4" />
                                     Create Template
@@ -481,7 +481,7 @@ export default function TemplatesPage() {
                                                 void handleTemplateClick(template)
                                             }
                                             aria-pressed={isSelected}
-                                            className={`mb-1 flex w-full items-start gap-3 rounded-lg p-4 text-left transition-colors ${
+                                            className={`mb-1 flex w-full items-start gap-3  rounded-tl-xl rounded-br-xl   p-4 text-left transition-colors ${
                                                 isSelected
                                                     ? "bg-primary/10 ring-1 ring-primary/30 dark:bg-primary/15 dark:ring-primary/40"
                                                     : "hover:bg-slate-50 dark:hover:bg-slate-800/70"
@@ -521,7 +521,7 @@ export default function TemplatesPage() {
                     {/* Template details */}
                     <section className="min-w-0">
                         {detailsLoading ? (
-                            <div className="flex min-h-72 items-center justify-center rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex min-h-72 items-center justify-center  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                                 <div className="text-center">
                                     <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary dark:text-gray-300" />
                                     <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -555,14 +555,14 @@ export default function TemplatesPage() {
                                             void handleTemplateClick(template);
                                         }
                                     }}
-                                    className="mt-4 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    className="mt-4  rounded-tl-xl rounded-br-xl   border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                                 >
                                     Try again
                                 </button>
                             </div>
                         ) : !selectedTemplate ? (
-                            <div className="flex min-h-80 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-6 text-center dark:border-slate-700 dark:bg-slate-900">
-                                <div className="mb-4 rounded-2xl bg-primary/10 p-4">
+                            <div className="flex min-h-80 flex-col items-center justify-center  rounded-tl-xl rounded-br-xl   border border-dashed border-slate-300 bg-white px-6 text-center dark:border-slate-700 dark:bg-slate-900">
+                                <div className="mb-4  rounded-tl-xl rounded-br-xl   bg-primary/10 p-4">
                                     <FolderOpen className="h-9 w-9 text-primary dark:text-gray-300" />
                                 </div>
                                 <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
@@ -575,10 +575,10 @@ export default function TemplatesPage() {
                         ) : (
                             <div className="space-y-6">
                                 {/* Template overview */}
-                                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+                                <div className="rounded-tl-3xl rounded-br-3xl border border-slate-200 bg-white p-5 shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900 sm:p-6">
                                     <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                                         <div className="flex min-w-0 flex-1 items-start gap-4">
-                                            <div className="shrink-0 rounded-xl bg-primary/10 p-3">
+                                            <div className="shrink-0  rounded-tl-xl rounded-br-xl   bg-primary/10 p-3">
                                                 <FileText className="h-7 w-7 text-primary dark:text-gray-300" />
                                             </div>
 
@@ -591,10 +591,10 @@ export default function TemplatesPage() {
                                                         "No description available."}
                                                 </p>
                                                 <div className="mt-3 flex flex-wrap gap-2">
-                                                    <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                                    <span className="rounded-tl-xl rounded-br-xl bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                                                         ID: {selectedTemplate.tid}
                                                     </span>
-                                                    <span className="rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary dark:text-gray-300">
+                                                    <span className="rounded-tl-xl rounded-br-xl bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary dark:text-gray-300">
                                                         Project Type: {selectedTemplate.projecttype}
                                                     </span>
                                                 </div>
@@ -606,7 +606,7 @@ export default function TemplatesPage() {
                                                 type="button"
                                                 onClick={handleEditTemplate}
                                                 disabled={deleting}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                                                className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                                             >
                                                 <Pencil className="h-4 w-4" />
                                                 Edit Template
@@ -618,7 +618,7 @@ export default function TemplatesPage() {
                                                     void handleDeleteTemplate()
                                                 }
                                                 disabled={deleting}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/50 dark:focus:ring-offset-slate-900"
+                                                className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/50 dark:focus:ring-offset-slate-900"
                                             >
                                                 {deleting ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -634,10 +634,10 @@ export default function TemplatesPage() {
                                 </div>
 
                                 {/* Folder structure */}
-                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
+                                <div className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
                                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                                         <div className="flex items-center gap-3">
-                                            <div className="rounded-lg bg-primary/10 p-2">
+                                            <div className="rounded-tl-xl rounded-br-xl bg-primary/10 p-2">
                                                 <Folder className="h-5 w-5 text-primary dark:text-gray-300" />
                                             </div>
                                             <div>
@@ -650,7 +650,7 @@ export default function TemplatesPage() {
                                             </div>
                                         </div>
 
-                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:text-gray-300">
+                                        <span className="rounded-tl-xl rounded-br-xl bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:text-gray-300">
                                             {getRootFolders(folders).length} root folders
                                         </span>
                                     </div>
@@ -676,10 +676,10 @@ export default function TemplatesPage() {
                                 </div>
 
                                 {/* Template roles */}
-                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
+                                <div className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-slate-900">
                                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                                         <div className="flex items-center gap-3">
-                                            <div className="rounded-lg bg-primary/10 p-2">
+                                            <div className="rounded-tl-xl rounded-br-xl bg-primary/10 p-2">
                                                 <Users className="h-5 w-5 text-primary dark:text-gray-300" />
                                             </div>
                                             <div>
@@ -692,7 +692,7 @@ export default function TemplatesPage() {
                                             </div>
                                         </div>
 
-                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:text-gray-300">
+                                        <span className="rounded-tl-xl rounded-br-xl bg-primary/10 px-3 py-1 text-xs font-semibold text-primary dark:text-gray-300">
                                             {roles.length} roles
                                         </span>
                                     </div>
@@ -705,7 +705,7 @@ export default function TemplatesPage() {
                                                         role.roleid ??
                                                         `${role.rolename}-${index}`
                                                     }
-                                                    className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 dark:border-primary/30 dark:bg-primary/10"
+                                                    className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary/20 bg-primary/5 px-4 py-3 dark:border-primary/30 dark:bg-primary/10"
                                                 >
                                                     <Users className="h-4 w-4 text-primary dark:text-gray-300" />
                                                     <span className="text-sm font-medium text-slate-800 dark:text-slate-100">

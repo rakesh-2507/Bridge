@@ -197,7 +197,7 @@ export default function ProjectDetails() {
                         onClick={() => void handleFolderClick(folder)}
                         disabled={startingFolderId !== null}
                         style={{ marginLeft: `${level * 24}px` }}
-                        className="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-blue-300 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-70 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        className="flex w-full items-center gap-3  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-4 text-left transition hover:border-blue-300 hover:bg-primary/5 disabled:cursor-wait disabled:opacity-70 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
                     >
                         <Folder
                             size={23}
@@ -265,7 +265,7 @@ export default function ProjectDetails() {
                 {folderError && (
                     <div
                         role="alert"
-                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
+                        className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
                     >
                         <AlertCircle
                             size={18}

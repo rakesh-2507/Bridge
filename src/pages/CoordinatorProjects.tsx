@@ -210,7 +210,7 @@ function NoProjects({
 }) {
     return (
         <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 dark:bg-slate-900/50">
+            <div className="flex h-14 w-14 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/5 dark:bg-slate-900/50">
                 {searching ? (
                     <Search
                         size={25}
@@ -273,7 +273,7 @@ function FolderTree({
                             style={{
                                 paddingLeft: `${12 + level * 22}px`,
                             }}
-                            className="flex items-center gap-2 rounded-lg pr-3 transition hover:bg-primary/5 dark:hover:bg-gray-700/70"
+                            className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   pr-3 transition hover:bg-primary/5 dark:hover:bg-gray-700/70"
                         >
                             <button
                                 type="button"
@@ -334,7 +334,7 @@ function FolderTree({
 
 // ========================================
 // Project Row
-// ========================================
+// =====================================`===
 
 function ProjectRow({
     project,
@@ -391,7 +391,7 @@ function ProjectRow({
                 <td className="px-5 py-3 align-top">
                     <div className="flex min-w-[190px] items-start gap-3">
                         <div
-                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isCoordinator
+                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   ${isCoordinator
                                 ? "bg-green-50 dark:bg-green-900/30"
                                 : "bg-primary/5 dark:bg-slate-900/50"
                                 }`}
@@ -566,7 +566,7 @@ function ProjectRow({
                             </span>
                         </div>
 
-                        <div className="max-w-3xl rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
+                        <div className="max-w-3xl  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-800">
                             <FolderTree folders={memberFolders} />
                         </div>
                     </td>
@@ -911,7 +911,7 @@ export default function CoordinatorProjects() {
                     {detailsError && (
                         <div
                             role="alert"
-                            className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                            className="flex items-start gap-2  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
                         >
                             <AlertCircle
                                 size={18}
@@ -942,7 +942,7 @@ export default function CoordinatorProjects() {
                             Loading project details...
                         </div>
                     ) : projectDetails ? (
-                        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <section className="overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                             {/* Project header */}
                             <div className="flex flex-col gap-4 border-b border-slate-200 p-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex min-w-0 items-center gap-3">
@@ -952,7 +952,7 @@ export default function CoordinatorProjects() {
                                             setFolderModalOpen(true)
                                         }
                                         aria-label={`View folders for ${projectDetails.projectname}`}
-                                        className="shrink-0 rounded-xl bg-primary p-3 text-white transition hover:brightness-90"
+                                        className="shrink-0  rounded-tl-xl rounded-br-xl   bg-primary p-3 text-white transition hover:brightness-90"
                                     >
                                         <FolderKanban size={26} />
                                     </button>
@@ -1004,7 +1004,7 @@ export default function CoordinatorProjects() {
                                                     projectDetails,
                                                 )
                                             }
-                                            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-90"
+                                            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:brightness-90"
                                         >
                                             <Pencil size={16} />
                                             Setup Project
@@ -1019,7 +1019,7 @@ export default function CoordinatorProjects() {
                                             )
                                         }
                                         title="View Gantt Chart"
-                                        className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary/10"
+                                        className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition hover:bg-primary/10"
                                     >
                                         <CalendarDays size={16} />
                                         <span>View Gantt Chart</span>
@@ -1033,7 +1033,7 @@ export default function CoordinatorProjects() {
                                         disabled={detailsLoading}
                                         title="Refresh project details"
                                         aria-label="Refresh project details"
-                                        className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2.5 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                                        className="inline-flex items-center justify-center  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white p-2.5 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                                     >
                                         <RefreshCw
                                             size={16}
@@ -1114,9 +1114,9 @@ export default function CoordinatorProjects() {
                                                             // onClick={() =>
                                                             //     openFolderFiles(folder)
                                                             // }
-                                                            className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-primary/10"
+                                                            className="flex min-w-0 items-center gap-3  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white p-4 text-left transition hover:border-primary/40 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-primary/10"
                                                         >
-                                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/10 text-primary">
                                                                 <Folder
                                                                     size={23}
                                                                 />
@@ -1220,7 +1220,7 @@ export default function CoordinatorProjects() {
                                                         return (
                                                             <div
                                                                 key={memberId}
-                                                                className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                                                                className="flex min-w-0 items-center gap-3  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
                                                             >
                                                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden bg-primary/10">
                                                                     <img
@@ -1305,7 +1305,7 @@ export default function CoordinatorProjects() {
                                         void refreshProjectDetails()
                                     }
                                     disabled={detailsLoading}
-                                    className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:brightness-90 disabled:opacity-50"
+                                    className="mt-4  rounded-tl-xl rounded-br-xl   bg-primary px-4 py-2 text-sm font-medium text-white hover:brightness-90 disabled:opacity-50"
                                 >
                                     Try again
                                 </button>
@@ -1330,7 +1330,7 @@ export default function CoordinatorProjects() {
                 </div>
 
                 {/* Folder legend */}
-                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2 rounded-lg bg-slate-100 px-3 py-2 dark:bg-slate-800">
+                <div className="mt-5 flex flex-wrap justify-end gap-x-4 gap-y-2  rounded-tl-xl rounded-br-xl   bg-slate-100 px-3 py-2 dark:bg-slate-800">
                   <div className="flex items-center gap-1.5">
                     <FolderOpen
                       size={16}
@@ -1400,7 +1400,7 @@ export default function CoordinatorProjects() {
                 {/* Header */}
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 dark:bg-slate-900/50">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/5 dark:bg-slate-900/50">
                             <BriefcaseBusiness
                                 size={23}
                                 className="text-primary"
@@ -1422,7 +1422,7 @@ export default function CoordinatorProjects() {
                         type="button"
                         onClick={() => void loadProjects()}
                         disabled={refreshing}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                        className="inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     >
                         <RefreshCw
                             size={16}
@@ -1434,7 +1434,7 @@ export default function CoordinatorProjects() {
 
                 {/* List error */}
                 {error && (
-                    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/20">
+                    <div className="flex items-start gap-3  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-900/20">
                         <AlertCircle
                             size={20}
                             className="mt-0.5 shrink-0 text-red-600 dark:text-red-400"
@@ -1453,7 +1453,7 @@ export default function CoordinatorProjects() {
                                 type="button"
                                 onClick={() => void loadProjects()}
                                 disabled={refreshing}
-                                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                                className="mt-3 inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl   bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
                             >
                                 <RefreshCw
                                     size={15}
@@ -1468,7 +1468,7 @@ export default function CoordinatorProjects() {
                 )}
 
                 {/* Search and count */}
-                <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:justify-between">
                     <div className="relative w-full sm:max-w-md">
                         <Search
                             size={18}
@@ -1483,7 +1483,7 @@ export default function CoordinatorProjects() {
                             }
                             placeholder="Search projects by name, ID, status or role..."
                             aria-label="Search projects"
-                            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            className="w-full  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                         />
                     </div>
 
@@ -1508,7 +1508,7 @@ export default function CoordinatorProjects() {
                 </div>
 
                 {/* Projects table */}
-                <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div className="w-full overflow-hidden  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     {error ? null : filteredProjects.length === 0 ? (
                         <NoProjects searching={projects.length > 0} />
                     ) : (

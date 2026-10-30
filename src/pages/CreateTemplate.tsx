@@ -99,16 +99,16 @@ const WIZARD_STEPS = [
 ];
 
 const inputClass =
-    "w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary dark:focus:ring-primary/20 dark:disabled:bg-slate-800";
+    "w-full min-w-0  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary dark:focus:ring-primary/20 dark:disabled:bg-slate-800";
 
 const labelClass =
     "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 const primaryButtonClass =
-    "inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-950";
+    "inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus:ring-offset-slate-950";
 
 const secondaryButtonClass =
-    "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus:ring-offset-slate-950";
+    "inline-flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus:ring-offset-slate-950";
 
 
 function uniqueName(name: string): string {
@@ -676,7 +676,7 @@ function FolderEditor({
 }: FolderEditorProps) {
     return (
         <section
-            className={`min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${depth ? "ml-3 sm:ml-6" : ""
+            className={` min-w-0 overflow-hidden  rounded-tl-2xl rounded-br-2xl   border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${depth ? "ml-3 sm:ml-6" : ""
                 }`}
         >
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/70">
@@ -703,7 +703,7 @@ function FolderEditor({
                     type="button"
                     onClick={() => remove(folder.id)}
                     disabled={disabled}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    className="inline-flex shrink-0 items-center gap-1.5  rounded-tl-xl rounded-br-xl   px-2.5 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/40"
                 >
                     <Trash2 size={14} />
                     <span className="hidden sm:inline">Remove</span>
@@ -884,7 +884,7 @@ function RoleFolderCheckbox({
                 return (
                     <div key={folder.id} className="min-w-0">
                         <label
-                            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-primary/5 dark:hover:bg-primary/10"
+                            className="flex cursor-pointer items-center gap-3  rounded-tl-xl rounded-br-xl   px-3 py-2.5 transition-colors hover:bg-primary/5 dark:hover:bg-primary/10"
                             style={{ marginLeft: `${depth * 20}px` }}
                         >
                             <input
@@ -1337,7 +1337,7 @@ export default function CreateTemplate() {
             "rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70";
 
         return (
-            <aside className="h-fit min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-4">
+            <aside className="h-fit min-w-0 overflow-hidden  rounded-tl-xl rounded-br-xl   border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-4">
                 <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-700">
                     <div className="flex items-center gap-2">
                         <Folder size={19} className="text-primary" />
@@ -1393,7 +1393,7 @@ export default function CreateTemplate() {
                         </div>
                     ) : (
                         <div className="py-8 text-center">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/10">
                                 <Folder
                                     size={25}
                                     className="text-primary"
@@ -1441,7 +1441,7 @@ export default function CreateTemplate() {
                     </div>
 
                     {folder.children.length > 0 && (
-                        <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        <span className="shrink-0 rounded-tl-xl rounded-br-xl bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                             {folder.children.length}
                         </span>
                     )}
@@ -1700,24 +1700,24 @@ export default function CreateTemplate() {
                 </div>
 
                 {loadingTemplate && (
-                    <div className="mb-5 flex items-center gap-3 rounded-lg border border-blue-200 bg-primary/5 p-4 text-sm text-primary dark:border-primary/30 dark:bg-primary/10/40 dark:text-blue-300">
+                    <div className="mb-5 flex items-center gap-3  rounded-tl-xl rounded-br-xl   border border-blue-200 bg-primary/5 p-4 text-sm text-primary dark:border-primary/30 dark:bg-primary/10/40 dark:text-blue-300">
                         <Loader2 className="h-5 w-5 animate-spin" /> Loading template details...
                     </div>
                 )}
 
                 {error && (
-                    <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+                    <div role="alert" className="mb-5 flex items-start gap-3  rounded-tl-xl rounded-br-xl   border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
                         <X size={18} className="mt-0.5 shrink-0" /><p>{error}</p>
                     </div>
                 )}
 
                 {success && (
-                    <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
+                    <div role="status" className="mb-5 flex items-start gap-3  rounded-tl-xl rounded-br-xl   border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300">
                         <Check size={18} className="mt-0.5 shrink-0" /><p>{success}</p>
                     </div>
                 )}
 
-                <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
+                <div className="mb-6  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:p-6">
                     <div className="mb-5 flex items-center justify-between gap-3">
                         <div>
                             <h2 className="text-base font-semibold text-gray-900 dark:text-white">Template Setup</h2>
@@ -1728,8 +1728,8 @@ export default function CreateTemplate() {
                         </span>
                     </div>
 
-                    <div className="mb-5 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={currentStep}>
-                        <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
+                    <div className="mb-5 h-2 overflow-hidden rounded-tl-xl rounded-br-xl bg-gray-100 dark:bg-gray-800" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={currentStep}>
+                        <div className="h-full rounded-tl-xl rounded-br-xl bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 sm:gap-4">
@@ -1744,9 +1744,9 @@ export default function CreateTemplate() {
                                     type="button"
                                     onClick={() => goToStep(step.number)}
                                     disabled={step.number >= currentStep || disabled}
-                                    className={`flex min-w-0 items-start gap-2 rounded-xl border p-3 text-left transition sm:gap-3 sm:p-4 ${active ? "border-primary bg-primary/5 dark:bg-primary/10/40" : completed ? "border-blue-200 bg-white dark:border-primary/30 dark:bg-gray-900" : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"}`}
+                                    className={`flex min-w-0 items-start gap-2  rounded-tl-xl rounded-br-xl   border p-3 text-left transition sm:gap-3 sm:p-4 ${active ? "border-primary bg-primary/5 dark:bg-primary/10/40" : completed ? "border-blue-200 bg-white dark:border-primary/30 dark:bg-gray-900" : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"}`}
                                 >
-                                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${active || completed ? "bg-primary text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
+                                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-tl-xl rounded-br-xl ${active || completed ? "bg-primary text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
                                         {completed ? <Check size={17} /> : <StepIcon size={17} />}
                                     </span>
                                     <span className="min-w-0">
@@ -1760,10 +1760,10 @@ export default function CreateTemplate() {
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <div className="max-h-[600px] overflow-auto rounded-tl-xl rounded-br-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
                         <div className="border-b border-gray-200 px-5 py-5 dark:border-gray-800 sm:px-7">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary dark:bg-primary/10 dark:text-primary">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   bg-primary/5 text-primary dark:bg-primary/10 dark:text-primary">
                                     {currentStep === 1 ? <FileText size={22} /> : currentStep === 2 ? <Folder size={22} /> : <Users size={22} />}
                                 </div>
                                 <div>
@@ -1797,10 +1797,6 @@ export default function CreateTemplate() {
                                         {loadingTypes ? <Loader2 size={17} className="absolute right-3 top-3 animate-spin text-gray-400" /> : <ChevronDown size={17} className="pointer-events-none absolute right-3 top-3 text-gray-400" />}
                                     </div>
                                 </div>
-                                <div className="rounded-xl border border-primary/20 bg-primary/5/70 p-4 dark:border-primary/30 dark:bg-primary/10/30">
-                                    <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Next: Configure your folders</p>
-                                    <p className="mt-1 text-sm text-primary dark:text-blue-300">Your details will be retained as you move through the wizard.</p>
-                                </div>
                             </div>
                         )}
 
@@ -1818,17 +1814,17 @@ export default function CreateTemplate() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
-                                        <button type="button" onClick={() => { setFolderMode("manual"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium ${folderMode === "manual" ? "bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
+                                    <div className="grid grid-cols-2 gap-2  rounded-tl-xl rounded-br-xl   bg-gray-100 p-1 dark:bg-gray-800">
+                                        <button type="button" onClick={() => { setFolderMode("manual"); setError(""); }} className={`flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   px-3 py-3 text-sm font-medium ${folderMode === "manual" ? "bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
                                             <Folder size={17} /> Manual Creation
                                         </button>
-                                        <button type="button" onClick={() => { setFolderMode("upload"); setError(""); }} className={`flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium ${folderMode === "upload" ? "bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
+                                        <button type="button" onClick={() => { setFolderMode("upload"); setError(""); }} className={`flex items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   px-3 py-3 text-sm font-medium ${folderMode === "upload" ? "bg-white text-primary shadow-sm dark:bg-gray-900 dark:text-blue-300" : "text-gray-600 dark:text-gray-300"}`}>
                                             <Upload size={17} /> Upload File
                                         </button>
                                     </div>
 
                                     {folderMode === "upload" && (
-                                        <section className="space-y-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700 sm:p-5">
+                                        <section className="space-y-4  rounded-tl-xl rounded-br-xl   border border-gray-200 p-4 dark:border-gray-700 sm:p-5">
                                             <div>
                                                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Import folders from a document</h3>
                                                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Supported: Markdown, TXT, PDF, DOCX, XLSX, CSV. Maximum 15 MB.</p>
@@ -1876,7 +1872,7 @@ export default function CreateTemplate() {
                                                     }
                                                 }}
                                                 onDrop={handleFileDrop}
-                                                className={`flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${isDragging
+                                                className={`flex w-full flex-col items-center justify-center  rounded-tl-xl rounded-br-xl   border-2 border-dashed px-4 py-8 text-center transition-colors ${isDragging
                                                         ? "border-primary bg-primary/10 ring-2 ring-primary/20"
                                                         : "border-gray-300 hover:border-primary hover:bg-primary/5 dark:border-gray-700 dark:hover:border-primary"
                                                     } ${disabled || parsingFile
@@ -1929,7 +1925,7 @@ export default function CreateTemplate() {
 
 
                                             {selectedFile && (
-                                                <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                                                <div className="flex items-center gap-3  rounded-tl-xl rounded-br-xl   border border-gray-200 p-3 dark:border-gray-700">
                                                     {["xlsx", "csv"].includes(getFileFormat(selectedFile.name) ?? "") ? <FileSpreadsheet size={22} className="shrink-0 text-green-600" /> : ["docx", "pdf"].includes(getFileFormat(selectedFile.name) ?? "") ? <FileType size={22} className="shrink-0 text-primary" /> : <FileText size={22} className="shrink-0 text-primary" />}
                                                     <div className="min-w-0 flex-1">
                                                         <p className="break-all text-sm font-medium text-gray-900 dark:text-white">{selectedFile.name}</p>
@@ -1940,7 +1936,7 @@ export default function CreateTemplate() {
                                             )}
 
                                             {parsedPreview.length > 0 && (
-                                                <div className="space-y-4 rounded-xl border border-blue-200 bg-primary/5/50 p-4 dark:border-primary/30 dark:bg-primary/10/20">
+                                                <div className="space-y-4  rounded-tl-xl rounded-br-xl   border border-blue-200 bg-primary/5/50 p-4 dark:border-primary/30 dark:bg-primary/10/20">
                                                     <div className="flex items-center gap-2">
                                                         <Eye size={18} className="text-primary dark:text-primary" />
                                                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Import Preview</h4>
@@ -1977,7 +1973,7 @@ export default function CreateTemplate() {
                                     {folderMode === "manual" && (
                                         <div className="space-y-5">
                                             {importedFileName && (
-                                                <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-primary/5 px-3 py-2 text-xs text-blue-800 dark:border-primary/30 dark:bg-primary/10/30 dark:text-blue-200">
+                                                <div className="flex items-center gap-2  rounded-tl-xl rounded-br-xl   border border-blue-200 bg-primary/5 px-3 py-2 text-xs text-blue-800 dark:border-primary/30 dark:bg-primary/10/30 dark:text-blue-200">
                                                     <Check size={15} /> Imported from {importedFileName}. You can edit the structure below.
                                                 </div>
                                             )}
@@ -1995,7 +1991,7 @@ export default function CreateTemplate() {
                                                 />
                                             ))}
 
-                                            <button type="button" onClick={addFolder} disabled={disabled} className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-5 text-sm font-medium text-gray-600 transition hover:border-blue-400 hover:bg-primary/5/50 hover:text-primary disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-700">
+                                            <button type="button" onClick={addFolder} disabled={disabled} className="flex w-full items-center justify-center gap-2  rounded-tl-xl rounded-br-xl   border-2 border-dashed border-gray-300 px-4 py-5 text-sm font-medium text-gray-600 transition hover:border-blue-400 hover:bg-primary/5/50 hover:text-primary disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-700">
                                                 <CirclePlus size={19} /> Add Another Root Folder
                                             </button>
 
@@ -2016,8 +2012,7 @@ export default function CreateTemplate() {
 
                         {currentStep === 3 && (
                             <div className="grid grid-cols-1 items-start gap-6 p-5 sm:p-7 lg:grid-cols-[300px_minmax(0,1fr)]">
-                                {/* LEFT PANEL: CREATE AND SELECT ROLES */}
-                                <aside className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                                <aside className="min-w-0  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
                                     <div className="mb-4 flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-2">
                                             <Users
@@ -2029,7 +2024,7 @@ export default function CreateTemplate() {
                                             </h3>
                                         </div>
 
-                                        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                        <span className="rounded-tl-xl rounded-br-xl bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                                             {roles.length}
                                         </span>
                                     </div>
@@ -2076,7 +2071,7 @@ export default function CreateTemplate() {
                                             return (
                                                 <div
                                                     key={role.name}
-                                                    className={`flex items-center gap-2 rounded-xl border p-3 transition ${active
+                                                    className={`flex items-center gap-2  rounded-tl-xl rounded-br-xl   border p-3 transition ${active
                                                         ? "border-primary bg-primary/5 dark:bg-primary/10/40"
                                                         : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
                                                         }`}
@@ -2088,7 +2083,7 @@ export default function CreateTemplate() {
                                                         className="flex min-w-0 flex-1 items-center gap-3 text-left"
                                                     >
                                                         <span
-                                                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${active
+                                                            className={`flex h-9 w-9 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl   ${active
                                                                 ? "bg-primary text-white"
                                                                 : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-300"
                                                                 }`}
@@ -2112,7 +2107,7 @@ export default function CreateTemplate() {
                                                         onClick={() => removeRole(role.name)}
                                                         disabled={disabled}
                                                         aria-label={`Remove role ${role.name}`}
-                                                        className="shrink-0 rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950"
+                                                        className="shrink-0  rounded-tl-xl rounded-br-xl   p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950"
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -2138,7 +2133,7 @@ export default function CreateTemplate() {
                                 </aside>
 
                                 {/* RIGHT PANEL: FOLDER ACCESS FOR THE SELECTED ROLE */}
-                                <section className="min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                                <section className="min-w-0  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                                     <div className="border-b border-gray-200 p-4 dark:border-gray-700 sm:p-5">
                                         <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div>
@@ -2169,7 +2164,7 @@ export default function CreateTemplate() {
 
                                     <div className="p-4 sm:p-5">
                                         {!selectedRole ? (
-                                            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 px-4 text-center dark:border-gray-700">
+                                            <div className="flex min-h-52 flex-col items-center justify-center  rounded-tl-xl rounded-br-xl   border border-dashed border-gray-300 px-4 text-center dark:border-gray-700">
                                                 <Users size={30} className="text-gray-400" />
                                                 <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                                     Select a role
@@ -2179,7 +2174,7 @@ export default function CreateTemplate() {
                                                 </p>
                                             </div>
                                         ) : folders.length === 0 ? (
-                                            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 px-4 text-center dark:border-gray-700">
+                                            <div className="flex min-h-52 flex-col items-center justify-center  rounded-tl-xl rounded-br-xl   border border-dashed border-gray-300 px-4 text-center dark:border-gray-700">
                                                 <Folder size={30} className="text-gray-400" />
                                                 <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-200">
                                                     No folders available
@@ -2215,7 +2210,7 @@ export default function CreateTemplate() {
                                                     </button>
                                                 </div>
 
-                                                <div className="max-h-[520px] overflow-y-auto rounded-xl border border-gray-100 p-2 dark:border-gray-800 sm:p-3">
+                                                <div className="max-h-[520px] overflow-y-auto  rounded-tl-xl rounded-br-xl   border border-gray-100 p-2 dark:border-gray-800 sm:p-3">
                                                     <RoleFolderCheckbox
                                                         folders={folders}
                                                         selectedFolderIds={selectedRole.folderIds}
@@ -2284,12 +2279,6 @@ export default function CreateTemplate() {
                                         </div>
                                     </dl>
 
-                                    <div className="mt-5 rounded-lg border border-primary/20 bg-primary/5 p-3 dark:border-primary/30 dark:bg-primary/10/40">
-                                        <p className="text-xs leading-5 text-blue-800 dark:text-blue-200">
-                                            Each role has its own folder selection. Selecting another role
-                                            preserves the current role's selections.
-                                        </p>
-                                    </div>
                                 </aside>
                             </div>
                         )}

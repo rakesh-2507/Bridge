@@ -22,9 +22,13 @@ interface FolderTreeItemProps {
 }
 
 function folderContainsFiles(folder: ProjectFolder): boolean {
-  if ((folder.fileCount ?? 0) > 0) return true;
+  const ownFileCount = Number(folder.fileCount ?? 0);
 
-  return (folder.children ?? []).some(folderContainsFiles);
+  if (ownFileCount > 0) return true;
+
+  return (folder.children ?? []).some((child) =>
+    folderContainsFiles(child)
+  );
 }
 
 function FolderTreeItem({
@@ -40,7 +44,6 @@ function FolderTreeItem({
   const hasChildren = children.length > 0;
   const hasFiles = (folder.fileCount ?? 0) > 0;
   const containsFiles = folderContainsFiles(folder);
-
   const lineColor = containsFiles
     ? "border-primary/60"
     : "border-slate-300 dark:border-slate-700";
@@ -82,7 +85,7 @@ function FolderTreeItem({
 
       {/* Folder row */}
       <div
-        className="group relative flex min-w-0 items-center gap-2 rounded-lg pr-2 transition hover:bg-primary/5 dark:hover:bg-primary/10"
+        className="group relative flex min-w-0 items-center gap-2  rounded-tl-xl rounded-br-xl   pr-2 transition hover:bg-primary/5 dark:hover:bg-primary/10"
         style={{ paddingLeft: `${level * 24 + 8}px` }}
       >
         {hasChildren ? (
@@ -107,12 +110,15 @@ function FolderTreeItem({
           onClick={() => onFolderClick(folder)}
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
-          {containsFiles ? (
-            <FolderOpen size={19} className="shrink-0 text-primary" />
-          ) : hasChildren ? (
+          {hasChildren ? (
             <FolderOpen
               size={19}
-              className="shrink-0 text-slate-400 dark:text-slate-500"
+              className="shrink-0 text-primary"
+            />
+          ) : hasFiles ? (
+            <Folder
+              size={19}
+              className="shrink-0 text-primary"
             />
           ) : (
             <Folder
