@@ -59,17 +59,23 @@ function getTodayDate(): string {
     return formatDate(new Date());
 }
 
-// function hasSubfolders(
-//     folder: ProjectFolderTimelineItem,
-//     folders: ProjectFolderTimelineItem[],
-// ): boolean {
-//     return folders.some((item) => item.parent_fid === folder.fid);
-// }
-
 function isContainerFolder(
     folder: ProjectFolderTimelineItem,
+    folders: ProjectFolderTimelineItem[],
 ): boolean {
-    return folder.is_parent === true && folder.is_top_level === true;
+    return folders.some(
+        (item) => item.parent_fid === folder.fid,
+    );
+}
+
+function isRootContainer(
+    folder: ProjectFolderTimelineItem,
+    folders: ProjectFolderTimelineItem[],
+): boolean {
+    return (
+        Boolean(folder.is_top_level) &&
+        isContainerFolder(folder, folders)
+    );
 }
 
 function orderFoldersByHierarchy(
@@ -150,22 +156,50 @@ function calculateFolderDates(
     projectStartDate: string,
     visiting: Set<number> = new Set<number>(),
 ): CalculatedDates {
-    if (
-        !projectStartDate ||
-        visiting.has(folder.fid) ||
-        isContainerFolder(folder)
-    ) {
-        return { start: "", end: "" };
-    }
-
-    const days = Number(folder.days);
-
-    if (!Number.isInteger(days) || days < 1) {
+    if (!projectStartDate || visiting.has(folder.fid)) {
         return { start: "", end: "" };
     }
 
     const nextVisiting = new Set(visiting);
     nextVisiting.add(folder.fid);
+
+    // Find direct children.
+    const children = folders.filter(
+        (item) => item.parent_fid === folder.fid,
+    );
+
+    // Parent folder: calculate dates from its children.
+    if (children.length > 0) {
+        const childDates = children
+            .map((child) =>
+                calculateFolderDates(
+                    child,
+                    folders,
+                    projectStartDate,
+                    nextVisiting,
+                ),
+            )
+            .filter((dates) => dates.start && dates.end);
+
+        if (childDates.length === 0) {
+            return { start: "", end: "" };
+        }
+
+        const starts = childDates.map((dates) => dates.start);
+        const ends = childDates.map((dates) => dates.end);
+
+        return {
+            start: starts.sort()[0],
+            end: ends.sort()[ends.length - 1] ?? "",
+        };
+    }
+
+    // Leaf folder: calculate using manual duration and predecessor.
+    const days = Number(folder.days);
+
+    if (!Number.isInteger(days) || days < 1) {
+        return { start: "", end: "" };
+    }
 
     let startDate = new Date(`${projectStartDate}T00:00:00`);
 
@@ -174,10 +208,7 @@ function calculateFolderDates(
             (item) => item.fid === folder.predecessorsid,
         );
 
-        if (
-            !predecessor ||
-            isContainerFolder(predecessor)
-        ) {
+        if (!predecessor) {
             return { start: "", end: "" };
         }
 
@@ -253,21 +284,21 @@ export default function CoordinatorProjectSetup() {
 
     const progressStatus = String(
         folderProgress?.status ??
-            selectedProgressFolder?.status ??
-            "0",
+        selectedProgressFolder?.status ??
+        "0",
     );
 
     const progressStatusLabel =
         progressStatus === "2" ||
-        progressStatus.toLowerCase() === "completed"
+            progressStatus.toLowerCase() === "completed"
             ? "Completed"
             : progressStatus === "1" ||
                 progressStatus.toLowerCase() === "in progress"
-              ? "In Progress"
-              : progressStatus === "0" ||
-                  progressStatus.toLowerCase() === "pending"
-                ? "Pending"
-                : progressStatus;
+                ? "In Progress"
+                : progressStatus === "0" ||
+                    progressStatus.toLowerCase() === "pending"
+                    ? "Pending"
+                    : progressStatus;
 
     const progressKeyPerson = selectedProgressFolder?.key_person_options.find(
         (person) => person.uid === selectedProgressFolder.keypersonid,
@@ -275,11 +306,11 @@ export default function CoordinatorProjectSetup() {
 
     const progressUserName = progressKeyPerson
         ? [
-              progressKeyPerson.firstname,
-              progressKeyPerson.lastname,
-          ]
-              .filter(Boolean)
-              .join(" ") || progressKeyPerson.loginname
+            progressKeyPerson.firstname,
+            progressKeyPerson.lastname,
+        ]
+            .filter(Boolean)
+            .join(" ") || progressKeyPerson.loginname
         : "Unassigned";
 
     const fetchProject = useCallback(
@@ -463,7 +494,7 @@ export default function CoordinatorProjectSetup() {
 
             setTimelineStartDate(
                 response.project_start_date?.slice(0, 10) ||
-                    getTodayDate(),
+                getTodayDate(),
             );
 
             const normalizedFolders = (response.folders ?? []).map(
@@ -648,20 +679,23 @@ export default function CoordinatorProjectSetup() {
             return;
         }
 
-        const scheduledFolders = timelineFolders.filter(
-            (folder) => !isContainerFolder(folder),
+        // Only folders without children require duration.
+        const leafFolders = timelineFolders.filter(
+            (folder) =>
+                !isContainerFolder(folder, timelineFolders),
         );
 
-        if (scheduledFolders.length === 0) {
+        if (leafFolders.length === 0) {
             setError("No schedulable folders are available.");
             return;
         }
 
-        const scheduledIds = new Set(
-            scheduledFolders.map((folder) => folder.fid),
+        const leafIds = new Set(
+            leafFolders.map((folder) => folder.fid),
         );
 
-        for (const folder of scheduledFolders) {
+        // Validate duration for leaf folders.
+        for (const folder of leafFolders) {
             if (
                 !Number.isInteger(Number(folder.days)) ||
                 Number(folder.days) < 1
@@ -671,21 +705,32 @@ export default function CoordinatorProjectSetup() {
                 );
                 return;
             }
+        }
+
+        // Validate predecessors for all editable rows.
+        for (const folder of timelineFolders) {
+            const rootContainer = isRootContainer(
+                folder,
+                timelineFolders,
+            );
+
+            if (rootContainer || !folder.predecessorsid) {
+                continue;
+            }
 
             if (
                 folder.predecessorsid === folder.fid ||
-                (folder.predecessorsid != null &&
-                    folder.predecessorsid !== 0 &&
-                    !scheduledIds.has(folder.predecessorsid))
+                !leafIds.has(folder.predecessorsid)
             ) {
                 setError(
-                    `Choose a valid predecessor for "${folder.fname}". A container folder cannot be a predecessor.`,
+                    `Choose a valid predecessor for "${folder.fname}".`,
                 );
                 return;
             }
         }
 
-        for (const folder of scheduledFolders) {
+        // Validate calculated dates for leaf folders.
+        for (const folder of leafFolders) {
             const dates = calculateFolderDates(
                 folder,
                 timelineFolders,
@@ -702,22 +747,43 @@ export default function CoordinatorProjectSetup() {
 
         const payload: SaveProjectFolderTimelinePayload = {
             start_date: timelineStartDate,
+
             folders: timelineFolders.map((folder) => {
-                const isContainer = isContainerFolder(
+                const container = isContainerFolder(
                     folder,
-                    
+                    timelineFolders,
+                );
+
+                const rootContainer = isRootContainer(
+                    folder,
+                    timelineFolders,
                 );
 
                 return {
                     fid: folder.fid,
-                    predecessorsid: isContainer
+
+                    // Main: hidden.
+                    // Novel / Story / leaves: preserve predecessor.
+                    predecessorsid: rootContainer
                         ? null
                         : folder.predecessorsid || null,
-                    days: isContainer ? null : Number(folder.days),
-                    keypersonid: isContainer
+
+                    // Containers get no manual duration.
+                    days: container
+                        ? null
+                        : Number(folder.days),
+
+                    // Main: hidden.
+                    // Novel / Story / leaves: preserve key person.
+                    keypersonid: rootContainer
                         ? null
                         : folder.keypersonid || null,
-                    remarks: folder.remarks ?? "",
+
+                    // Main: hidden.
+                    // Novel / Story / leaves: preserve remarks.
+                    remarks: rootContainer
+                        ? ""
+                        : folder.remarks ?? "",
                 };
             }),
         };
@@ -735,10 +801,6 @@ export default function CoordinatorProjectSetup() {
             setSuccess("Folder timeline saved successfully.");
         } catch (error) {
             console.error("Failed to save folder timeline:", error);
-
-            if (error instanceof Error) {
-                console.error("Error message:", error.message);
-            }
 
             setError(
                 error instanceof Error
@@ -896,12 +958,12 @@ export default function CoordinatorProjectSetup() {
                                                     className="shrink-0 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                                                 >
                                                     {filteredMembers.length > 0 &&
-                                                    filteredMembers.every(
-                                                        (member) =>
-                                                            selectedMembers.includes(
-                                                                member.memberid,
-                                                            ),
-                                                    )
+                                                        filteredMembers.every(
+                                                            (member) =>
+                                                                selectedMembers.includes(
+                                                                    member.memberid,
+                                                                ),
+                                                        )
                                                         ? "Deselect All"
                                                         : "Select All"}
                                                 </button>
@@ -916,7 +978,7 @@ export default function CoordinatorProjectSetup() {
                                                             );
                                                         const assignedRoles =
                                                             assignmentsByMember[
-                                                                member.memberid
+                                                            member.memberid
                                                             ] ?? [];
 
                                                         return (
@@ -924,11 +986,10 @@ export default function CoordinatorProjectSetup() {
                                                                 key={
                                                                     member.memberid
                                                                 }
-                                                                className={`rounded-lg border p-3 ${
-                                                                    selected
-                                                                        ? "border-blue-300 bg-primary/5/50 dark:border-blue-800 dark:bg-primary/10/20"
-                                                                        : "border-gray-200 dark:border-gray-800"
-                                                                }`}
+                                                                className={`rounded-lg border p-3 ${selected
+                                                                    ? "border-blue-300 bg-primary/5/50 dark:border-blue-800 dark:bg-primary/10/20"
+                                                                    : "border-gray-200 dark:border-gray-800"
+                                                                    }`}
                                                             >
                                                                 <label className="flex cursor-pointer items-center gap-3">
                                                                     <input
@@ -977,7 +1038,7 @@ export default function CoordinatorProjectSetup() {
                                                                         </p>
 
                                                                         {roles.length ===
-                                                                        0 ? (
+                                                                            0 ? (
                                                                             <p className="text-xs text-amber-600 dark:text-amber-400">
                                                                                 No
                                                                                 roles
@@ -1003,11 +1064,10 @@ export default function CoordinatorProjectSetup() {
                                                                                                 key={
                                                                                                     role.rollid
                                                                                                 }
-                                                                                                className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${
-                                                                                                    roleSelected
-                                                                                                        ? "border-blue-300 bg-primary/10 text-blue-800 dark:border-blue-800 dark:bg-primary/10 dark:text-blue-200"
-                                                                                                        : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
-                                                                                                }`}
+                                                                                                className={`inline-flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs ${roleSelected
+                                                                                                    ? "border-blue-300 bg-primary/10 text-blue-800 dark:border-blue-800 dark:bg-primary/10 dark:text-blue-200"
+                                                                                                    : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
+                                                                                                    }`}
                                                                                             >
                                                                                                 <input
                                                                                                     type="checkbox"
@@ -1034,60 +1094,60 @@ export default function CoordinatorProjectSetup() {
 
                                                                         {assignedRoles.length >
                                                                             0 && (
-                                                                            <div className="mt-3 space-y-2">
-                                                                                {roles
-                                                                                    .filter(
-                                                                                        (
-                                                                                            role,
-                                                                                        ) =>
-                                                                                            assignedRoles.includes(
-                                                                                                role.rollid,
-                                                                                            ),
-                                                                                    )
-                                                                                    .map(
-                                                                                        (
-                                                                                            role,
-                                                                                        ) => (
-                                                                                            <div
-                                                                                                key={
-                                                                                                    role.rollid
-                                                                                                }
-                                                                                                className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"
-                                                                                            >
-                                                                                                <Folder
-                                                                                                    size={
-                                                                                                        14
+                                                                                <div className="mt-3 space-y-2">
+                                                                                    {roles
+                                                                                        .filter(
+                                                                                            (
+                                                                                                role,
+                                                                                            ) =>
+                                                                                                assignedRoles.includes(
+                                                                                                    role.rollid,
+                                                                                                ),
+                                                                                        )
+                                                                                        .map(
+                                                                                            (
+                                                                                                role,
+                                                                                            ) => (
+                                                                                                <div
+                                                                                                    key={
+                                                                                                        role.rollid
                                                                                                     }
-                                                                                                    className="mt-0.5 shrink-0"
-                                                                                                />
-                                                                                                <p>
-                                                                                                    <span className="font-medium">
-                                                                                                        {
-                                                                                                            role.rolename
+                                                                                                    className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"
+                                                                                                >
+                                                                                                    <Folder
+                                                                                                        size={
+                                                                                                            14
                                                                                                         }
+                                                                                                        className="mt-0.5 shrink-0"
+                                                                                                    />
+                                                                                                    <p>
+                                                                                                        <span className="font-medium">
+                                                                                                            {
+                                                                                                                role.rolename
+                                                                                                            }
 
-                                                                                                        :
-                                                                                                    </span>{" "}
-                                                                                                    {role
-                                                                                                        .folder_access
-                                                                                                        ?.length
-                                                                                                        ? role.folder_access
-                                                                                                              .map(
-                                                                                                                  (
-                                                                                                                      folder,
-                                                                                                                  ) =>
-                                                                                                                      folder.fname,
-                                                                                                              )
-                                                                                                              .join(
-                                                                                                                  ", ",
-                                                                                                              )
-                                                                                                        : "No folder access details"}
-                                                                                                </p>
-                                                                                            </div>
-                                                                                        ),
-                                                                                    )}
-                                                                            </div>
-                                                                        )}
+                                                                                                            :
+                                                                                                        </span>{" "}
+                                                                                                        {role
+                                                                                                            .folder_access
+                                                                                                            ?.length
+                                                                                                            ? role.folder_access
+                                                                                                                .map(
+                                                                                                                    (
+                                                                                                                        folder,
+                                                                                                                    ) =>
+                                                                                                                        folder.fname,
+                                                                                                                )
+                                                                                                                .join(
+                                                                                                                    ", ",
+                                                                                                                )
+                                                                                                            : "No folder access details"}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            ),
+                                                                                        )}
+                                                                                </div>
+                                                                            )}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -1097,11 +1157,11 @@ export default function CoordinatorProjectSetup() {
 
                                                 {filteredMembers.length ===
                                                     0 && (
-                                                    <p className="py-5 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                        No member IDs match your
-                                                        search.
-                                                    </p>
-                                                )}
+                                                        <p className="py-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                            No member IDs match your
+                                                            search.
+                                                        </p>
+                                                    )}
                                             </div>
                                         </div>
 
@@ -1118,7 +1178,7 @@ export default function CoordinatorProjectSetup() {
                                             </div>
 
                                             {selectedMemberDetails.length ===
-                                            0 ? (
+                                                0 ? (
                                                 <p className="rounded-lg border border-dashed border-gray-300 p-5 text-center text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                                     Selected members will appear
                                                     here.
@@ -1129,7 +1189,7 @@ export default function CoordinatorProjectSetup() {
                                                         (member) => {
                                                             const assignedRoles =
                                                                 assignmentsByMember[
-                                                                    member.memberid
+                                                                member.memberid
                                                                 ] ?? [];
                                                             const roleNames =
                                                                 roles.filter(
@@ -1174,7 +1234,7 @@ export default function CoordinatorProjectSetup() {
 
                                                                     <div className="mt-2 flex flex-wrap gap-1">
                                                                         {roleNames.length >
-                                                                        0 ? (
+                                                                            0 ? (
                                                                             roleNames.map(
                                                                                 (
                                                                                     role,
@@ -1302,37 +1362,31 @@ export default function CoordinatorProjectSetup() {
                                             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
                                                 {timelineFolders.map(
                                                     (folder) => {
-                                                        const container =
-                                                            isContainerFolder(
-                                                                folder,
-                                                                
-                                                            );
-                                                        const dates = container
-                                                            ? {
-                                                                  start: "",
-                                                                  end: "",
-                                                              }
-                                                            : calculateFolderDates(
-                                                                  folder,
-                                                                  timelineFolders,
-                                                                  timelineStartDate,
-                                                              );
+                                                        const container = isContainerFolder(
+                                                            folder,
+                                                            timelineFolders,
+                                                        );
+
+                                                        const rootContainer = isRootContainer(
+                                                            folder,
+                                                            timelineFolders,
+                                                        );
+                                                        const dates = calculateFolderDates(
+                                                            folder,
+                                                            timelineFolders,
+                                                            timelineStartDate,
+                                                        );
                                                         const depth =
                                                             getFolderDepth(
                                                                 folder,
                                                                 timelineFolders,
                                                             );
 
-                                                        const predecessorOptions =
-                                                            timelineFolders.filter(
-                                                                (candidate) =>
-                                                                    candidate.fid !==
-                                                                        folder.fid &&
-                                                                    !isContainerFolder(
-                                                                        candidate,
-                                                                        
-                                                                    ),
-                                                            );
+                                                        const predecessorOptions = timelineFolders.filter(
+                                                            (candidate) =>
+                                                                candidate.fid !== folder.fid &&
+                                                                !isContainerFolder(candidate, timelineFolders),
+                                                        );
 
                                                         return (
                                                             <tr
@@ -1354,11 +1408,10 @@ export default function CoordinatorProjectSetup() {
                                                                             size={
                                                                                 16
                                                                             }
-                                                                            className={`shrink-0 ${
-                                                                                container
-                                                                                    ? "text-primary dark:text-primary"
-                                                                                    : "text-gray-400 dark:text-gray-500"
-                                                                            }`}
+                                                                            className={`shrink-0 ${container
+                                                                                ? "text-primary dark:text-primary"
+                                                                                : "text-gray-400 dark:text-gray-500"
+                                                                                }`}
                                                                         />
                                                                         <span>
                                                                             {
@@ -1375,268 +1428,179 @@ export default function CoordinatorProjectSetup() {
 
                                                                 {/* Predecessor */}
                                                                 <td className="px-4 py-2">
-                                                                    {!container && (
+                                                                    {!rootContainer ? (
                                                                         <select
-                                                                            value={
-                                                                                folder.predecessorsid ??
-                                                                                0
-                                                                            }
-                                                                            onChange={(
-                                                                                event,
-                                                                            ) =>
-                                                                                updateTimelineFolder(
-                                                                                    folder.fid,
-                                                                                    {
-                                                                                        predecessorsid:
-                                                                                            Number(
-                                                                                                event
-                                                                                                    .target
-                                                                                                    .value,
-                                                                                            ) ||
-                                                                                            null,
-                                                                                    },
-                                                                                )
+                                                                            value={folder.predecessorsid ?? 0}
+                                                                            onChange={(event) =>
+                                                                                updateTimelineFolder(folder.fid, {
+                                                                                    predecessorsid:
+                                                                                        Number(event.target.value) || null,
+                                                                                })
                                                                             }
                                                                             aria-label={`Predecessor for ${folder.fname}`}
                                                                             className={`${inputClass} w-48 !py-1`}
                                                                         >
-                                                                            <option value={0}>
-                                                                                None
-                                                                            </option>
-                                                                            {predecessorOptions.map(
-                                                                                (
-                                                                                    candidate,
-                                                                                ) => (
-                                                                                    <option
-                                                                                        key={
-                                                                                            candidate.fid
-                                                                                        }
-                                                                                        value={
-                                                                                            candidate.fid
-                                                                                        }
-                                                                                    >
-                                                                                        {
-                                                                                            candidate.fname
-                                                                                        }{" "}
-                                                                                        (ID:{" "}
-                                                                                        {
-                                                                                            candidate.fid
-                                                                                        }
-                                                                                        )
-                                                                                    </option>
-                                                                                ),
-                                                                            )}
+                                                                            <option value={0}>None</option>
+
+                                                                            {predecessorOptions.map((candidate) => (
+                                                                                <option
+                                                                                    key={candidate.fid}
+                                                                                    value={candidate.fid}
+                                                                                >
+                                                                                    {candidate.fname} (ID: {candidate.fid})
+                                                                                </option>
+                                                                            ))}
                                                                         </select>
+                                                                    ) : (
+                                                                        <span className="text-gray-400"></span>
                                                                     )}
                                                                 </td>
 
                                                                 {/* Duration */}
                                                                 <td className="px-4 py-2">
-                                                                    {!container && (
+                                                                    {!container ? (
                                                                         <input
                                                                             type="number"
-                                                                            min={
-                                                                                1
-                                                                            }
-                                                                            step={
-                                                                                1
-                                                                            }
-                                                                            value={
-                                                                                folder.days ??
-                                                                                ""
-                                                                            }
-                                                                            onChange={(
-                                                                                event,
-                                                                            ) =>
-                                                                                updateTimelineFolder(
-                                                                                    folder.fid,
-                                                                                    {
-                                                                                        days:
-                                                                                            event
-                                                                                                .target
-                                                                                                .value ===
-                                                                                            ""
-                                                                                                ? null
-                                                                                                : Number(
-                                                                                                      event
-                                                                                                          .target
-                                                                                                          .value,
-                                                                                                  ),
-                                                                                    },
-                                                                                )
+                                                                            min={1}
+                                                                            step={1}
+                                                                            value={folder.days ?? ""}
+                                                                            onChange={(event) =>
+                                                                                updateTimelineFolder(folder.fid, {
+                                                                                    days:
+                                                                                        event.target.value === ""
+                                                                                            ? null
+                                                                                            : Number(event.target.value),
+                                                                                })
                                                                             }
                                                                             aria-label={`Duration for ${folder.fname}`}
                                                                             className={`${inputClass} w-24 !py-1`}
                                                                         />
+                                                                    ) : (
+                                                                        <span className="text-gray-400"></span>
                                                                     )}
                                                                 </td>
 
-                                                                {/* Start date */}
                                                                 <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
-                                                                    {!container
-                                                                        ? dates.start
-                                                                        : ""}
+                                                                    {!rootContainer ? dates.start || "" : ""}
                                                                 </td>
 
-                                                                {/* End date */}
                                                                 <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
-                                                                    {!container
-                                                                        ? dates.end
-                                                                        : ""}
+                                                                    {!rootContainer ? dates.end || "" : ""}
                                                                 </td>
 
-                                                                {/* Key person */}
                                                                 <td className="px-4 py-2">
-                                                                    {!container && (
+                                                                    {!rootContainer ? (
                                                                         <select
-                                                                            value={
-                                                                                folder.keypersonid ??
-                                                                                0
-                                                                            }
-                                                                            onChange={(
-                                                                                event,
-                                                                            ) =>
-                                                                                updateTimelineFolder(
-                                                                                    folder.fid,
-                                                                                    {
-                                                                                        keypersonid:
-                                                                                            Number(
-                                                                                                event
-                                                                                                    .target
-                                                                                                    .value,
-                                                                                            ) ||
-                                                                                            null,
-                                                                                    },
-                                                                                )
+                                                                            value={folder.keypersonid ?? 0}
+                                                                            onChange={(event) =>
+                                                                                updateTimelineFolder(folder.fid, {
+                                                                                    keypersonid:
+                                                                                        Number(event.target.value) || null,
+                                                                                })
                                                                             }
                                                                             aria-label={`Key person for ${folder.fname}`}
                                                                             className={`${inputClass} w-48 !py-1`}
                                                                         >
-                                                                            <option value={0}>
-                                                                                Unassigned
-                                                                            </option>
-                                                                            {folder.key_person_options.map(
-                                                                                (
-                                                                                    person,
-                                                                                ) => (
-                                                                                    <option
-                                                                                        key={
-                                                                                            person.uid
-                                                                                        }
-                                                                                        value={
-                                                                                            person.uid
-                                                                                        }
-                                                                                    >
-                                                                                        {[
-                                                                                            person.firstname,
-                                                                                            person.lastname,
-                                                                                        ]
-                                                                                            .filter(
-                                                                                                Boolean,
-                                                                                            )
-                                                                                            .join(
-                                                                                                " ",
-                                                                                            ) ||
-                                                                                            person.loginname}
-                                                                                    </option>
-                                                                                ),
-                                                                            )}
+                                                                            <option value={0}>Unassigned</option>
+
+                                                                            {folder.key_person_options.map((person) => (
+                                                                                <option
+                                                                                    key={person.uid}
+                                                                                    value={person.uid}
+                                                                                >
+                                                                                    {[
+                                                                                        person.firstname,
+                                                                                        person.lastname,
+                                                                                    ]
+                                                                                        .filter(Boolean)
+                                                                                        .join(" ") || person.loginname}
+                                                                                </option>
+                                                                            ))}
                                                                         </select>
+                                                                    ) : (
+                                                                        <span className="text-gray-400"></span>
                                                                     )}
                                                                 </td>
 
-                                                                {/* Remarks */}
                                                                 <td className="px-4 py-2">
-                                                                    {!container && (
+                                                                    {!rootContainer ? (
                                                                         <input
                                                                             type="text"
-                                                                            value={
-                                                                                folder.remarks ??
-                                                                                ""
-                                                                            }
-                                                                            onChange={(
-                                                                                event,
-                                                                            ) =>
-                                                                                updateTimelineFolder(
-                                                                                    folder.fid,
-                                                                                    {
-                                                                                        remarks:
-                                                                                            event
-                                                                                                .target
-                                                                                                .value,
-                                                                                    },
-                                                                                )
+                                                                            value={folder.remarks ?? ""}
+                                                                            onChange={(event) =>
+                                                                                updateTimelineFolder(folder.fid, {
+                                                                                    remarks: event.target.value,
+                                                                                })
                                                                             }
                                                                             aria-label={`Remarks for ${folder.fname}`}
                                                                             placeholder="Enter remarks"
                                                                             className={`${inputClass} w-52 !py-1`}
                                                                         />
+                                                                    ) : (
+                                                                        <span className="text-gray-400"></span>
                                                                     )}
                                                                 </td>
 
                                                                 {/* Status */}
                                                                 <td className="px-4 py-2">
-                                                                    {!container && (
-                                                                        <button
-                                                                            type="button"
-                                                                            disabled={
-                                                                                String(
-                                                                                    folder.status,
-                                                                                ) !==
-                                                                                "1"
-                                                                            }
-                                                                            onClick={() =>
-                                                                                void handleViewProgress(
-                                                                                    folder,
-                                                                                )
-                                                                            }
-                                                                            aria-label={`View progress and notes for ${folder.fname}`}
-                                                                            className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                                                                                String(
-                                                                                    folder.status,
-                                                                                ) ===
-                                                                                "0"
-                                                                                    ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                                                    : String(
-                                                                                            folder.status,
-                                                                                        ) ===
-                                                                                        "1"
-                                                                                      ? "cursor-pointer bg-orange-50 text-orange-700 hover:bg-orange-100 hover:ring-2 hover:ring-primary/30 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
-                                                                                      : String(
-                                                                                            folder.status,
-                                                                                        ) ===
-                                                                                        "2"
-                                                                                        ? "cursor-default bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-                                                                                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                                            }`}
-                                                                        >
-                                                                            {String(
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={
+                                                                            String(
+                                                                                folder.status,
+                                                                            ) !==
+                                                                            "1"
+                                                                        }
+                                                                        onClick={() =>
+                                                                            void handleViewProgress(
+                                                                                folder,
+                                                                            )
+                                                                        }
+                                                                        aria-label={`View progress and notes for ${folder.fname}`}
+                                                                        className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition ${String(
+                                                                            folder.status,
+                                                                        ) ===
+                                                                            "0"
+                                                                            ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                                            : String(
                                                                                 folder.status,
                                                                             ) ===
-                                                                            "0"
-                                                                                ? "Pending"
+                                                                                "1"
+                                                                                ? "cursor-pointer bg-orange-50 text-orange-700 hover:bg-orange-100 hover:ring-2 hover:ring-primary/30 dark:bg-orange-950 dark:text-orange-300 dark:hover:bg-orange-900"
                                                                                 : String(
-                                                                                        folder.status,
-                                                                                    ) ===
-                                                                                    "1"
-                                                                                  ? "In Progress"
-                                                                                  : String(
-                                                                                        folder.status,
-                                                                                    ) ===
+                                                                                    folder.status,
+                                                                                ) ===
+                                                                                    "2"
+                                                                                    ? "cursor-default bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                                                                                    : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                                            }`}
+                                                                    >
+                                                                        {String(
+                                                                            folder.status,
+                                                                        ) ===
+                                                                            "0"
+                                                                            ? "Pending"
+                                                                            : String(
+                                                                                folder.status,
+                                                                            ) ===
+                                                                                "1"
+                                                                                ? "In Progress"
+                                                                                : String(
+                                                                                    folder.status,
+                                                                                ) ===
                                                                                     "2"
                                                                                     ? "Completed"
                                                                                     : "Unknown"}
 
-                                                                            {String(
-                                                                                folder.status,
-                                                                            ) ===
-                                                                                "1" && (
+                                                                        {String(
+                                                                            folder.status,
+                                                                        ) ===
+                                                                            "1" && (
                                                                                 <span className="ml-1.5">
                                                                                     ↗
                                                                                 </span>
                                                                             )}
-                                                                        </button>
-                                                                    )}
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         );
@@ -1645,17 +1609,17 @@ export default function CoordinatorProjectSetup() {
 
                                                 {timelineFolders.length ===
                                                     0 && (
-                                                    <tr>
-                                                        <td
-                                                            colSpan={9}
-                                                            className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
-                                                        >
-                                                            No folders were
-                                                            returned for this
-                                                            project.
-                                                        </td>
-                                                    </tr>
-                                                )}
+                                                        <tr>
+                                                            <td
+                                                                colSpan={9}
+                                                                className="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
+                                                            >
+                                                                No folders were
+                                                                returned for this
+                                                                project.
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                             </tbody>
                                         </table>
                                     </div>
@@ -1729,8 +1693,8 @@ export default function CoordinatorProjectSetup() {
                                 {saving || timelineLoading
                                     ? "Saving..."
                                     : setupSaved
-                                      ? "Load Timeline"
-                                      : "Save Setup & Continue"}
+                                        ? "Load Timeline"
+                                        : "Save Setup & Continue"}
                             </button>
                         ) : (
                             <button
@@ -1874,26 +1838,24 @@ export default function CoordinatorProjectSetup() {
                                             </p>
 
                                             <span
-                                                className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                                    progressStatusLabel ===
+                                                className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${progressStatusLabel ===
                                                     "Completed"
-                                                        ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-                                                        : progressStatusLabel ===
-                                                            "Pending"
-                                                          ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                          : "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
-                                                }`}
+                                                    ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+                                                    : progressStatusLabel ===
+                                                        "Pending"
+                                                        ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                        : "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                                                    }`}
                                             >
                                                 <span
-                                                    className={`h-1.5 w-1.5 rounded-full ${
-                                                        progressStatusLabel ===
+                                                    className={`h-1.5 w-1.5 rounded-full ${progressStatusLabel ===
                                                         "Completed"
-                                                            ? "bg-green-500"
-                                                            : progressStatusLabel ===
-                                                                "Pending"
-                                                              ? "bg-gray-400"
-                                                              : "animate-pulse bg-primary"
-                                                    }`}
+                                                        ? "bg-green-500"
+                                                        : progressStatusLabel ===
+                                                            "Pending"
+                                                            ? "bg-gray-400"
+                                                            : "animate-pulse bg-primary"
+                                                        }`}
                                                 />
                                                 {progressStatusLabel}
                                             </span>
@@ -1965,7 +1927,7 @@ export default function CoordinatorProjectSetup() {
                                                 {selectedProgressFolder.days ??
                                                     "—"}
                                                 {selectedProgressFolder.days !=
-                                                null
+                                                    null
                                                     ? " days"
                                                     : ""}
                                             </p>
