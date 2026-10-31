@@ -25,7 +25,6 @@ import {
     getCoordinatorProjects,
     getProject,
     getProjectFolderFiles,
-    type CoordinatorProjectsResponse,
     type Project,
     type ProjectFolder,
 } from "../api/projects";
@@ -36,35 +35,17 @@ import mrImage from "../assets/mr.png";
 import mrsImage from "../assets/mrs.png";
 
 import Modal from "../components/models/Modal";
-// import ProjectFolderTree from "../components/models/FolderTree";
+import { formatDate } from "../utils/dates";
+import { getErrorMessage } from "../utils/errors";
+import { normalizeCoordinatorProjects } from "../utils/projects";
+import { getUserPhotoUrl } from "../utils/users";
 
 // ========================================
 // Response Helpers
 // ========================================
 
-function normalizeProjects(
-    response: CoordinatorProjectsResponse,
-): Project[] {
-    if (Array.isArray(response)) {
-        return response;
-    }
-
-    if (response && Array.isArray(response.projects)) {
-        return response.projects;
-    }
-
-    return [];
-}
-
 function isCoordinatorProject(project: Project): boolean {
     return project.view_type?.toLowerCase() === "coordinator";
-}
-
-function getErrorMessage(
-    error: unknown,
-    fallback: string,
-): string {
-    return error instanceof Error ? error.message : fallback;
 }
 
 // ========================================
@@ -114,22 +95,6 @@ async function addFolderFileCounts(
 // ========================================
 // Formatting Helpers
 // ========================================
-
-function formatDate(date?: string | null): string {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-        return date;
-    }
-
-    return parsedDate.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
-}
 
 function getStatusLabel(
     status?: number | string | null,
@@ -576,19 +541,6 @@ function ProjectRow({
     );
 }
 
-function getUserPhotoUrl(user: User | undefined): string | null {
-    const photo = user?.photo?.trim();
-
-    if (!photo) return null;
-
-    if (/^https?:\/\//i.test(photo)) {
-        return photo;
-    }
-
-    return `https://bridge.sidpz.com/${photo.replace(/^\/+/, "")}`;
-}
-
-
 // ========================================
 // Coordinator Projects Page
 // ========================================
@@ -632,7 +584,7 @@ export default function CoordinatorProjects() {
 
         try {
             const response = await getCoordinatorProjects();
-            const projectList = normalizeProjects(response);
+            const projectList = normalizeCoordinatorProjects(response);
 
             console.log("Assigned projects API response:", response);
             console.log("Normalized assigned projects:", projectList);

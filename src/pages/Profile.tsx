@@ -20,6 +20,7 @@ import {
 import { getCurrentUser } from "../api/auth";
 import { getUser, updateUser } from "../api/users";
 import type { User } from "../api/users";
+import { API_ORIGIN } from "../config";
 
 // --------------------------------------------------
 // Configuration
@@ -148,7 +149,7 @@ export default function Profile() {
       ? normalizedPath
       : `uploads/${normalizedPath}`;
 
-    return `https://bridge.sidpz.com/${imagePath}`;
+    return `${API_ORIGIN}/${imagePath}`;
   }
 
   const displayedPhoto = photoPreview || getPhotoUrl(photoPath);

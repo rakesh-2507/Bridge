@@ -1,6 +1,5 @@
-const API_BASE_URL = import.meta.env.DEV
-  ? "/api"
-  : "https://bridge.sidpz.com/api";
+import { API_BASE_URL } from "../config";
+
 
 interface ValidationError {
   loc?: (string | number)[];
@@ -194,6 +193,136 @@ export function post<T>(path: string, payload: unknown): Promise<T> {
     method: "POST",
     body: isFormData ? payload : JSON.stringify(payload),
   });
+}
+
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  percentage: number;
+}
+
+export function postWithProgress<T>(
+  path: string,
+  payload: FormData,
+  onProgress: (progress: UploadProgress) => void,
+): Promise<T> {
+  const send = (
+    token: string | null,
+  ): Promise<{
+    status: number;
+    text: string;
+  }> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.open("POST", `${API_BASE_URL}${path}`);
+
+      xhr.setRequestHeader("Accept", "application/json");
+
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
+
+      // Track actual browser upload progress.
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onProgress({
+            loaded: event.loaded,
+            total: event.total,
+            percentage: Math.round((event.loaded / event.total) * 100),
+          });
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress({
+            loaded: 1,
+            total: 1,
+            percentage: 100,
+          });
+        }
+
+        resolve({
+          status: xhr.status,
+          text: xhr.responseText,
+        });
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Network error while uploading files."));
+      };
+
+      xhr.onabort = () => {
+        reject(new Error("File upload was cancelled."));
+      };
+
+      xhr.ontimeout = () => {
+        reject(new Error("File upload timed out."));
+      };
+
+      // Do not set Content-Type manually.
+      // Browser must generate the multipart boundary.
+      xhr.send(payload);
+    });
+  };
+
+  const execute = async (): Promise<T> => {
+    let token = localStorage.getItem("access_token");
+
+    let response = await send(token);
+
+    // Refresh authentication once if required.
+    if (response.status === 401) {
+      const newToken = await refreshAccessToken();
+
+      if (newToken) {
+        token = newToken;
+        response = await send(token);
+      }
+    }
+
+    let data: unknown;
+
+    if (response.text) {
+      try {
+        data = JSON.parse(response.text) as unknown;
+      } catch {
+        if (response.status >= 200 && response.status < 300) {
+          throw new Error("The server returned an invalid JSON response.");
+        }
+      }
+    }
+
+    if (response.status < 200 || response.status >= 300) {
+      const error =
+        typeof data === "object" && data !== null
+          ? (data as ApiError)
+          : undefined;
+
+      const detail = error?.detail;
+
+      let message = `Upload failed (${response.status}).`;
+
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message =
+          detail
+            .map((item) => item.msg ?? "")
+            .filter(Boolean)
+            .join(", ") || message;
+      } else if (error?.message) {
+        message = error.message;
+      }
+
+      throw new Error(message);
+    }
+
+    return data as T;
+  };
+
+  return execute();
 }
 
 export function put<T>(path: string, payload: unknown): Promise<T> {

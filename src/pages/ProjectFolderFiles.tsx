@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, MouseEvent } from "react";
 import {
-    Folder, Check, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, File, FileImage, FileText, FileSpreadsheet, FileCode, FileArchive, FileType, Pencil, MessageSquare, Send,
+    Folder, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, FileText, Pencil, MessageSquare, Send,
 } from "lucide-react";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -14,386 +14,27 @@ import {
 import type {
     FolderFile, ProjectFolder, FolderNavigationState, FolderProgress, Project, Notification, FolderCommentRecipient,
 } from "../api/projects";
-import { createPortal } from "react-dom";
 import { getUsers, type User } from "../api/users";
 import { getCurrentUser } from "../api/auth";
 import Modal from "../components/models/Modal";
 import FolderTree from "../components/models/FolderTree";
 
-const getFileIcon = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase();
-
-    switch (extension) {
-        case "png":
-        case "jpg":
-        case "jpeg":
-        case "gif":
-        case "svg":
-        case "webp":
-        case "bmp":
-        case "avif":
-            return <FileImage size={20} className="text-purple-500" />;
-
-        case "doc":
-        case "docx":
-            return <FileType size={20} className="text-primary" />;
-
-        case "xls":
-        case "xlsx":
-        case "csv":
-            return <FileSpreadsheet size={20} className="text-green-600" />;
-
-        case "pdf":
-            return <FileText size={20} className="text-red-500" />;
-
-        case "txt":
-        case "md":
-        case "rtf":
-            return <FileText size={20} className="text-gray-500" />;
-
-        case "js":
-        case "jsx":
-        case "ts":
-        case "tsx":
-        case "html":
-        case "css":
-        case "json":
-        case "xml":
-            return <FileCode size={20} className="text-orange-500" />;
-
-        case "zip":
-        case "rar":
-        case "7z":
-            return <FileArchive size={20} className="text-yellow-600" />;
-
-        default:
-            return <File size={20} className="text-primary" />;
-    }
-};
-
-function getFolderFileCount(folder: ProjectFolder): number {
-    const data = folder as ProjectFolder & {
-        file_count?: number;
-        files_count?: number;
-        files?: unknown[];
-    };
-
-    const count =
-        data.fileCount ??
-        data.file_count ??
-        data.files_count ??
-        data.files?.length ??
-        0;
-
-    return Math.max(0, Number(count) || 0);
-}
-
-function normalizeFiles(response: unknown): FolderFile[] {
-    if (Array.isArray(response)) {
-        return response as FolderFile[];
-    }
-
-    if (!response || typeof response !== "object") {
-        return [];
-    }
-
-    const data = response as Record<string, unknown>;
-
-    if (Array.isArray(data.files)) {
-        return data.files as FolderFile[];
-    }
-
-    if (Array.isArray(data.folder_files)) {
-        return data.folder_files as FolderFile[];
-    }
-
-    if (Array.isArray(data.data)) {
-        return data.data as FolderFile[];
-    }
-
-    if (data.data && typeof data.data === "object") {
-        const nested = data.data as Record<string, unknown>;
-
-        if (Array.isArray(nested.files)) {
-            return nested.files as FolderFile[];
-        }
-
-        if (Array.isArray(nested.folder_files)) {
-            return nested.folder_files as FolderFile[];
-        }
-    }
-
-    return [];
-}
-
-function findProjectFolder(
-    folders: ProjectFolder[] | undefined,
-    targetId: number,
-): ProjectFolder | undefined {
-    for (const folder of folders ?? []) {
-        if (Number(folder.fid) === targetId) {
-            return folder;
-        }
-
-        const found = findProjectFolder(folder.children, targetId);
-
-        if (found) {
-            return found;
-        }
-    }
-
-    return undefined;
-}
-
-function normalizeFolderTree(
-    folders: ProjectFolder[],
-): ProjectFolder[] {
-    if (!folders.length) return [];
-
-    const isFlatResponse = folders.some((folder) =>
-        Object.prototype.hasOwnProperty.call(folder, "parent_fid"),
-    );
-
-    // Admin response: already nested
-    if (!isFlatResponse) {
-        return folders.map((folder) => ({
-            ...folder,
-            fileCount: getFolderFileCount(folder),
-            children: normalizeFolderTree(folder.children ?? []),
-        }));
-    }
-
-    // Member response: flat list
-    const folderMap = new Map<number, ProjectFolder>();
-
-    folders.forEach((folder) => {
-        folderMap.set(Number(folder.fid), {
-            ...folder,
-            fileCount: getFolderFileCount(folder),
-            parent_fid:
-                folder.parent_fid == null
-                    ? null
-                    : Number(folder.parent_fid),
-            children: [],
-        });
-    });
-
-    const roots: ProjectFolder[] = [];
-
-    folders.forEach((folder) => {
-        const node = folderMap.get(Number(folder.fid));
-        if (!node) return;
-
-        const parentId = node.parent_fid;
-
-        const parent =
-            parentId == null
-                ? undefined
-                : folderMap.get(parentId);
-
-        if (parent && parent !== node) {
-            parent.children = [...(parent.children ?? []), node];
-        } else {
-            roots.push(node);
-        }
-    });
-
-    return roots;
-}
-
-function getProjectFolders(
-    project: Project | null | undefined,
-): ProjectFolder[] {
-    if (!project) {
-        return [];
-    }
-
-    const folders = (
-        project as Project & {
-            folders?: ProjectFolder[];
-        }
-    ).folders;
-
-    return Array.isArray(folders)
-        ? normalizeFolderTree(folders)
-        : [];
-}
-
-
-function formatFileSize(
-    bytes: number | string | null | undefined,
-): string {
-    if (bytes == null || bytes === "") {
-        return "Unknown size";
-    }
-
-    const size = Number(bytes);
-
-    if (!Number.isFinite(size) || size < 0) {
-        return "Unknown size";
-    }
-
-    if (size < 1024) {
-        return `${size} B`;
-    }
-
-    if (size < 1024 * 1024) {
-        return `${(size / 1024).toFixed(1)} KB`;
-    }
-
-    if (size < 1024 * 1024 * 1024) {
-        return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-    }
-
-    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-}
-
-function formatUploadedDate(date?: string | null): string {
-    if (!date) {
-        return "Unknown date";
-    }
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-        return "Unknown date";
-    }
-
-    return parsedDate.toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-}
-
-function normalizeFolderProgress(response: unknown): FolderProgress {
-    if (!response || typeof response !== "object") {
-        return {};
-    }
-
-    const result = response as Record<string, unknown>;
-
-    const nested =
-        result.data && typeof result.data === "object"
-            ? (result.data as Record<string, unknown>)
-            : result;
-
-    const rawPercentage = nested.progress_percentage;
-    const parsedPercentage =
-        rawPercentage == null ? null : Number(rawPercentage);
-
-    return {
-        progress_percentage:
-            parsedPercentage !== null && Number.isFinite(parsedPercentage)
-                ? parsedPercentage
-                : null,
-        progress_notes:
-            typeof nested.progress_notes === "string"
-                ? nested.progress_notes
-                : "",
-        status: nested.status as number | string | null | undefined,
-    };
-}
-
-function isFolderCompleted(status: unknown): boolean {
-    const value = String(status ?? "").trim().toLowerCase();
-    return value === "2" || value === "completed";
-}
-
-function getFolderProgressPercentage(
-    folder: ProjectFolder | null | undefined,
-    apiProgress?: FolderProgress | null,
-): number {
-    if (!folder) {
-        return 0;
-    }
-
-    const percentage =
-        apiProgress?.progress_percentage ?? folder.progress_percentage;
-
-    const parsedPercentage = Number(percentage ?? 0);
-
-    const savedPercentage = Number.isFinite(parsedPercentage)
-        ? Math.min(100, Math.max(0, parsedPercentage))
-        : 0;
-
-    const status = String(apiProgress?.status ?? folder.status ?? "")
-        .trim()
-        .toLowerCase();
-
-    if (status === "2" || status === "completed") {
-        return 100;
-    }
-
-    if (
-        status === "1" ||
-        status === "in progress" ||
-        status === "in_progress"
-    ) {
-        return Math.max(1, savedPercentage);
-    }
-
-    return savedPercentage;
-}
-
-function getFolderProgressLabel(percentage: number): string {
-    if (percentage >= 100) {
-        return "Completed";
-    }
-
-    if (percentage > 0) {
-        return `${percentage}% Complete`;
-    }
-
-    return "Not Started";
-}
-
-function getFolderProgressClass(percentage: number): string {
-    if (percentage >= 100) {
-        return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300";
-    }
-
-    if (percentage > 0) {
-        return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
-    }
-
-    return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
-}
-
-function getFileName(file: FolderFile): string {
-    return file.filename ?? file.file_name ?? file.name ?? "Unnamed file";
-}
-
-function getFileKey(file: FolderFile, index: number): string {
-    return String(file.file_id ?? file.id ?? `file-${index}`);
-}
-
-function getUploaderName(file: FolderFile, users: User[]): string {
-    if (file.createduid == null || file.createduid === "") {
-        return "Unknown user";
-    }
-
-    const uploader = users.find(
-        (user) => Number(user.uid) === Number(file.createduid),
-    );
-
-    if (!uploader) {
-        return `User ID: ${file.createduid}`;
-    }
-
-    const fullName = [
-        uploader.title,
-        uploader.firstname,
-        uploader.lastname,
-    ]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-    return fullName || uploader.loginname || `User ID: ${file.createduid}`;
-}
+import {
+    getFileIcon,
+    normalizeFiles,
+    findProjectFolder,
+    getProjectFolders,
+    formatFileSize,
+    formatUploadedDate,
+    normalizeFolderProgress,
+    isFolderCompleted,
+    getFolderProgressPercentage,
+    getFolderProgressLabel,
+    getFolderProgressClass,
+    getFileName,
+    getFileKey,
+    getUploaderName,
+} from "../features/project-files/helpers";
 
 export default function ProjectFolderFiles() {
     const navigate = useNavigate();
@@ -498,6 +139,16 @@ export default function ProjectFolderFiles() {
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState("");
     const [isDragging, setIsDragging] = useState(false);
+
+    const [transferProgress, setTransferProgress] = useState({
+        loaded: 0,
+        total: 0,
+        percentage: 0,
+    });
+
+    const [uploadStage, setUploadStage] = useState<
+        "uploading" | "processing"
+    >("uploading");
 
     useEffect(() => {
         let cancelled = false;
@@ -651,7 +302,6 @@ export default function ProjectFolderFiles() {
             });
 
             setProgressPercentage(100);
-            showSuccessWithProgress("Folder completed successfully.");
         } catch (err: unknown) {
             setCompleteFolderError(
                 err instanceof Error
@@ -1068,7 +718,6 @@ export default function ProjectFolderFiles() {
             });
 
             setShowStatusModal(false);
-            showSuccessWithProgress("Folder progress saved successfully.");
         } catch (err: unknown) {
             setStatusError(
                 err instanceof Error
@@ -1114,7 +763,6 @@ export default function ProjectFolderFiles() {
                 return updated;
             });
 
-            showSuccessWithProgress(`"${fileName}" deleted successfully.`);
             setReloadKey((key) => key + 1);
         } catch (err: unknown) {
             setDeleteError(
@@ -1145,16 +793,26 @@ export default function ProjectFolderFiles() {
         setUploading(true);
         setUploadError("");
 
+        setTransferProgress({
+            loaded: 0,
+            total: 0,
+            percentage: 0,
+        });
+
+        setUploadStage("uploading");
+
         try {
-            // Preserve File objects and webkitRelativePath for folder uploads.
             await uploadProjectFolderFiles(
                 parsedProjectId,
                 parsedFolderId,
                 selected,
-            );
+                (progress) => {
+                    setTransferProgress(progress);
 
-            showSuccessWithProgress(
-                `${selected.length} file${selected.length === 1 ? "" : "s"} uploaded successfully.`,
+                    if (progress.percentage >= 100) {
+                        setUploadStage("processing");
+                    }
+                },
             );
 
             setSelectedFiles(new Set());
@@ -1181,17 +839,6 @@ export default function ProjectFolderFiles() {
             setUploadError("The selected folder contains no files.");
             return;
         }
-
-        // Confirm the browser selected individual files.
-        console.table(
-            selected.map((file) => ({
-                name: file.name,
-                path: (
-                    file as File & { webkitRelativePath?: string }
-                ).webkitRelativePath,
-                size: file.size,
-            })),
-        );
 
         try {
             await uploadFiles(selected);
@@ -1519,10 +1166,6 @@ export default function ProjectFolderFiles() {
             setSelectedFiles(failedKeys);
 
             if (deletedCount > 0) {
-                showSuccessWithProgress(
-                    `${deletedCount} file${deletedCount === 1 ? "" : "s"} deleted successfully.`,
-                );
-
                 setReloadKey((key) => key + 1);
             }
 
@@ -1538,60 +1181,6 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    const [successMessage, setSuccessMessage] = useState("");
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [progressFinished, setProgressFinished] = useState(false);
-
-    const progressIntervalRef = useRef<number | null>(null);
-    const successTimeoutRef = useRef<number | null>(null);
-
-    const showSuccessWithProgress = (message: string) => {
-        // Clear any previous animation and dismissal timer.
-        if (progressIntervalRef.current !== null) {
-            window.clearInterval(progressIntervalRef.current);
-        }
-
-        if (successTimeoutRef.current !== null) {
-            window.clearTimeout(successTimeoutRef.current);
-        }
-
-        setSuccessMessage(message);
-        setUploadProgress(1);
-        setProgressFinished(false);
-
-        let progress = 1;
-
-        progressIntervalRef.current = window.setInterval(() => {
-            progress = Math.min(progress + 1, 100);
-            setUploadProgress(progress);
-
-            if (progress >= 100) {
-                if (progressIntervalRef.current !== null) {
-                    window.clearInterval(progressIntervalRef.current);
-                    progressIntervalRef.current = null;
-                }
-
-                setProgressFinished(true);
-
-                successTimeoutRef.current = window.setTimeout(() => {
-                    setSuccessMessage("");
-                    successTimeoutRef.current = null;
-                }, 1200);
-            }
-        }, 25);
-    };
-
-    useEffect(() => {
-        return () => {
-            if (progressIntervalRef.current !== null) {
-                window.clearInterval(progressIntervalRef.current);
-            }
-
-            if (successTimeoutRef.current !== null) {
-                window.clearTimeout(successTimeoutRef.current);
-            }
-        };
-    }, []);
     return (
         <div
             onDragEnter={handlePageDragEnter}
@@ -1760,7 +1349,6 @@ export default function ProjectFolderFiles() {
                     )}
                 </div>
 
-                {/* Loading and error states */}
                 {loading ? (
                     <div className="flex flex-col items-center justify-center gap-3 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white px-4 py-16 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
                         <Loader2
@@ -1788,7 +1376,6 @@ export default function ProjectFolderFiles() {
                     </div>
                 ) : (
                     <>
-                        {/* Subfolders */}
                         {subfolders.length > 0 && (
                             <section className="space-y-3">
                                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -1826,7 +1413,6 @@ export default function ProjectFolderFiles() {
                             </section>
                         )}
 
-                        {/* Files section: hide for folders containing subfolders */}
                         {(
                             <section className="space-y-3">
                                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -1943,6 +1529,55 @@ export default function ProjectFolderFiles() {
                                     </div>
                                 )}
 
+                                {/* Actual upload progress */}
+                                {uploading && (
+                                    <div className="rounded-tl-xl rounded-br-xl border border-primary/30 bg-white p-4 shadow-sm dark:bg-gray-800">
+                                        <div className="mb-3 flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <Loader2
+                                                    size={18}
+                                                    className="animate-spin text-primary"
+                                                />
+
+                                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                    {uploadStage === "uploading"
+                                                        ? "Uploading files..."
+                                                        : "Processing files on server..."}
+                                                </span>
+                                            </div>
+
+                                            <span className="text-sm font-bold text-primary">
+                                                {transferProgress.percentage}%
+                                            </span>
+                                        </div>
+
+                                        <div
+                                            className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                                            role="progressbar"
+                                            aria-label="File upload progress"
+                                            aria-valuemin={0}
+                                            aria-valuemax={100}
+                                            aria-valuenow={transferProgress.percentage}
+                                        >
+                                            <div
+                                                className="h-full rounded-full bg-primary transition-all duration-200"
+                                                style={{
+                                                    width: `${transferProgress.percentage}%`,
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                            <span>
+                                                {formatFileSize(transferProgress.loaded)} uploaded
+                                            </span>
+
+                                            <span>
+                                                {formatFileSize(transferProgress.total)} total
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
 
                                 {deleteError && (
@@ -2226,7 +1861,6 @@ export default function ProjectFolderFiles() {
                             </section>
                         )}
 
-                        {/* Folder tree warning */}
                         {folderError && (
                             <p className="text-sm text-amber-600 dark:text-amber-400">
                                 {folderError} Files are still displayed if the
@@ -2865,89 +2499,6 @@ export default function ProjectFolderFiles() {
                     )}
                 </section>) : null}
 
-            {successMessage &&
-                createPortal(
-                    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-                        <div
-                            role="alertdialog"
-                            aria-modal="true"
-                            aria-labelledby="success-modal-title"
-                            className="w-full max-w-sm  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white p-6 text-center shadow-2xl dark:border-gray-700 dark:bg-gray-800"
-                        >
-                            {/* Animated success icon */}
-                            <div
-                                className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full transition-colors duration-300 ${progressFinished
-                                    ? "bg-green-100 dark:bg-green-900/30"
-                                    : "bg-primary/10"
-                                    }`}
-                            >
-                                {progressFinished ? (
-                                    <Check
-                                        size={36}
-                                        className="animate-in zoom-in text-green-600 dark:text-green-400"
-                                        strokeWidth={3}
-                                    />
-                                ) : (
-                                    <span className="text-lg font-bold text-primary">
-                                        {uploadProgress}%
-                                    </span>
-                                )}
-                            </div>
-
-                            <h3
-                                id="success-modal-title"
-                                className="mb-2 text-lg font-semibold text-gray-900 dark:text-white"
-                            >
-                                {progressFinished ? "Success!" : "Processing..."}
-                            </h3>
-
-                            <p className="mb-5 text-sm text-gray-600 dark:text-gray-300">
-                                {progressFinished
-                                    ? successMessage
-                                    : "Please wait while we finish..."}
-                            </p>
-
-                            {/* Animated progress bar */}
-                            <div className="mb-2 flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {progressFinished ? "Completed" : "Progress"}
-                                </span>
-
-                                <span
-                                    className={`text-sm font-bold ${progressFinished
-                                        ? "text-green-600 dark:text-green-400"
-                                        : "text-primary"
-                                        }`}
-                                >
-                                    {uploadProgress}%
-                                </span>
-                            </div>
-
-                            <div
-                                className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
-                                role="progressbar"
-                                aria-label="Operation progress"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={uploadProgress}
-                            >
-                                <div
-                                    className={`h-full rounded-full transition-[width] duration-75 ease-linear ${progressFinished ? "bg-green-500" : "bg-primary"
-                                        }`}
-                                    style={{ width: `${uploadProgress}%` }}
-                                />
-                            </div>
-
-                            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                                {progressFinished
-                                    ? "✓ Completed successfully"
-                                    : "Please wait..."}
-                            </p>
-
-                        </div>
-                    </div>,
-                    document.body
-                )}
         </div>
     );
 }

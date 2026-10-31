@@ -1,6 +1,5 @@
-const API_BASE_URL = import.meta.env.DEV
-  ? "/api"
-  : "https://bridge.sidpz.com/api";
+import { API_BASE_URL } from "../config";
+
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";

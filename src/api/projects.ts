@@ -1,4 +1,12 @@
-import { del, get, post, put, getBlob } from "./http";
+import {
+  del,
+  get,
+  post,
+  put,
+  getBlob,
+  postWithProgress,
+  type UploadProgress,
+} from "./http";
 // ==============================
 // Project Types
 // ==============================
@@ -297,10 +305,12 @@ export async function getProjectFolderFiles(
   return get(`/${projectId}/folders/${folderId}/files`);
 }
 
+
 export async function uploadProjectFolderFiles<T = unknown>(
   projectId: number,
   folderId: number,
   files: File[],
+  onProgress?: (progress: UploadProgress) => void,
 ): Promise<T> {
   const formData = new FormData();
 
@@ -314,11 +324,17 @@ export async function uploadProjectFolderFiles<T = unknown>(
     formData.append("relative_paths", relativePath);
   });
 
-  return post<T>(
-    `/${encodeURIComponent(String(projectId))}/folders/${encodeURIComponent(String(folderId))}/files`,
+  const path =
+    `/${encodeURIComponent(String(projectId))}` +
+    `/folders/${encodeURIComponent(String(folderId))}/files`;
+
+  return postWithProgress<T>(
+    path,
     formData,
+    onProgress ?? (() => {}),
   );
 }
+
 
 export async function deleteProjectFolderFile(
   projectId: number,
@@ -470,4 +486,12 @@ export interface FolderProgress {
   progress_percentage?: number | null;
   progress_notes?: string | null;
   status?: number | string | null;
+}
+
+export async function getProjectFolderFileCounts(
+  projectId: number | string,
+): Promise<unknown> {
+  return get<unknown>(
+    `/projects/${encodeURIComponent(String(projectId))}/folder-file-counts`,
+  );
 }

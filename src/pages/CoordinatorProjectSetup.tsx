@@ -24,17 +24,12 @@ import {
     type ProjectAssignment,
     type ProjectMember,
     type ProjectRole,
-    type CoordinatorProjectsResponse,
     type ProjectFolderTimelineItem,
     type SaveProjectFolderTimelinePayload,
     type FolderProgress,
 } from "../api/projects";
-
-function normalizeProjects(
-    response: CoordinatorProjectsResponse,
-): Project[] {
-    return Array.isArray(response) ? response : response.projects ?? [];
-}
+import { toDateInputValue } from "../utils/dates";
+import { normalizeCoordinatorProjects } from "../utils/projects";
 
 function getProjectMembers(project: Project | null): ProjectMember[] {
     if (!project) return [];
@@ -47,16 +42,8 @@ function getProjectMembers(project: Project | null): ProjectMember[] {
     }));
 }
 
-function formatDate(date: Date): string {
-    return [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, "0"),
-        String(date.getDate()).padStart(2, "0"),
-    ].join("-");
-}
-
 function getTodayDate(): string {
-    return formatDate(new Date());
+    return toDateInputValue(new Date());
 }
 
 function isContainerFolder(
@@ -233,8 +220,8 @@ function calculateFolderDates(
     endDate.setDate(endDate.getDate() + days - 1);
 
     return {
-        start: formatDate(startDate),
-        end: formatDate(endDate),
+        start: toDateInputValue(startDate),
+        end: toDateInputValue(endDate),
     };
 }
 
@@ -333,7 +320,7 @@ export default function CoordinatorProjectSetup() {
 
                 if (cancelled?.()) return;
 
-                const projects = normalizeProjects(response);
+                const projects = normalizeCoordinatorProjects(response);
                 const foundProject =
                     projects.find(
                         (item) =>
@@ -1487,7 +1474,6 @@ export default function CoordinatorProjectSetup() {
                                                                 <td className="whitespace-nowrap px-4 py-2 text-gray-600 dark:text-gray-300">
                                                                     {!rootContainer ? dates.end || "" : ""}
                                                                 </td>
-
                                                                 <td className="px-4 py-2">
                                                                     {!rootContainer ? (
                                                                         <select

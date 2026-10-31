@@ -31,32 +31,8 @@ import mrsImage from "../assets/mrs.png";
 
 import Modal from "../components/models/Modal";
 import FolderTree from "../components/models/FolderTree";
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
-
-// async function addFolderFileCounts(
-//   folders: ProjectFolder[],
-//   projectId: number,
-// ): Promise<ProjectFolder[]> {
-//   return Promise.all(
-//     folders.map(async (folder) => {
-//       const [response, children] = await Promise.all([
-//         getProjectFolderFiles(projectId, folder.fid) as Promise<{
-//           files?: unknown[];
-//         }>,
-//         addFolderFileCounts(folder.children ?? [], projectId),
-//       ]);
-
-//       return {
-//         ...folder,
-//         fileCount: response.files?.length ?? 0,
-//         children,
-//       };
-//     }),
-//   );
-// }
+import { getErrorMessage } from "../utils/errors";
+import { getUserPhotoUrl } from "../utils/users";
 
 function getCoordinatorName(
   coordinatorId: number | string | null | undefined,
@@ -77,18 +53,6 @@ function getCoordinatorName(
   return [user.title, user.firstname, user.lastname]
     .filter(Boolean)
     .join(" ");
-}
-
-function getUserPhotoUrl(user: User | undefined): string | null {
-  const photo = user?.photo?.trim();
-
-  if (!photo) return null;
-
-  if (/^https?:\/\//i.test(photo)) {
-    return photo;
-  }
-
-  return `https://bridge.sidpz.com/${photo.replace(/^\/+/, "")}`;
 }
 
 export default function Projects() {
