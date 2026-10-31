@@ -305,7 +305,6 @@ export async function getProjectFolderFiles(
   return get(`/${projectId}/folders/${folderId}/files`);
 }
 
-
 export async function uploadProjectFolderFiles<T = unknown>(
   projectId: number,
   folderId: number,
@@ -328,13 +327,8 @@ export async function uploadProjectFolderFiles<T = unknown>(
     `/${encodeURIComponent(String(projectId))}` +
     `/folders/${encodeURIComponent(String(folderId))}/files`;
 
-  return postWithProgress<T>(
-    path,
-    formData,
-    onProgress ?? (() => {}),
-  );
+  return postWithProgress<T>(path, formData, onProgress ?? (() => {}));
 }
-
 
 export async function deleteProjectFolderFile(
   projectId: number,
@@ -382,6 +376,7 @@ export interface FolderProgress {
   progress_percentage?: number | null;
   progress_notes?: string | null;
   status?: number | string | null;
+  keypersonid?: number | null;
 }
 
 export async function getProjectFolderFilePreview(

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, MouseEvent } from "react";
 import {
-    Folder, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, FileText, Pencil, MessageSquare, Send,
+    Folder, Maximize2, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, FileText, Pencil, MessageSquare, Send,
 } from "lucide-react";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -18,7 +18,9 @@ import { getUsers, type User } from "../api/users";
 import { getCurrentUser } from "../api/auth";
 import Modal from "../components/models/Modal";
 import FolderTree from "../components/models/FolderTree";
-
+import UploadProgressPanel, {
+    type UploadProgressItem,
+} from "../components/UploadProgressPanel";
 import {
     getFileIcon,
     normalizeFiles,
@@ -140,16 +142,9 @@ export default function ProjectFolderFiles() {
     const [uploadError, setUploadError] = useState("");
     const [isDragging, setIsDragging] = useState(false);
 
-    const [transferProgress, setTransferProgress] = useState({
-        loaded: 0,
-        total: 0,
-        percentage: 0,
-    });
-
-    const [uploadStage, setUploadStage] = useState<
-        "uploading" | "processing"
-    >("uploading");
-
+    const [uploadItems, setUploadItems] = useState<UploadProgressItem[]>([]);
+    const [uploadRootName, setUploadRootName] = useState("");
+    const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
     useEffect(() => {
         let cancelled = false;
 
@@ -481,10 +476,8 @@ export default function ProjectFolderFiles() {
             setFolderError("");
 
             try {
-                // Load only the project data and the currently opened folder's files.
-                const projectPromise = navigationState?.project
-                    ? Promise.resolve(navigationState.project)
-                    : getProject(parsedProjectId);
+                // Always fetch fresh project data to get the latest folder structure.
+                const projectPromise = getProject(parsedProjectId);
 
                 const filesPromise = getProjectFolderFiles(
                     parsedProjectId,
@@ -500,7 +493,6 @@ export default function ProjectFolderFiles() {
 
                 setProject(activeProject);
 
-                // Normalize the tree locally. Do not fetch files for every folder.
                 const normalizedFolders = getProjectFolders(activeProject);
                 setFolderTree(normalizedFolders);
 
@@ -509,29 +501,20 @@ export default function ProjectFolderFiles() {
                     parsedFolderId,
                 );
 
-                const stateFolder =
-                    navigationState?.folder &&
-                        Number(navigationState.folder.fid) === parsedFolderId
-                        ? navigationState.folder
-                        : null;
-
                 if (folder) {
                     setCurrentFolder(folder);
-                } else if (stateFolder) {
-                    setCurrentFolder(stateFolder);
-                    setFolderError("");
                 } else {
-                    setCurrentFolder(null);
-                    setFolderError(
-                        "Folder details are unavailable in the project folder tree.",
+                    setCurrentFolder(
+                        navigationState?.folder &&
+                            Number(navigationState.folder.fid) === parsedFolderId
+                            ? navigationState.folder
+                            : null,
                     );
                 }
 
                 const loadedFiles = normalizeFiles(filesResponse);
-
                 setFiles(loadedFiles);
 
-                // Update the currently opened folder's file count in the tree.
                 const updateFolderFileCount = (
                     folders: ProjectFolder[],
                 ): ProjectFolder[] =>
@@ -776,9 +759,7 @@ export default function ProjectFolderFiles() {
     };
 
     const uploadFiles = async (selected: File[]) => {
-        if (selected.length === 0 || uploading) {
-            return;
-        }
+        if (selected.length === 0 || uploading) return;
 
         if (
             !Number.isInteger(parsedProjectId) ||
@@ -790,39 +771,129 @@ export default function ProjectFolderFiles() {
             return;
         }
 
+        const getRelativePath = (file: File) =>
+            (file as File & { webkitRelativePath?: string })
+                .webkitRelativePath || file.name;
+
+        const firstPath = getRelativePath(selected[0]);
+        const rootName = firstPath.includes("/")
+            ? firstPath.split("/")[0]
+            : "Selected files";
+
+        const initialItems: UploadProgressItem[] = selected.map(
+            (file, index) => ({
+                id: `${index}-${file.name}-${file.lastModified}`,
+                name: file.name,
+                relativePath: getRelativePath(file),
+                size: file.size,
+                loaded: 0,
+                percentage: 0,
+                status: "waiting",
+            }),
+        );
+
+        setUploadRootName(rootName);
+        setUploadItems(initialItems);
         setUploading(true);
         setUploadError("");
 
-        setTransferProgress({
-            loaded: 0,
-            total: 0,
-            percentage: 0,
-        });
+        let nextIndex = 0;
+        let completedCount = 0;
+        const failedFiles: string[] = [];
 
-        setUploadStage("uploading");
+        const updateItem = (
+            id: string,
+            updates: Partial<UploadProgressItem>,
+        ) => {
+            setUploadItems((previous) =>
+                previous.map((item) =>
+                    item.id === id ? { ...item, ...updates } : item,
+                ),
+            );
+        };
+
+        const uploadWorker = async () => {
+            while (true) {
+                const index = nextIndex++;
+
+                if (index >= selected.length) return;
+
+                const file = selected[index];
+                const item = initialItems[index];
+
+                updateItem(item.id, {
+                    status: "uploading",
+                    error: undefined,
+                });
+
+                try {
+                    await uploadProjectFolderFiles(
+                        parsedProjectId,
+                        parsedFolderId,
+                        [file],
+                        (progress) => {
+                            const percentage = Math.min(
+                                100,
+                                Math.max(0, progress.percentage),
+                            );
+
+                            updateItem(item.id, {
+                                loaded: Math.min(
+                                    file.size,
+                                    Math.round(
+                                        file.size * percentage / 100,
+                                    ),
+                                ),
+                                percentage,
+                            });
+                        },
+                    );
+
+                    updateItem(item.id, {
+                        loaded: file.size,
+                        percentage: 100,
+                        status: "completed",
+                    });
+
+                    completedCount++;
+                } catch (err: unknown) {
+                    const message =
+                        err instanceof Error
+                            ? err.message
+                            : "Upload failed.";
+
+                    updateItem(item.id, {
+                        status: "failed",
+                        error: message,
+                    });
+
+                    failedFiles.push(file.name);
+                }
+            }
+        };
 
         try {
-            await uploadProjectFolderFiles(
-                parsedProjectId,
-                parsedFolderId,
-                selected,
-                (progress) => {
-                    setTransferProgress(progress);
+            const workerCount = Math.min(3, selected.length);
 
-                    if (progress.percentage >= 100) {
-                        setUploadStage("processing");
-                    }
-                },
+            await Promise.all(
+                Array.from(
+                    { length: workerCount },
+                    () => uploadWorker(),
+                ),
             );
 
-            setSelectedFiles(new Set());
-            setReloadKey((key) => key + 1);
-        } catch (err: unknown) {
-            setUploadError(
-                err instanceof Error
-                    ? err.message
-                    : "Unable to upload files. Please try again.",
-            );
+            if (completedCount > 0) {
+                setSelectedFiles(new Set());
+                setReloadKey((key) => key + 1);
+            }
+
+            if (failedFiles.length > 0) {
+                setUploadError(
+                    `${completedCount} file(s) uploaded successfully. ` +
+                    `${failedFiles.length} file(s) failed. ` +
+                    `You can review the failed files in the upload panel.`,
+                );
+            }
         } finally {
             setUploading(false);
             setIsDragging(false);
@@ -1529,56 +1600,116 @@ export default function ProjectFolderFiles() {
                                     </div>
                                 )}
 
-                                {/* Actual upload progress */}
-                                {uploading && (
-                                    <div className="rounded-tl-xl rounded-br-xl border border-primary/30 bg-white p-4 shadow-sm dark:bg-gray-800">
-                                        <div className="mb-3 flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <Loader2
-                                                    size={18}
-                                                    className="animate-spin text-primary"
+                                {uploadItems.length > 0 && (
+                                    <>
+                                        {/* Small floating upload alert */}
+                                        {!isUploadPanelOpen && (
+                                            <div className="fixed bottom-5 left-1/2 z-[180] w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
+                                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-2xl dark:border-gray-700 dark:bg-gray-800">
+
+                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                                                        {uploading ? (
+                                                            <Loader2
+                                                                size={22}
+                                                                className="animate-spin text-primary"
+                                                            />
+                                                        ) : (
+                                                            <Upload size={22} className="text-primary" />
+                                                        )}
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+                                                            {uploading ? "Uploading files..." : "Upload finished"}
+                                                        </p>
+
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                            {uploadItems.length} files
+                                                            {uploading ? " • Upload in progress" : " • View upload details"}
+                                                        </p>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsUploadPanelOpen(true)}
+                                                        className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+                                                    >
+                                                        <Maximize2 size={14} />
+                                                        Expand
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Full-height right-side upload panel */}
+                                        {isUploadPanelOpen && (
+                                            <div className="fixed inset-0 z-[190]">
+
+                                                {/* Background overlay */}
+                                                <button
+                                                    type="button"
+                                                    aria-label="Close upload panel"
+                                                    onClick={() => setIsUploadPanelOpen(false)}
+                                                    className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
                                                 />
 
-                                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                    {uploadStage === "uploading"
-                                                        ? "Uploading files..."
-                                                        : "Processing files on server..."}
-                                                </span>
+                                                {/* Right-side panel */}
+                                                <aside
+                                                    role="dialog"
+                                                    aria-modal="true"
+                                                    aria-label="Upload progress"
+                                                    className="absolute right-0 top-0 flex h-dvh w-full max-w-xl flex-col border-l border-gray-200 bg-gray-50 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                                                >
+                                                    {/* Panel header */}
+                                                    <div className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
+
+                                                        <div className="flex min-w-0 items-center gap-3">
+                                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                                                                <Upload size={20} className="text-primary" />
+                                                            </div>
+
+                                                            <div className="min-w-0">
+                                                                <h2 className="font-semibold text-gray-900 dark:text-white">
+                                                                    Upload Progress
+                                                                </h2>
+
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                    {uploading
+                                                                        ? "Files are being uploaded..."
+                                                                        : "Upload process finished"}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsUploadPanelOpen(false)}
+                                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                                            title="Close panel"
+                                                            aria-label="Close upload panel"
+                                                        >
+                                                            <X size={20} />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Upload progress content */}
+                                                    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                                                        <UploadProgressPanel
+                                                            rootName={uploadRootName}
+                                                            items={uploadItems}
+                                                            uploading={uploading}
+                                                            onClear={() => {
+                                                                setUploadItems([]);
+                                                                setUploadError("");
+                                                                setIsUploadPanelOpen(false);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </aside>
                                             </div>
-
-                                            <span className="text-sm font-bold text-primary">
-                                                {transferProgress.percentage}%
-                                            </span>
-                                        </div>
-
-                                        <div
-                                            className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
-                                            role="progressbar"
-                                            aria-label="File upload progress"
-                                            aria-valuemin={0}
-                                            aria-valuemax={100}
-                                            aria-valuenow={transferProgress.percentage}
-                                        >
-                                            <div
-                                                className="h-full rounded-full bg-primary transition-all duration-200"
-                                                style={{
-                                                    width: `${transferProgress.percentage}%`,
-                                                }}
-                                            />
-                                        </div>
-
-                                        <div className="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                                            <span>
-                                                {formatFileSize(transferProgress.loaded)} uploaded
-                                            </span>
-
-                                            <span>
-                                                {formatFileSize(transferProgress.total)} total
-                                            </span>
-                                        </div>
-                                    </div>
+                                        )}
+                                    </>
                                 )}
-
 
                                 {deleteError && (
                                     <div
