@@ -266,16 +266,30 @@ export function normalizeFolderProgress(response: unknown): FolderProgress {
     const parsedPercentage =
         rawPercentage == null ? null : Number(rawPercentage);
 
+    const rawKeypersonId = nested.keypersonid;
+    const parsedKeypersonId =
+        rawKeypersonId == null || rawKeypersonId === ""
+            ? null
+            : Number(rawKeypersonId);
+
     return {
         progress_percentage:
             parsedPercentage !== null && Number.isFinite(parsedPercentage)
                 ? parsedPercentage
                 : null,
+
         progress_notes:
             typeof nested.progress_notes === "string"
                 ? nested.progress_notes
                 : "",
+
         status: nested.status as number | string | null | undefined,
+
+        keypersonid:
+            parsedKeypersonId !== null &&
+                Number.isFinite(parsedKeypersonId)
+                ? parsedKeypersonId
+                : null,
     };
 }
 

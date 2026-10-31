@@ -111,20 +111,21 @@ export default function ProjectFolderFiles() {
     const isAdmin =
         String(currentUser?.mtype ?? "").trim().toLowerCase() === "sysadmin";
 
-    const canViewFolderProgress =
-        isAdmin ||
-        isProjectCoordinator ||
-        (currentFolder?.keypersonid != null &&
-            currentUser?.uid != null &&
-            Number(currentFolder.keypersonid) === Number(currentUser.uid));
-
-    const canUpdateFolderStatus =
-        currentFolder?.keypersonid != null &&
-        currentUser?.uid != null &&
-        Number(currentFolder.keypersonid) === Number(currentUser.uid);
-
     const [folderProgress, setFolderProgress] =
         useState<FolderProgress | null>(null);
+
+    const assignedKeypersonId =
+        folderProgress?.keypersonid ?? currentFolder?.keypersonid;
+
+    const isAssignedKeyperson =
+        assignedKeypersonId != null &&
+        currentUser?.uid != null &&
+        Number(assignedKeypersonId) === Number(currentUser.uid);
+
+    const canViewFolderProgress =
+        isAdmin || isProjectCoordinator || isAssignedKeyperson;
+
+    const canUpdateFolderStatus = isAssignedKeyperson;
 
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [progressPercentage, setProgressPercentage] = useState(0);
