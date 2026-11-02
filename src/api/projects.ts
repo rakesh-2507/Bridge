@@ -490,3 +490,13 @@ export async function getProjectFolderFileCounts(
     `/projects/${encodeURIComponent(String(projectId))}/folder-file-counts`,
   );
 }
+
+// Delete an entire project folder
+export function deleteProjectFolder<T = string>(
+  projectId: string | number,
+  folderId: string | number,
+): Promise<T> {
+  return del<T>(
+    `/projects/${encodeURIComponent(String(projectId))}/folders/${encodeURIComponent(String(folderId))}`,
+  );
+}

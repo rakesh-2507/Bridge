@@ -6,10 +6,8 @@ import {
 } from "lucide-react";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { deleteFolder } from "../api/folders";
-
 import {
-    getProject, getProjectFolderFiles, uploadProjectFolderFiles, deleteProjectFolderFile, updateProjectFolderProgress, completeProjectFolder, getProjectFolderProgress, getProjectFolderFilePreview, getProjectFolderCommentRecipients, createProjectFolderComment, getNotifications,
+    getProject, getProjectFolderFiles, uploadProjectFolderFiles, deleteProjectFolderFile, updateProjectFolderProgress, completeProjectFolder, getProjectFolderProgress, getProjectFolderFilePreview, getProjectFolderCommentRecipients, createProjectFolderComment, getNotifications, deleteProjectFolder,
 } from "../api/projects";
 
 import type {
@@ -732,7 +730,7 @@ export default function ProjectFolderFiles() {
         setDeleteError("");
 
         try {
-            await deleteFolder(currentFolder.fid);
+            await deleteProjectFolder(parsedProjectId, parsedFolderId);
             navigate(-1);
         } catch (err: unknown) {
             setDeleteError(
@@ -2691,7 +2689,7 @@ export default function ProjectFolderFiles() {
                         </div>
                     )}
                 </section>) :
-            null}
+                null}
 
         </div>
     );
