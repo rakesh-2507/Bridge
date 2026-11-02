@@ -2,10 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent, MouseEvent } from "react";
 import {
-    Folder, Maximize2, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, FileText, Pencil, MessageSquare, Send,
+    ArrowLeft, Folder, Maximize2, Loader2, AlertCircle, RefreshCw, ChevronRight, Trash2, X, ExternalLink, Download, Upload, FolderOpen, FileText, Pencil, MessageSquare, Send,
 } from "lucide-react";
 
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { deleteFolder } from "../api/folders";
 
 import {
     getProject, getProjectFolderFiles, uploadProjectFolderFiles, deleteProjectFolderFile, updateProjectFolderProgress, completeProjectFolder, getProjectFolderProgress, getProjectFolderFilePreview, getProjectFolderCommentRecipients, createProjectFolderComment, getNotifications,
@@ -137,6 +138,7 @@ export default function ProjectFolderFiles() {
     const [completeFolderError, setCompleteFolderError] = useState("");
 
     const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+    const [deletingFolder, setDeletingFolder] = useState(false);
     const [deleteError, setDeleteError] = useState("");
 
     const [uploading, setUploading] = useState(false);
@@ -713,6 +715,36 @@ export default function ProjectFolderFiles() {
         }
     };
 
+    const handleDeleteCurrentFolder = async () => {
+        if (!currentFolder?.fid || deletingFolder) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete the entire folder "${currentFolderName}"? This action cannot be undone.`,
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setDeletingFolder(true);
+        setDeleteError("");
+
+        try {
+            await deleteFolder(currentFolder.fid);
+            navigate(-1);
+        } catch (err: unknown) {
+            setDeleteError(
+                err instanceof Error
+                    ? err.message
+                    : "Unable to delete the folder. Please try again.",
+            );
+        } finally {
+            setDeletingFolder(false);
+        }
+    };
+
     const handleDeleteFile = async (file: FolderFile) => {
         const fileId = Number(file.file_id ?? file.id);
 
@@ -1286,6 +1318,16 @@ export default function ProjectFolderFiles() {
             <div className="mx-auto w-full space-y-6">
                 <div className="flex w-full flex-col justify-between gap-4 rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:flex-row sm:items-center sm:p-6">
                     <div className="flex min-w-0 items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)}
+                            title="Go back"
+                            aria-label="Go back to previous page"
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-tl-xl rounded-br-xl border border-gray-200 text-gray-600 transition hover:border-primary hover:bg-primary/10 hover:text-primary dark:border-gray-600 dark:text-gray-300 dark:hover:border-primary"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl    bg-primary">
                             <Folder size={26} className="text-white" />
                         </div>
@@ -1364,7 +1406,7 @@ export default function ProjectFolderFiles() {
                                                             className="animate-spin"
                                                         />
                                                     ) : (
-                                                        <span>✓</span>
+                                                        <span>âœ“</span>
                                                     )}
 
                                                     {completingFolder
@@ -1400,23 +1442,42 @@ export default function ProjectFolderFiles() {
                     </div>
 
                     {!loading && !error && (
-                        <div className="flex shrink-0 items-center gap-3  rounded-tl-xl rounded-br-xl  bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
-                            <div className="flex h-10 w-10 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/20">
-                                <FileText
-                                    size={21}
-                                    className="text-primary dark:text-gray-100"
-                                />
+                        <div className="flex shrink-0 flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-3 rounded-tl-xl rounded-br-xl bg-gray-50 px-4 py-3 dark:bg-gray-700/50">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-tl-xl rounded-br-xl bg-primary/20">
+                                    <FileText
+                                        size={21}
+                                        className="text-primary dark:text-gray-100"
+                                    />
+                                </div>
+
+                                <div>
+                                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                        {files.length}
+                                    </p>
+
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {files.length === 1 ? "File" : "Files"}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div>
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {files.length}
-                                </p>
-
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {files.length === 1 ? "File" : "Files"}
-                                </p>
-                            </div>
+                            {currentFolder && (
+                                <button
+                                    type="button"
+                                    onClick={() => void handleDeleteCurrentFolder()}
+                                    disabled={deletingFolder || uploading || deletingSelected}
+                                    title="Delete entire folder"
+                                    className="inline-flex items-center justify-center gap-2 rounded-tl-xl rounded-br-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {deletingFolder ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        <Trash2 size={16} />
+                                    )}
+                                    {deletingFolder ? "Deleting Folder..." : "Delete Folder"}
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -1626,7 +1687,7 @@ export default function ProjectFolderFiles() {
 
                                                         <p className="text-xs text-gray-500 dark:text-gray-400">
                                                             {uploadItems.length} files
-                                                            {uploading ? " • Upload in progress" : " • View upload details"}
+                                                            {uploading ? " â€¢ Upload in progress" : " â€¢ View upload details"}
                                                         </p>
                                                     </div>
 
@@ -1853,7 +1914,7 @@ export default function ProjectFolderFiles() {
                                                                 <td className="whitespace-nowrap px-4 py-4 font-medium text-gray-700 dark:text-gray-300">
                                                                     {file.file_id ??
                                                                         file.id ??
-                                                                        "—"}
+                                                                        "â€”"}
                                                                 </td>
 
                                                                 <td className="max-w-[280px] px-4 py-4">
@@ -2340,7 +2401,7 @@ export default function ProjectFolderFiles() {
             <Modal
                 isOpen={showFolderTreeModal && !!project}
                 onClose={() => setShowFolderTreeModal(false)}
-                title={`${project?.projectname ?? "Project"} — Folder Structure`}
+                title={`${project?.projectname ?? "Project"} â€” Folder Structure`}
                 size="2xl"
             >
                 <div className="max-h-[65vh] overflow-y-auto px-2 py-1">
@@ -2393,7 +2454,7 @@ export default function ProjectFolderFiles() {
                         setCommentError("");
                     }
                 }}
-                title={`Comment — ${currentFolder?.fname ?? "Folder"}`}
+                title={`Comment â€” ${currentFolder?.fname ?? "Folder"}`}
                 size="lg"
             >
                 <div className="space-y-5">
@@ -2629,7 +2690,8 @@ export default function ProjectFolderFiles() {
                             ))}
                         </div>
                     )}
-                </section>) : null}
+                </section>) :
+            null}
 
         </div>
     );

@@ -343,7 +343,7 @@ export function getFolderProgressLabel(percentage: number): string {
         return `${percentage}% Complete`;
     }
 
-    return "Not Started";
+    return "";
 }
 
 export function getFolderProgressClass(percentage: number): string {
