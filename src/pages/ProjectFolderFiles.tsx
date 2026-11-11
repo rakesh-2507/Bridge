@@ -14,7 +14,11 @@ import type {
     FolderFile, ProjectFolder, FolderNavigationState, FolderProgress, Project, Notification, FolderCommentRecipient,
 } from "../api/projects";
 import { getUsers, type User } from "../api/users";
-import { getCurrentUser } from "../api/auth";
+import {
+    getAccessToken,
+    getCurrentUser,
+    getCurrentUserId,
+} from "../api/auth";
 import Modal from "../components/models/Modal";
 import FolderTree from "../components/models/FolderTree";
 import UploadProgressPanel, {
@@ -135,7 +139,7 @@ export default function ProjectFolderFiles() {
     const [completingFolder, setCompletingFolder] = useState(false);
     const [completeFolderError, setCompleteFolderError] = useState("");
 
-    const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+    const [deletingFileId] = useState<number | null>(null);
     const [deletingFolder, setDeletingFolder] = useState(false);
     const [deleteError, setDeleteError] = useState("");
 
@@ -743,51 +747,51 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    const handleDeleteFile = async (file: FolderFile) => {
-        const fileId = Number(file.file_id ?? file.id);
+    // const handleDeleteFile = async (file: FolderFile) => {
+    //     const fileId = Number(file.file_id ?? file.id);
 
-        if (!Number.isInteger(fileId) || fileId <= 0) {
-            setDeleteError("Cannot delete file: invalid file ID.");
-            return;
-        }
+    //     if (!Number.isInteger(fileId) || fileId <= 0) {
+    //         setDeleteError("Cannot delete file: invalid file ID.");
+    //         return;
+    //     }
 
-        const fileName = getFileName(file);
+    //     const fileName = getFileName(file);
 
-        if (
-            !window.confirm(
-                `Are you sure you want to delete "${fileName}"?`,
-            )
-        ) {
-            return;
-        }
+    //     if (
+    //         !window.confirm(
+    //             `Are you sure you want to delete "${fileName}"?`,
+    //         )
+    //     ) {
+    //         return;
+    //     }
 
-        setDeletingFileId(fileId);
-        setDeleteError("");
+    //     setDeletingFileId(fileId);
+    //     setDeleteError("");
 
-        try {
-            await deleteProjectFolderFile(
-                parsedProjectId,
-                parsedFolderId,
-                fileId,
-            );
+    //     try {
+    //         await deleteProjectFolderFile(
+    //             parsedProjectId,
+    //             parsedFolderId,
+    //             fileId,
+    //         );
 
-            setSelectedFiles((previous) => {
-                const updated = new Set(previous);
-                updated.delete(getFileKey(file, files.indexOf(file)));
-                return updated;
-            });
+    //         setSelectedFiles((previous) => {
+    //             const updated = new Set(previous);
+    //             updated.delete(getFileKey(file, files.indexOf(file)));
+    //             return updated;
+    //         });
 
-            setReloadKey((key) => key + 1);
-        } catch (err: unknown) {
-            setDeleteError(
-                err instanceof Error
-                    ? err.message
-                    : "Unable to delete the file. Please try again.",
-            );
-        } finally {
-            setDeletingFileId(null);
-        }
-    };
+    //         setReloadKey((key) => key + 1);
+    //     } catch (err: unknown) {
+    //         setDeleteError(
+    //             err instanceof Error
+    //                 ? err.message
+    //                 : "Unable to delete the file. Please try again.",
+    //         );
+    //     } finally {
+    //         setDeletingFileId(null);
+    //     }
+    // };
 
     const uploadFiles = async (selected: File[]) => {
         if (selected.length === 0 || uploading) return;
@@ -1282,6 +1286,230 @@ export default function ProjectFolderFiles() {
             setDeletingSelected(false);
         }
     };
+
+    const LQ_BACKEND_URL = "http://200.141.5.165:5000";
+
+    // Replace with the same configured LQ user ID from your previous integration.
+    const LQ_USER_ID = "65f8a1b2c3d4e5f6a7b8c9d0";
+
+    const [openingLQFileId, setOpeningLQFileId] = useState<number | null>(null);
+    const [lqError, setLqError] = useState("");
+
+    const handleOpenInLQ = async (file: FolderFile) => {
+        const fileId = Number(file.file_id ?? file.id);
+        const fileName = getFileName(file);
+
+        if (!fileName.toLowerCase().endsWith(".pdf")) {
+            return;
+        }
+
+        if (!Number.isInteger(fileId) || fileId <= 0) {
+            setLqError("Invalid file ID.");
+            return;
+        }
+
+        const currentUser = getCurrentUser();
+
+        if (!currentUser) {
+            setLqError("Unable to identify the logged-in user.");
+            return;
+        }
+
+        setOpeningLQFileId(fileId);
+        setLqError("");
+
+        let lqWindow: Window | null = null;
+
+        try {
+            // Open a blank tab immediately to avoid popup blocking.
+            lqWindow = window.open("about:blank", "_blank");
+
+            if (!lqWindow) {
+                throw new Error(
+                    "Please allow pop-ups for Bridge to open LQ."
+                );
+            }
+
+            // 1. Fetch the original PDF from Bridge.
+            const blob = await getProjectFolderFilePreview(
+                parsedProjectId,
+                parsedFolderId,
+                fileId,
+            );
+
+            // 2. Find or create the PDF category in LQ.
+            const categoryResponse = await fetch(
+                `${LQ_BACKEND_URL}/categories?kind=pdf&userId=${encodeURIComponent(LQ_USER_ID)}`
+            );
+
+            if (!categoryResponse.ok) {
+                throw new Error(
+                    `LQ category request failed (${categoryResponse.status}).`
+                );
+            }
+
+            const categoryData = await categoryResponse.json();
+
+            const categories = Array.isArray(categoryData)
+                ? categoryData
+                : categoryData.categories ?? [];
+
+            let category = categories.find(
+                (item: { name?: string }) =>
+                    item.name?.toLowerCase() === "notes_pdf"
+            );
+
+            if (!category) {
+                const createResponse = await fetch(
+                    `${LQ_BACKEND_URL}/categories`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            name: "notes_pdf",
+                            kind: "pdf",
+                            userId: LQ_USER_ID,
+                        }),
+                    }
+                );
+
+                if (!createResponse.ok) {
+                    throw new Error(
+                        "Unable to create PDF category in LQ."
+                    );
+                }
+
+                category = await createResponse.json();
+            }
+
+            if (!category?.id) {
+                throw new Error(
+                    "Could not find or create the PDF category in LQ."
+                );
+            }
+
+            // 3. Upload the PDF to LQ.
+            const formData = new FormData();
+
+            const pdfFile = new File(
+                [blob],
+                fileName,
+                { type: "application/pdf" }
+            );
+
+            formData.append("files", pdfFile);
+            formData.append("categoryId", String(category.id));
+            formData.append("kind", "pdf");
+            formData.append("userId", LQ_USER_ID);
+
+            const uploadResponse = await fetch(
+                `${LQ_BACKEND_URL}/documents/upload-multiple`,
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json().catch(() => null);
+
+                throw new Error(
+                    errorData?.error || "Failed to upload PDF to LQ."
+                );
+            }
+
+            // IMPORTANT: upload-multiple returns an ARRAY.
+            const uploadedDocs = await uploadResponse.json() as Array<{
+                id: string;
+                name: string;
+                kind: string;
+                size: number;
+                url: string;
+            }>;
+
+            const lqDocument = uploadedDocs?.[0];
+
+            if (!lqDocument?.id || !lqDocument?.url) {
+                throw new Error(
+                    "LQ uploaded the PDF but returned invalid document details."
+                );
+            }
+
+            // 4. Get Bridge authentication details.
+            const bridgeToken = getAccessToken();
+            const bridgeUserId = getCurrentUserId();
+            const loginname = currentUser.loginname;
+
+            if (!bridgeToken || !bridgeUserId || !loginname) {
+                throw new Error(
+                    "Bridge authentication details are incomplete."
+                );
+            }
+
+            // 5. Mint a fresh LQ SSO token.
+            const ssoResponse = await fetch(
+                `${LQ_BACKEND_URL}/auth/sso-mint`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        bridgeToken,
+                        uid: bridgeUserId,
+                        loginname,
+                    }),
+                }
+            );
+
+            const ssoData = await ssoResponse.json();
+
+            if (
+                !ssoResponse.ok ||
+                !ssoData.success ||
+                !ssoData.sso
+            ) {
+                throw new Error(
+                    ssoData.error || "Unable to authenticate with LQ."
+                );
+            }
+
+            // 6. Build the LQ document URL.
+            const documentUrl = new URL(
+                lqDocument.url,
+                LQ_BACKEND_URL
+            ).toString();
+
+            const lqUrl = new URL(
+                "http://200.141.5.165:3000/manage-documents"
+            );
+
+            lqUrl.searchParams.set("docId", String(lqDocument.id));
+            lqUrl.searchParams.set("name", lqDocument.name);
+            lqUrl.searchParams.set("url", documentUrl);
+            lqUrl.searchParams.set("category", "notes_pdf");
+            lqUrl.searchParams.set("sso", ssoData.sso);
+
+            // 7. Navigate to LQ.
+            lqWindow.location.href = lqUrl.toString();
+
+        } catch (error) {
+            console.error("Open in LQ failed:", error);
+
+            lqWindow?.close();
+
+            setLqError(
+                error instanceof Error
+                    ? error.message
+                    : "Unable to open PDF in LQ."
+            );
+        } finally {
+            setOpeningLQFileId(null);
+        }
+    };
+
 
     return (
         <div
@@ -1803,6 +2031,21 @@ export default function ProjectFolderFiles() {
                                         </button>
                                     </div>
                                 )}
+                                {lqError && (
+                                    <div
+                                        role="alert"
+                                        className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-900/20 dark:text-red-300"
+                                    >
+                                        <span>{lqError}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setLqError("")}
+                                            aria-label="Dismiss LQ error"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                )}
 
                                 {/* Files table */}
                                 <div className="overflow-hidden rounded-tl-xl rounded-br-xl  border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -1969,43 +2212,32 @@ export default function ProjectFolderFiles() {
                                                                     )}
                                                                 </td>
 
-                                                                <td className="px-4 py-4 text-center">
-                                                                    <button
-                                                                        type="button"
-                                                                        title={
-                                                                            deletingFileId ===
-                                                                                Number(
-                                                                                    file.file_id ??
-                                                                                    file.id,
-                                                                                )
-                                                                                ? "Deleting file..."
-                                                                                : "Delete file"
-                                                                        }
-                                                                        aria-label={`Delete ${fileName}`}
-                                                                        disabled={deletingFileId !== null || deletingSelected}
-                                                                        onClick={() =>
-                                                                            void handleDeleteFile(
-                                                                                file,
-                                                                            )
-                                                                        }
-                                                                        className="inline-flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/30"
-                                                                    >
-                                                                        {deletingFileId ===
-                                                                            Number(
-                                                                                file.file_id ??
-                                                                                file.id,
-                                                                            ) ? (
-                                                                            <Loader2
-                                                                                size={18}
-                                                                                className="animate-spin"
-                                                                            />
-                                                                        ) : (
-                                                                            <Trash2
-                                                                                size={18}
-                                                                            />
+
+                                                                <td className="px-4 py-4">
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        {fileName.toLowerCase().endsWith(".pdf") && (
+                                                                            <button
+                                                                                type="button"
+                                                                                title="Open PDF in LQ"
+                                                                                aria-label={`Open ${fileName} in LQ`}
+                                                                                disabled={
+                                                                                    openingLQFileId !== null ||
+                                                                                    deletingSelected ||
+                                                                                    deletingFileId !== null
+                                                                                }
+                                                                                onClick={() => void handleOpenInLQ(file)}
+                                                                                className="inline-flex h-9 w-9 items-center justify-center rounded-tl-xl rounded-br-xl text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                            >
+                                                                                {openingLQFileId === Number(file.file_id ?? file.id) ? (
+                                                                                    <Loader2 size={18} className="animate-spin" />
+                                                                                ) : (
+                                                                                    <ExternalLink size={18} />
+                                                                                )}
+                                                                            </button>
                                                                         )}
-                                                                    </button>
+                                                                    </div>
                                                                 </td>
+
                                                             </tr>
                                                         );
                                                     })}
