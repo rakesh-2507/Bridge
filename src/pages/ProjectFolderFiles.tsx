@@ -1287,11 +1287,10 @@ export default function ProjectFolderFiles() {
         }
     };
 
-    const LQ_BACKEND_URL = "http://200.141.5.165:5000";
+    const LQ_BACKEND_URL = "https://connectednotes-api.sidpz.com";
+    const LQ_FRONTEND_URL = "https://connectednotes.sidpz.com";
 
-    // Replace with the same configured LQ user ID from your previous integration.
     const LQ_USER_ID = "65f8a1b2c3d4e5f6a7b8c9d0";
-
     const [openingLQFileId, setOpeningLQFileId] = useState<number | null>(null);
     const [lqError, setLqError] = useState("");
 
@@ -1321,7 +1320,6 @@ export default function ProjectFolderFiles() {
         let lqWindow: Window | null = null;
 
         try {
-            // Open a blank tab immediately to avoid popup blocking.
             lqWindow = window.open("about:blank", "_blank");
 
             if (!lqWindow) {
@@ -1330,7 +1328,6 @@ export default function ProjectFolderFiles() {
                 );
             }
 
-            // 1. Fetch the original PDF from Bridge.
             const blob = await getProjectFolderFilePreview(
                 parsedProjectId,
                 parsedFolderId,
@@ -1483,7 +1480,7 @@ export default function ProjectFolderFiles() {
             ).toString();
 
             const lqUrl = new URL(
-                "http://200.141.5.165:3000/manage-documents"
+                `${LQ_FRONTEND_URL}/manage-documents`
             );
 
             lqUrl.searchParams.set("docId", String(lqDocument.id));
