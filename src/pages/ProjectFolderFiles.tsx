@@ -1298,9 +1298,20 @@ export default function ProjectFolderFiles() {
         const fileId = Number(file.file_id ?? file.id);
         const fileName = getFileName(file);
 
-        if (!fileName.toLowerCase().endsWith(".pdf")) {
+        const extension = fileName.split(".").pop()?.toLowerCase();
+
+        if (!["pdf", "xlsx"].includes(extension ?? "")) {
             return;
         }
+
+        const isPdf = extension === "pdf";
+
+        const mimeType = isPdf
+            ? "application/pdf"
+            : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        const categoryName = isPdf ? "notes_pdf" : "notes_xlsx";
+        const categoryKind = isPdf ? "pdf" : "excel";
 
         if (!Number.isInteger(fileId) || fileId <= 0) {
             setLqError("Invalid file ID.");
@@ -1336,7 +1347,7 @@ export default function ProjectFolderFiles() {
 
             // 2. Find or create the PDF category in LQ.
             const categoryResponse = await fetch(
-                `${LQ_BACKEND_URL}/categories?kind=pdf&userId=${encodeURIComponent(LQ_USER_ID)}`
+                `${LQ_BACKEND_URL}/categories?kind=${categoryKind}&userId=${encodeURIComponent(LQ_USER_ID)}`
             );
 
             if (!categoryResponse.ok) {
@@ -1353,7 +1364,7 @@ export default function ProjectFolderFiles() {
 
             let category = categories.find(
                 (item: { name?: string }) =>
-                    item.name?.toLowerCase() === "notes_pdf"
+                    item.name?.toLowerCase() === categoryName
             );
 
             if (!category) {
@@ -1365,8 +1376,8 @@ export default function ProjectFolderFiles() {
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
-                            name: "notes_pdf",
-                            kind: "pdf",
+                            name: categoryName,
+                            kind: categoryKind,
                             userId: LQ_USER_ID,
                         }),
                     }
@@ -1390,15 +1401,15 @@ export default function ProjectFolderFiles() {
             // 3. Upload the PDF to LQ.
             const formData = new FormData();
 
-            const pdfFile = new File(
+            const uploadFile = new File(
                 [blob],
                 fileName,
-                { type: "application/pdf" }
+                { type: mimeType }
             );
 
-            formData.append("files", pdfFile);
+            formData.append("files", uploadFile);
             formData.append("categoryId", String(category.id));
-            formData.append("kind", "pdf");
+            formData.append("kind", categoryKind);
             formData.append("userId", LQ_USER_ID);
 
             const uploadResponse = await fetch(
@@ -1486,7 +1497,7 @@ export default function ProjectFolderFiles() {
             lqUrl.searchParams.set("docId", String(lqDocument.id));
             lqUrl.searchParams.set("name", lqDocument.name);
             lqUrl.searchParams.set("url", documentUrl);
-            lqUrl.searchParams.set("category", "notes_pdf");
+            lqUrl.searchParams.set("category", categoryName);
             lqUrl.searchParams.set("sso", ssoData.sso);
 
             // 7. Navigate to LQ.
@@ -2158,13 +2169,21 @@ export default function ProjectFolderFiles() {
                                                                 <td className="max-w-[280px] px-4 py-4">
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() =>
-                                                                            void handleOpenFile(
-                                                                                file,
-                                                                            )
+                                                                        onClick={() => {
+                                                                            const extension = getFileExtension(file);
+
+                                                                            if (extension === "pdf" || extension === "xlsx") {
+                                                                                void handleOpenInLQ(file);
+                                                                            } else {
+                                                                                void handleOpenFile(file);
+                                                                            }
+                                                                        }}
+                                                                        className="group flex w-full min-w-0 items-center gap-3 rounded-tl-xl rounded-br-xl text-left"
+                                                                        title={
+                                                                            ["pdf", "xlsx"].includes(getFileExtension(file))
+                                                                                ? `Open ${fileName} in LQ`
+                                                                                : `Preview ${fileName}`
                                                                         }
-                                                                        className="group flex w-full min-w-0 items-center gap-3  rounded-tl-xl rounded-br-xl  text-left"
-                                                                        title={`Preview ${fileName}`}
                                                                     >
                                                                         <div className="flex h-10 w-10 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-gray-50 transition group-hover:bg-primary/10 dark:bg-gray-700/50 dark:group-hover:bg-primary/20">
                                                                             {getFileIcon(
@@ -2212,26 +2231,36 @@ export default function ProjectFolderFiles() {
 
                                                                 <td className="px-4 py-4">
                                                                     <div className="flex items-center justify-center gap-2">
-                                                                        {fileName.toLowerCase().endsWith(".pdf") && (
-                                                                            <button
-                                                                                type="button"
-                                                                                title="Open PDF in LQ"
-                                                                                aria-label={`Open ${fileName} in LQ`}
-                                                                                disabled={
-                                                                                    openingLQFileId !== null ||
-                                                                                    deletingSelected ||
-                                                                                    deletingFileId !== null
-                                                                                }
-                                                                                onClick={() => void handleOpenInLQ(file)}
-                                                                                className="inline-flex h-9 w-9 items-center justify-center rounded-tl-xl rounded-br-xl text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
-                                                                            >
-                                                                                {openingLQFileId === Number(file.file_id ?? file.id) ? (
-                                                                                    <Loader2 size={18} className="animate-spin" />
-                                                                                ) : (
-                                                                                    <ExternalLink size={18} />
-                                                                                )}
-                                                                            </button>
-                                                                        )}
+                                                                        {[".pdf", ".xlsx"].some((ext) =>
+                                                                            fileName.toLowerCase().endsWith(ext)
+                                                                        ) && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    title="Open file in LQ"
+                                                                                    aria-label={`Open ${fileName} in LQ`}
+                                                                                    disabled={
+                                                                                        openingLQFileId !== null ||
+                                                                                        deletingSelected ||
+                                                                                        deletingFileId !== null
+                                                                                    }
+                                                                                    onClick={() => {
+                                                                                        const name = fileName.toLowerCase();
+
+                                                                                        if (name.endsWith(".pdf") || name.endsWith(".xlsx")) {
+                                                                                            void handleOpenInLQ(file);
+                                                                                        } else {
+                                                                                            void handleOpenFile(file);
+                                                                                        }
+                                                                                    }}
+                                                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-tl-xl rounded-br-xl text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                                >
+                                                                                    {openingLQFileId === Number(file.file_id ?? file.id) ? (
+                                                                                        <Loader2 size={18} className="animate-spin" />
+                                                                                    ) : (
+                                                                                        <ExternalLink size={18} />
+                                                                                    )}
+                                                                                </button>
+                                                                            )}
                                                                     </div>
                                                                 </td>
 
@@ -2457,173 +2486,174 @@ export default function ProjectFolderFiles() {
                 </div>
             )}
 
-            {previewFile && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6"
-                    onClick={closePreview}
-                >
+            {previewFile &&
+                !["pdf", "xlsx"].includes(getFileExtension(previewFile)) && (
                     <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label={`Preview ${getFileName(previewFile)}`}
-                        className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
-                        onClick={(event: MouseEvent<HTMLDivElement>) =>
-                            event.stopPropagation()
-                        }
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6"
+                        onClick={closePreview}
                     >
-                        <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-4 dark:border-gray-700 sm:px-6">
-                            <div className="flex min-w-0 items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/10">
-                                    <FileText className="text-primary" />
+                        <div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label={`Preview ${getFileName(previewFile)}`}
+                            className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden  rounded-tl-xl rounded-br-xl   border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+                            onClick={(event: MouseEvent<HTMLDivElement>) =>
+                                event.stopPropagation()
+                            }
+                        >
+                            <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-4 dark:border-gray-700 sm:px-6">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center  rounded-tl-xl rounded-br-xl  bg-primary/10">
+                                        <FileText className="text-primary" />
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <h2 className="truncate text-base font-semibold text-gray-900 dark:text-white">
+                                            {getFileName(previewFile)}
+                                        </h2>
+
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            {previewFile.mime_type ||
+                                                getFileExtension(
+                                                    previewFile,
+                                                ).toUpperCase()}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div className="min-w-0">
-                                    <h2 className="truncate text-base font-semibold text-gray-900 dark:text-white">
-                                        {getFileName(previewFile)}
-                                    </h2>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    {previewUrl && (
+                                        <a
+                                            href={previewUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                            title="Open in new tab"
+                                            aria-label="Open file in new tab"
+                                        >
+                                            <ExternalLink size={18} />
+                                        </a>
+                                    )}
 
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        {previewFile.mime_type ||
-                                            getFileExtension(
-                                                previewFile,
-                                            ).toUpperCase()}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex shrink-0 items-center gap-2">
-                                {previewUrl && (
-                                    <a
-                                        href={previewUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                                        title="Open in new tab"
-                                        aria-label="Open file in new tab"
+                                    <button
+                                        type="button"
+                                        onClick={closePreview}
+                                        className="flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
+                                        title="Close preview"
+                                        aria-label="Close preview"
                                     >
-                                        <ExternalLink size={18} />
-                                    </a>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={closePreview}
-                                    className="flex h-9 w-9 items-center justify-center  rounded-tl-xl rounded-br-xl  text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-                                    title="Close preview"
-                                    aria-label="Close preview"
-                                >
-                                    <X size={20} />
-                                </button>
+                                        <X size={20} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="min-h-[300px] flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 sm:min-h-[500px]">
-                            {previewLoading ? (
-                                <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
-                                    <Loader2
-                                        className="animate-spin text-primary"
-                                        size={32}
-                                    />
-                                    Loading file preview...
-                                </div>
-                            ) : previewError ? (
-                                <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
-                                    <AlertCircle
-                                        size={40}
-                                        className="text-amber-500"
-                                    />
+                            <div className="min-h-[300px] flex-1 overflow-auto bg-gray-50 dark:bg-gray-950 sm:min-h-[500px]">
+                                {previewLoading ? (
+                                    <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+                                        <Loader2
+                                            className="animate-spin text-primary"
+                                            size={32}
+                                        />
+                                        Loading file preview...
+                                    </div>
+                                ) : previewError ? (
+                                    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
+                                        <AlertCircle
+                                            size={40}
+                                            className="text-amber-500"
+                                        />
 
-                                    <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
-                                        {previewError}
-                                    </p>
-                                </div>
-                            ) : isImageFile(previewFile) ? (
-                                <div className="flex min-h-[400px] items-center justify-center p-4">
-                                    <img
+                                        <p className="max-w-xl text-sm text-gray-600 dark:text-gray-300">
+                                            {previewError}
+                                        </p>
+                                    </div>
+                                ) : isImageFile(previewFile) ? (
+                                    <div className="flex min-h-[400px] items-center justify-center p-4">
+                                        <img
+                                            src={previewUrl ?? undefined}
+                                            alt={getFileName(previewFile)}
+                                            className="max-h-[75vh] max-w-full  rounded-tl-xl rounded-br-xl  object-contain"
+                                        />
+                                    </div>
+                                ) : isTextFile(previewFile) ? (
+                                    <pre className="min-h-[400px] whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-gray-800 dark:text-gray-200 sm:p-8">
+                                        {previewText}
+                                    </pre>
+                                ) : getFileExtension(previewFile) === "pdf" ||
+                                    previewFile.mime_type === "application/pdf" ? (
+                                    <iframe
+                                        title={`PDF preview: ${getFileName(previewFile)}`}
                                         src={previewUrl ?? undefined}
-                                        alt={getFileName(previewFile)}
-                                        className="max-h-[75vh] max-w-full  rounded-tl-xl rounded-br-xl  object-contain"
+                                        className="h-[70vh] min-h-[500px] w-full border-0"
                                     />
-                                </div>
-                            ) : isTextFile(previewFile) ? (
-                                <pre className="min-h-[400px] whitespace-pre-wrap break-words p-5 font-mono text-sm leading-6 text-gray-800 dark:text-gray-200 sm:p-8">
-                                    {previewText}
-                                </pre>
-                            ) : getFileExtension(previewFile) === "pdf" ||
-                                previewFile.mime_type === "application/pdf" ? (
-                                <iframe
-                                    title={`PDF preview: ${getFileName(previewFile)}`}
-                                    src={previewUrl ?? undefined}
-                                    className="h-[70vh] min-h-[500px] w-full border-0"
-                                />
-                            ) : [
-                                "doc",
-                                "docx",
-                                "xls",
-                                "xlsx",
-                                "ppt",
-                                "pptx",
-                            ].includes(getFileExtension(previewFile)) ? (
-                                <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
-                                    <FileText
-                                        size={48}
-                                        className="text-primary"
-                                    />
+                                ) : [
+                                    "doc",
+                                    "docx",
+                                    "xls",
+                                    "xlsx",
+                                    "ppt",
+                                    "pptx",
+                                ].includes(getFileExtension(previewFile)) ? (
+                                    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
+                                        <FileText
+                                            size={48}
+                                            className="text-primary"
+                                        />
 
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                        Office document
-                                    </h3>
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            Office document
+                                        </h3>
 
-                                    <p className="max-w-lg text-sm text-gray-500 dark:text-gray-400">
-                                        This file requires an Office-compatible
-                                        preview service or a document conversion
-                                        library to render its contents inside
-                                        the modal.
-                                    </p>
+                                        <p className="max-w-lg text-sm text-gray-500 dark:text-gray-400">
+                                            This file requires an Office-compatible
+                                            preview service or a document conversion
+                                            library to render its contents inside
+                                            the modal.
+                                        </p>
 
-                                    {previewUrl && (
-                                        <a
-                                            href={previewUrl}
-                                            download={getFileName(previewFile)}
-                                            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                                        >
-                                            <Download size={16} />
-                                            Download document
-                                        </a>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
-                                    <FileText
-                                        size={48}
-                                        className="text-gray-400"
-                                    />
+                                        {previewUrl && (
+                                            <a
+                                                href={previewUrl}
+                                                download={getFileName(previewFile)}
+                                                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                                            >
+                                                <Download size={16} />
+                                                Download document
+                                            </a>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 px-6 text-center">
+                                        <FileText
+                                            size={48}
+                                            className="text-gray-400"
+                                        />
 
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                        Preview unavailable
-                                    </h3>
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            Preview unavailable
+                                        </h3>
 
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        This file format cannot be rendered
-                                        directly in the browser.
-                                    </p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            This file format cannot be rendered
+                                            directly in the browser.
+                                        </p>
 
-                                    {previewUrl && (
-                                        <a
-                                            href={previewUrl}
-                                            download={getFileName(previewFile)}
-                                            className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                                        >
-                                            <Download size={16} />
-                                            Download file
-                                        </a>
-                                    )}
-                                </div>
-                            )}
+                                        {previewUrl && (
+                                            <a
+                                                href={previewUrl}
+                                                download={getFileName(previewFile)}
+                                                className="inline-flex items-center gap-2  rounded-tl-xl rounded-br-xl  bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+                                            >
+                                                <Download size={16} />
+                                                Download file
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
             <Modal
                 isOpen={showFolderTreeModal && !!project}
